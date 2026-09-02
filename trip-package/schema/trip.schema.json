@@ -797,6 +797,10 @@
         "startLocation": {
           "$ref": "#/$defs/location"
         },
+        "startAttractionId": {
+          "$ref": "#/$defs/id",
+          "description": "Attraction this walk departs from. Screens use this to decide where the walk can be started; sharing a city is not an association."
+        },
         "stops": {
           "type": "array",
           "minItems": 1,

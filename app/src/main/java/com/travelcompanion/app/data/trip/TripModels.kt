@@ -98,7 +98,9 @@ data class ActionLink(
     val kind: String,
     val uri: String,
     val fallbackUri: String? = null,
-    val requiresInternet: Boolean = false,
+    /** Schema default is true: assume an action needs the network unless the
+     *  content package states otherwise, so offline UI never over-promises. */
+    val requiresInternet: Boolean = true,
 )
 
 @Serializable
@@ -187,7 +189,9 @@ data class AudioGuide(
 data class LocationTrigger(
     val geo: GeoPoint,
     val radiusMeters: Double,
-    val notifyOncePerTrip: Boolean = false,
+    /** Schema default is true: a story interrupts at most once per trip
+     *  unless the content package opts into repeating it. */
+    val notifyOncePerTrip: Boolean = true,
     val autoPlayInWalk: Boolean = false,
 )
 
@@ -223,6 +227,8 @@ data class Walk(
     val durationMinutes: Int,
     val routeLabel: String? = null,
     val startLocation: TripLocation? = null,
+    /** The attraction this walk departs from, when it departs from one. */
+    val startAttractionId: String? = null,
     val stops: List<WalkStop> = emptyList(),
     val automaticStoriesDefault: Boolean = true,
     val sharedAudioSupported: Boolean = true,
@@ -248,7 +254,28 @@ data class CriticalItem(
     val instruction: String,
     val reason: String? = null,
     val actionLinks: List<ActionLink> = emptyList(),
-)
+) {
+    /**
+     * Combines two declarations of the same critical item.
+     *
+     * The same item is routinely declared twice — once curated on the day and
+     * once in full on the transport or accommodation that owns it — and the
+     * two copies rarely carry the same fields. Dropping either one silently
+     * loses an action the traveller needs under time pressure, so every field
+     * is kept: the first non-null wins and the action lists are unioned.
+     */
+    fun mergedWith(other: CriticalItem): CriticalItem {
+        require(id == other.id) { "cannot merge critical items with different ids" }
+        return copy(
+            title = title.ifBlank { other.title },
+            nominalTime = nominalTime ?: other.nominalTime,
+            actionByTime = actionByTime ?: other.actionByTime,
+            instruction = instruction.ifBlank { other.instruction },
+            reason = reason ?: other.reason,
+            actionLinks = (actionLinks + other.actionLinks).distinctBy { it.uri },
+        )
+    }
+}
 
 @Serializable
 data class Accommodation(

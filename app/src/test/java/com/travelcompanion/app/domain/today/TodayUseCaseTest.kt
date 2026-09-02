@@ -26,7 +26,7 @@ class TodayUseCaseTest {
         val now = state.now!!
         assertTrue("an item that has started is active", now.isActive)
         assertEquals("09:40", now.time)
-        assertEquals("Latin Bridge", now.title)
+        assertEquals("Baščaršija", now.title)
         assertEquals(TimelineState.Active, state.timeline.first().state)
     }
 
@@ -104,6 +104,45 @@ class TodayUseCaseTest {
     }
 
     @Test
+    fun theCriticalCardKeepsEveryActionDeclaredForTheItem() {
+        val state = today("vinicius", dayDate, LocalTime.of(12, 0))!!
+
+        val bus = state.criticalItems.single { it.item.id == "critical.bus.sarajevo-mostar" }
+
+        // The day declares only "Mostrar passagem"; the transport also declares
+        // "Ver ponto de embarque". Losing either strands someone at 19:00.
+        assertEquals(
+            listOf("Mostrar passagem", "Ver ponto de embarque"),
+            bus.item.actionLinks.map { it.label }.sorted(),
+        )
+        assertNotNull("the ticket action drives the primary button", bus.documentAction)
+        assertNotNull("the boarding-point action drives the secondary button", bus.mapsAction)
+    }
+
+    @Test
+    fun aDocumentIsOnlyLabelledOfflineWhenItsFileIsPackaged() {
+        val state = today("vinicius", dayDate, LocalTime.of(12, 0))!!
+
+        val documents = state.shortcuts.filter { it.kind == ShortcutUi.Kind.Document }
+        assertTrue("the day carries documents", documents.isNotEmpty())
+        assertTrue(
+            "no PDF is packaged, so nothing may claim to be offline",
+            documents.all { it.trailingNote == null },
+        )
+    }
+
+    @Test
+    fun aDocumentIsLabelledOfflineOnceItsFileIsPackaged() {
+        val withBinaries = TodayUseCase(packagedContent(exists = { true }))
+
+        val state = withBinaries("vinicius", dayDate, LocalTime.of(12, 0))!!
+
+        val documents = state.shortcuts.filter { it.kind == ShortcutUi.Kind.Document }
+        assertTrue(documents.isNotEmpty())
+        assertTrue(documents.all { it.trailingNote == "Offline" })
+    }
+
+    @Test
     fun shortcutsCoverDocumentsPlanBAndMemory() {
         val state = today("vinicius", dayDate, LocalTime.of(12, 0))!!
 
@@ -117,7 +156,7 @@ class TodayUseCaseTest {
     fun theDayHeaderReadsInTripLocale() {
         val state = today("vinicius", dayDate, LocalTime.of(12, 0))!!
 
-        assertEquals("Dia 9 de 20", state.dayLabel)
+        assertEquals("Dia 9 de 21", state.dayLabel)
         assertEquals("Segunda, 21 de setembro", state.dateLabel)
         assertEquals("Vinícius", state.participant?.name)
     }

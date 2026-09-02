@@ -79,11 +79,22 @@ class TripContent(
         return ordered.last()
     }
 
-    /** Critical items of the day, plus those carried by the day's entities. */
+    /**
+     * Critical items of the day, plus those carried by the day's entities.
+     *
+     * Duplicates are merged rather than de-duplicated: the same item declared
+     * on both the day and its transport must end up with every field and every
+     * action from both declarations.
+     */
     fun criticalItemsFor(day: TripDay): List<CriticalItem> {
         val fromEntities = day.transportIds.mapNotNull(::transport).flatMap { it.criticalItems } +
             day.accommodationIds.mapNotNull(::accommodation).flatMap { it.criticalItems }
-        return (day.criticalItems + fromEntities).distinctBy(CriticalItem::id)
+
+        val merged = LinkedHashMap<String, CriticalItem>()
+        (day.criticalItems + fromEntities).forEach { item ->
+            merged[item.id] = merged[item.id]?.mergedWith(item) ?: item
+        }
+        return merged.values.toList()
     }
 
     /** The attraction a timeline item points at, when it points at one. */
@@ -93,11 +104,17 @@ class TripContent(
     fun walkFor(item: TimelineItem): Walk? =
         if (item.kind == "walk") walk(item.refId) else null
 
-    /** The walk that departs from this attraction, if the day schedules one. */
+    /**
+     * The walk that departs from this attraction, if the day schedules one.
+     *
+     * The association is explicit: a walk names its starting attraction via
+     * `startAttractionId`. Sharing a city is not enough — every attraction in
+     * Sarajevo would otherwise claim the walk starts there.
+     */
     fun walkStartingAt(attraction: Attraction, day: TripDay?): Pair<Walk, TimelineItem>? {
         val timeline = day?.timeline ?: return null
         return timeline.asSequence()
             .mapNotNull { item -> walkFor(item)?.let { it to item } }
-            .firstOrNull { (walk, _) -> walk.cityId == attraction.cityId }
+            .firstOrNull { (walk, _) -> walk.startAttractionId == attraction.id }
     }
 }

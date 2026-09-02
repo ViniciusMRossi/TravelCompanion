@@ -4,14 +4,14 @@
     "contentStatus": "prototype",
     "isMockContent": true,
     "generatedAt": "2026-09-01T18:00:00Z",
-    "notes": "Representative Day 9 content based on the approved prototype. The attraction already described in this package is also placed on the day timeline so the approved 02 Hoje -> 05 Atracao flow is reachable. Operational details are mock/prototype content unless replaced by verified trip data."
+    "notes": "Representative Day 9 content based on the approved prototype. Baščaršija, its audioguide and its rain Plan B are transcribed from the approved prototype so the 02 Hoje -> 05 Atracao flow opens the attraction the design actually specifies, and the walk names its starting attraction explicitly. Operational details are mock/prototype content unless replaced by verified trip data."
   },
   "trip": {
     "id": "balkans-2026",
     "title": "Mochilão pelos Bálcãs",
     "subtitle": "21 dias · 7 países · setembro de 2026",
     "startDate": "2026-09-13",
-    "endDate": "2026-10-02",
+    "endDate": "2026-10-03",
     "locale": "pt-BR",
     "defaultCountryCode": "BA",
     "coverAssetId": "img.trip.cover",
@@ -75,6 +75,19 @@
       "type": "document",
       "path": "documents/accommodations/sarajevo-voucher.pdf",
       "mimeType": "application/pdf"
+    },
+    {
+      "id": "img.bascarsija.hero",
+      "type": "image",
+      "path": "images/attractions/bascarsija.jpg",
+      "mimeType": "image/jpeg",
+      "description": "Baščaršija, fonte Sebilj"
+    },
+    {
+      "id": "audio.bascarsija",
+      "type": "audio",
+      "path": "audio/attractions/bascarsija.mp3",
+      "mimeType": "audio/mpeg"
     }
   ],
   "cities": [
@@ -97,6 +110,7 @@
       ],
       "audioGuideId": "ag.sarajevo.city",
       "attractionIds": [
+        "bascarsija",
         "latin-bridge"
       ],
       "walkIds": [
@@ -126,6 +140,40 @@
     }
   ],
   "attractions": [
+    {
+      "id": "bascarsija",
+      "cityId": "sarajevo",
+      "name": "Baščaršija",
+      "subtitle": "Bazar otomano · desde 1462",
+      "heroAssetId": "img.bascarsija.hero",
+      "summary": "O bazar nasceu em 1462 como parada de caravanas entre o Adriático e Istambul. Ainda hoje o som de martelo em cobre vem das oficinas da Kazandžiluk, e o cheiro de café moído a pilão sai das portas abertas.",
+      "whatToObserve": [
+        "A fonte Sebilj de 1753, reconstruída depois de um incêndio.",
+        "A linha no chão da Ferhadija: onde o Oriente encontra o Ocidente.",
+        "Marcas de morteiro preenchidas de resina vermelha, as rosas de Sarajevo."
+      ],
+      "location": {
+        "name": "Baščaršija",
+        "geo": {
+          "latitude": 43.8595,
+          "longitude": 18.431
+        },
+        "mapsQuery": "Baščaršija Sarajevo"
+      },
+      "practical": {
+        "price": "Entrada livre"
+      },
+      "audioGuideId": "ag.bascarsija",
+      "planBId": "planb.bascarsija.rain",
+      "actions": [
+        {
+          "label": "Abrir no Maps",
+          "kind": "maps",
+          "uri": "geo:43.8595,18.4310?q=Ba%C5%A1%C4%8Dar%C5%A1ija",
+          "requiresInternet": false
+        }
+      ]
+    },
     {
       "id": "latin-bridge",
       "cityId": "sarajevo",
@@ -179,9 +227,10 @@
       "durationMinutes": 45,
       "routeLabel": "Baščaršija → Meeting of Cultures → Latin Bridge",
       "startLocation": {
-        "name": "Baščaršija",
-        "mapsQuery": "Baščaršija Sarajevo"
+        "name": "Fonte Sebilj",
+        "mapsQuery": "Sebilj Sarajevo"
       },
+      "startAttractionId": "bascarsija",
       "stops": [
         {
           "storyId": "story.meeting-of-cultures",
@@ -240,6 +289,12 @@
     }
   ],
   "audioGuides": [
+    {
+      "id": "ag.bascarsija",
+      "title": "Audioguia de Baščaršija",
+      "audioAssetId": "audio.bascarsija",
+      "durationSeconds": 720
+    },
     {
       "id": "ag.sarajevo.city",
       "title": "Audioguia de Sarajevo",
@@ -451,6 +506,17 @@
       "relatedDocumentIds": [
         "ticket.sarajevo-mostar"
       ]
+    },
+    {
+      "id": "planb.bascarsija.rain",
+      "scenario": "Se chover forte",
+      "reassurance": "O audioguia da cidade funciona sentado no Café Divan, dentro do Morića Han, a 80 m da fonte.",
+      "steps": [
+        {
+          "title": "Abrigar-se no Morića Han",
+          "instruction": "Entre no Café Divan e ouça o audioguia da cidade enquanto a chuva passa."
+        }
+      ]
     }
   ],
   "emergencyProfiles": [
@@ -516,13 +582,13 @@
       "baseCityId": "sarajevo",
       "timeline": [
         {
-          "id": "day09.timeline.latin-bridge",
+          "id": "day09.timeline.bascarsija",
           "startTime": "09:40",
           "endTime": "10:40",
           "kind": "attraction",
-          "title": "Latin Bridge",
-          "detail": "Ponto histórico no centro · audioguia 9 min",
-          "refId": "latin-bridge"
+          "title": "Baščaršija",
+          "detail": "Bazar otomano · audioguia 12 min",
+          "refId": "bascarsija"
         },
         {
           "id": "day09.timeline.walk",

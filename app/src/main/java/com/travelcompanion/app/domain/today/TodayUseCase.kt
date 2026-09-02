@@ -182,12 +182,17 @@ class TodayUseCase(
 
     private fun shortcuts(day: TripDay): List<ShortcutUi> = buildList {
         day.documentIds.mapNotNull(content::document).forEach { document ->
+            // Declaring availableOffline is a content promise; the badge is only
+            // earned once the file is actually in this build. Saying "Offline"
+            // over a missing asset is the one lie that hurts at a bus station.
+            val resolvesLocally = document.availableOffline &&
+                content.assets.isAvailableOffline(document.assetId)
             add(
                 ShortcutUi(
                     id = document.id,
                     label = document.title,
                     kind = ShortcutUi.Kind.Document,
-                    trailingNote = if (document.availableOffline) "Offline" else null,
+                    trailingNote = if (resolvesLocally) "Offline" else null,
                 )
             )
         }

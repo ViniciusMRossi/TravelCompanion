@@ -79,6 +79,73 @@ class PackagedTripTest {
     }
 
     @Test
+    fun mergingDuplicateCriticalItemsLosesNoActionOrField() {
+        val content = packagedContent()
+        val day = content.days.first()
+        val transport = content.transport("transport.sarajevo-mostar.bus")!!
+
+        val declaredOnDay = day.criticalItems.single { it.id == "critical.bus.sarajevo-mostar" }
+        val declaredOnTransport = transport.criticalItems.single { it.id == "critical.bus.sarajevo-mostar" }
+        val merged = content.criticalItemsFor(day).single { it.id == "critical.bus.sarajevo-mostar" }
+
+        // The day declares one action, the transport declares two. Nothing may
+        // be dropped just because the same item was declared twice.
+        val expected = (declaredOnDay.actionLinks + declaredOnTransport.actionLinks)
+            .map { it.uri }
+            .distinct()
+        assertEquals(expected.sorted(), merged.actionLinks.map { it.uri }.sorted())
+        assertEquals(
+            listOf("Mostrar passagem", "Ver ponto de embarque"),
+            merged.actionLinks.map { it.label }.sorted(),
+        )
+        assertNotNull("the reason only exists on the transport copy", merged.reason)
+        assertEquals("19:30", merged.nominalTime)
+        assertEquals("19:00", merged.actionByTime)
+    }
+
+    @Test
+    fun mergingIsSymmetricAboutWhichCopyWasSeenFirst() {
+        val content = packagedContent()
+        val day = content.days.first()
+        val transport = content.transport("transport.sarajevo-mostar.bus")!!
+        val fromDay = day.criticalItems.single { it.id == "critical.bus.sarajevo-mostar" }
+        val fromTransport = transport.criticalItems.single { it.id == "critical.bus.sarajevo-mostar" }
+
+        val forward = fromDay.mergedWith(fromTransport)
+        val backward = fromTransport.mergedWith(fromDay)
+
+        assertEquals(
+            forward.actionLinks.map { it.uri }.toSet(),
+            backward.actionLinks.map { it.uri }.toSet(),
+        )
+        assertEquals(forward.reason, backward.reason)
+    }
+
+    @Test
+    fun theTripWindowMatchesTheDayNumbersItPublishes() {
+        val content = packagedContent()
+
+        // "Dia 9 de 21" has to be arithmetic, not a coincidence.
+        assertEquals(21, content.totalDays)
+        content.days.forEach { day ->
+            val expected = java.time.temporal.ChronoUnit.DAYS.between(
+                java.time.LocalDate.parse(content.info.startDate),
+                java.time.LocalDate.parse(day.date),
+            ).toInt() + 1
+            assertEquals("dayNumber must match the calendar", expected, day.dayNumber)
+        }
+    }
+
+    @Test
+    fun aWalkNamesTheAttractionItDepartsFrom() {
+        val content = packagedContent()
+        val walk = content.walk("walk.sarajevo.historical")!!
+
+        assertEquals("bascarsija", walk.startAttractionId)
+        assertNotNull("and that attraction must exist", content.attraction(walk.startAttractionId))
+    }
+
+    @Test
     fun missingAssetBinariesResolveToNullRatherThanThrowing() {
         val content = packagedContent()
 
