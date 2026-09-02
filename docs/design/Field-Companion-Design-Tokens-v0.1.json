@@ -1,0 +1,219 @@
+{
+  "meta": {
+    "name": "Travel Companion",
+    "version": "0.1",
+    "platform": "Android"
+  },
+  "color": {
+    "brand": {
+      "ink": "#16232E",
+      "paper": "#F5F1E8",
+      "surface": "#FFFDF8",
+      "teal": "#1F6F78",
+      "gold": "#B8863B",
+      "oxblood": "#7A2E2E",
+      "moss": "#4C6444"
+    },
+    "neutral": {
+      "950": "#16232E",
+      "800": "#33414B",
+      "700": "#4B5962",
+      "600": "#65717A",
+      "500": "#7E898F",
+      "400": "#A4ACA9",
+      "300": "#C8CCC5",
+      "200": "#DDDCD4",
+      "100": "#ECE9E1",
+      "050": "#F5F1E8",
+      "white": "#FFFDF8"
+    },
+    "semantic": {
+      "primary": {
+        "background": "#1F6F78",
+        "foreground": "#FFFFFF",
+        "subtleBackground": "#E4F0F0",
+        "subtleForeground": "#185860"
+      },
+      "success": {
+        "background": "#4C6444",
+        "foreground": "#FFFFFF",
+        "subtleBackground": "#E7EDE3",
+        "subtleForeground": "#3D5337"
+      },
+      "warning": {
+        "background": "#B8863B",
+        "foreground": "#16232E",
+        "subtleBackground": "#F3E8D0",
+        "subtleForeground": "#684817"
+      },
+      "critical": {
+        "background": "#7A2E2E",
+        "foreground": "#FFFFFF",
+        "subtleBackground": "#FDECEC",
+        "subtleForeground": "#7A2E2E"
+      }
+    },
+    "dark": {
+      "background": "#10171C",
+      "surface": "#182128",
+      "elevated": "#202C34",
+      "textPrimary": "#F2EFE7",
+      "textSecondary": "#BCC4C7",
+      "teal": "#67B6BB",
+      "gold": "#D5AB68",
+      "moss": "#91AE84",
+      "critical": "#E18B84"
+    }
+  },
+  "typography": {
+    "displayFamily": "Fraunces",
+    "uiFamily": "Roboto",
+    "styles": {
+      "displayLarge": {
+        "family": "Fraunces",
+        "weight": 600,
+        "sizeSp": 40,
+        "lineHeightSp": 44
+      },
+      "displayMedium": {
+        "family": "Fraunces",
+        "weight": 600,
+        "sizeSp": 32,
+        "lineHeightSp": 38
+      },
+      "displaySmall": {
+        "family": "Fraunces",
+        "weight": 600,
+        "sizeSp": 28,
+        "lineHeightSp": 34
+      },
+      "heading1": {
+        "family": "Roboto",
+        "weight": 700,
+        "sizeSp": 28,
+        "lineHeightSp": 34
+      },
+      "heading2": {
+        "family": "Roboto",
+        "weight": 700,
+        "sizeSp": 24,
+        "lineHeightSp": 30
+      },
+      "heading3": {
+        "family": "Roboto",
+        "weight": 500,
+        "sizeSp": 20,
+        "lineHeightSp": 26
+      },
+      "bodyLarge": {
+        "family": "Roboto",
+        "weight": 400,
+        "sizeSp": 18,
+        "lineHeightSp": 27
+      },
+      "body": {
+        "family": "Roboto",
+        "weight": 400,
+        "sizeSp": 16,
+        "lineHeightSp": 24
+      },
+      "bodySmall": {
+        "family": "Roboto",
+        "weight": 400,
+        "sizeSp": 14,
+        "lineHeightSp": 20
+      },
+      "labelLarge": {
+        "family": "Roboto",
+        "weight": 500,
+        "sizeSp": 16,
+        "lineHeightSp": 20
+      },
+      "label": {
+        "family": "Roboto",
+        "weight": 500,
+        "sizeSp": 14,
+        "lineHeightSp": 18
+      },
+      "labelSmall": {
+        "family": "Roboto",
+        "weight": 500,
+        "sizeSp": 12,
+        "lineHeightSp": 16
+      },
+      "timeHero": {
+        "family": "Roboto",
+        "weight": 700,
+        "sizeSp": 28,
+        "lineHeightSp": 30
+      },
+      "timeInline": {
+        "family": "Roboto",
+        "weight": 700,
+        "sizeSp": 16,
+        "lineHeightSp": 20
+      }
+    }
+  },
+  "spacingDp": {
+    "0": 0,
+    "1": 4,
+    "2": 8,
+    "3": 12,
+    "4": 16,
+    "5": 20,
+    "6": 24,
+    "8": 32,
+    "10": 40,
+    "12": 48,
+    "16": 64
+  },
+  "radiusDp": {
+    "xs": 6,
+    "sm": 10,
+    "md": 14,
+    "lg": 20,
+    "xl": 28,
+    "pill": 999
+  },
+  "layout": {
+    "screenGutterDp": 20,
+    "denseScreenGutterDp": 16,
+    "minimumTouchTargetDp": 48,
+    "preferredCriticalActionHeightDp": 52
+  },
+  "motionMs": {
+    "micro": 120,
+    "standard": 200,
+    "emphasized": 300
+  },
+  "components": [
+    "TcButton",
+    "TcIconButton",
+    "TcChip",
+    "TcStatusChip",
+    "TcCard",
+    "TcTimeline",
+    "TcTimelineItem",
+    "TcNowCard",
+    "TcCriticalCard",
+    "TcWeatherSummary",
+    "TcOutfitCard",
+    "TcCityHero",
+    "TcAttractionHero",
+    "TcTransportCard",
+    "TcAccommodationCard",
+    "TcStoryCard",
+    "TcPlanBCard",
+    "TcAudioPlayer",
+    "TcGroupAudioStatus",
+    "TcParticipantStatus",
+    "TcWalkProgress",
+    "TcDocumentRow",
+    "TcQrViewer",
+    "TcVoiceRecorder",
+    "TcEmergencyAction",
+    "TcOfflineStatus",
+    "TcSectionHeader"
+  ]
+}

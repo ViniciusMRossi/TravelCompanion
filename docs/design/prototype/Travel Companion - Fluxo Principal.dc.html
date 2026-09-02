@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400&display=swap" />
+<script src="tc-icons.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; }
+  body { background: #E7E3DA; font-family: Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #1F6F78; text-decoration: none; }
+  a:hover { color: #185860; }
+  button { font-family: inherit; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  @keyframes tcPulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  @keyframes tcWave { 0%,100% { transform: scaleY(.32); } 50% { transform: scaleY(1); } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:22px;padding:30px 20px 44px;box-sizing:border-box;color:#16232E">
+
+  <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#65717A">Travel Companion · Fluxo principal · Android 412 × 915</div>
+    <div style="font-family:Fraunces,Georgia,serif;font-weight:600;font-size:24px">Mochilão pelos Bálcãs 2026</div>
+  </div>
+
+  <div style="padding:11px;background:#101619;border-radius:46px;box-shadow:0 24px 60px rgba(22,35,46,.28)">
+  <div style="position:relative;width:412px;height:915px;background:#F5F1E8;border-radius:36px;overflow:hidden">
+
+    <!-- 01 — Quem é você? -->
+    <sc-if value="{{ sWho }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F5F1E8">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 20px;font-size:12px;font-weight:500;color:#16232E;flex:0 0 auto">
+          <span>09:12</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-offline"></use></svg>
+            <span>84%</span>
+          </span>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column">
+          <div style="position:relative;height:262px;background-image:repeating-linear-gradient(115deg,#D7CFBC 0 12px,#CDC4AE 12px 24px);display:flex;align-items:flex-end;padding:20px;flex:0 0 auto">
+            <span style="position:absolute;top:14px;left:20px;font-family:'Roboto Mono',monospace;font-size:11px;padding:4px 7px;border-radius:6px;background:rgba(22,35,46,.42);color:#F2EFE7">foto — Stari Most, Mostar</span>
+          </div>
+
+          <div style="padding:26px 20px 20px;display:flex;flex-direction:column;gap:22px">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#B8863B">21 dias · 7 países · setembro de 2026</div>
+              <h1 style="margin:0;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:40px;line-height:44px">Quem é você?</h1>
+              <p style="margin:0;font-size:16px;line-height:24px;color:#4B5962;text-wrap:pretty">Roteiro, audioguias e documentos já estão neste aparelho. Escolha quem está com este celular.</p>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <button type="button" onClick="{{ pickVinicius }}" style="display:flex;align-items:center;gap:14px;width:100%;min-height:76px;padding:0 18px;text-align:left;background:#FFFDF8;border:1px solid #C8CCC5;border-radius:14px;cursor:pointer;color:#16232E">
+                <span style="width:44px;height:44px;flex:0 0 auto;border-radius:999px;background:#16232E;color:#FFFDF8;display:grid;place-items:center;font-size:16px;font-weight:700">V</span>
+                <span style="display:flex;flex-direction:column;gap:2px;flex:1">
+                  <span style="font-size:18px;font-weight:700">Vinícius</span>
+                  <span style="font-size:14px;color:#65717A">Reservas e transportes no nome dele</span>
+                </span>
+                <svg width="20" height="20" style="display:block;color:#7E898F" aria-hidden="true"><use href="#tc-chevron-right"></use></svg>
+              </button>
+
+              <button type="button" onClick="{{ pickErika }}" style="display:flex;align-items:center;gap:14px;width:100%;min-height:76px;padding:0 18px;text-align:left;background:#FFFDF8;border:1px solid #C8CCC5;border-radius:14px;cursor:pointer;color:#16232E">
+                <span style="width:44px;height:44px;flex:0 0 auto;border-radius:999px;background:#16232E;color:#FFFDF8;display:grid;place-items:center;font-size:16px;font-weight:700">É</span>
+                <span style="display:flex;flex-direction:column;gap:2px;flex:1">
+                  <span style="font-size:18px;font-weight:700">Érika</span>
+                  <span style="font-size:14px;color:#65717A">Seguro e documentos no nome dela</span>
+                </span>
+                <svg width="20" height="20" style="display:block;color:#7E898F" aria-hidden="true"><use href="#tc-chevron-right"></use></svg>
+              </button>
+            </div>
+
+            <div style="display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:20px;color:#65717A">
+              <svg width="18" height="18" style="display:block;flex:0 0 auto;margin-top:1px" aria-hidden="true"><use href="#tc-offline"></use></svg>
+              <span>Offline · a viagem inteira já está salva neste aparelho. Você pode trocar de pessoa depois em Configurações.</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:22px;display:grid;place-items:center;flex:0 0 auto">
+          <span style="width:112px;height:4px;border-radius:999px;background:#C8CCC5"></span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 02 — Hoje -->
+    <sc-if value="{{ sHoje }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F5F1E8">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 20px;font-size:12px;font-weight:500;color:#16232E;flex:0 0 auto">
+          <span>09:41</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-offline"></use></svg>
+            <span>82%</span>
+          </span>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 20px 12px;flex:0 0 auto">
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:#16232E">
+              <svg width="18" height="18" style="display:block;color:#1F6F78" aria-hidden="true"><use href="#tc-pin"></use></svg>
+              <span>Sarajevo · Bósnia e Herzegovina</span>
+            </div>
+            <div style="font-size:12px;color:#65717A">Dia 9 de 21</div>
+          </div>
+          <span style="display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;background:#ECE9E1;border:1px solid #DDDCD4;font-size:12px;font-weight:500;color:#4B5962;flex:0 0 auto">
+            <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-offline"></use></svg>
+            Offline · conteúdo disponível
+          </span>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;padding:0 20px 24px;display:flex;flex-direction:column;gap:16px">
+
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#65717A">Quinta, 17 de setembro</div>
+            <h1 style="margin:0;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:32px;line-height:38px">Sarajevo</h1>
+          </div>
+
+          <section style="position:relative;flex:0 0 auto;overflow:hidden;padding:22px;border-radius:20px;background:#16232E;color:#FFFFFF">
+            <span aria-hidden="true" style="position:absolute;width:170px;height:170px;border-radius:999px;right:-60px;top:-80px;background:rgba(31,111,120,.45)"></span>
+            <div style="position:relative;z-index:2;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#BFD1D8">Agora · 09:40</div>
+            <div style="position:relative;z-index:2;font-size:34px;line-height:1;font-weight:700;margin:9px 0;font-variant-numeric:tabular-nums">09:40</div>
+            <h2 style="position:relative;z-index:2;margin:0 0 7px;font-size:24px;line-height:30px;font-weight:700">Baščaršija, o bazar velho</h2>
+            <p style="position:relative;z-index:2;margin:0 0 12px;font-size:16px;line-height:24px;color:#DCE4E8;text-wrap:pretty">Vocês estão a 3 minutos a pé. A caminhada histórica sai da fonte Sebilj às 11:00.</p>
+            <div style="position:relative;z-index:2;display:flex;align-items:center;gap:7px;font-size:13px;color:#C6D3D8;margin:0 0 14px">
+              <svg width="16" height="16" style="display:block" aria-hidden="true"><use href="#tc-headphones"></use></svg>
+              <span>Audioguia da cidade · 12 min · salvo no aparelho</span>
+            </div>
+            <div style="position:relative;z-index:2;display:flex;gap:8px;flex-wrap:wrap">
+              <button type="button" onClick="{{ goAtracao }}" style="min-height:44px;padding:0 18px;border:0;border-radius:14px;background:#FFFFFF;color:#16232E;font-size:16px;font-weight:500;cursor:pointer">Ver atração</button>
+              <button type="button" style="min-height:44px;padding:0 18px;border:1px solid rgba(255,255,255,.25);border-radius:14px;background:rgba(255,255,255,.06);color:#FFFFFF;font-size:16px;font-weight:500;cursor:pointer">Abrir no Maps</button>
+            </div>
+          </section>
+
+          <section style="border-radius:14px;border:1px solid #E7C9C7;border-left:5px solid #7A2E2E;background:#FDECEC;padding:18px">
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7A2E2E">
+              <svg width="18" height="18" style="display:block" aria-hidden="true"><use href="#tc-warning"></use></svg>
+              Não pode dar errado
+            </div>
+            <div style="font-size:24px;font-weight:700;margin:7px 0 3px;font-variant-numeric:tabular-nums">19:30</div>
+            <h3 style="margin:0 0 6px;font-size:20px;line-height:26px;font-weight:700">Ônibus para Mostar</h3>
+            <p style="margin:0 0 14px;font-size:16px;line-height:24px;color:#673B3A;text-wrap:pretty">Esteja na estação de Sarajevo até 19:00. É a única saída da noite.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button type="button" style="min-height:52px;padding:0 18px;border:0;border-radius:14px;background:#1F6F78;color:#FFFFFF;font-size:16px;font-weight:500;cursor:pointer">Mostrar passagem</button>
+              <button type="button" style="min-height:52px;padding:0 18px;border:1px solid #C8CCC5;border-radius:14px;background:#FFFDF8;color:#16232E;font-size:16px;font-weight:500;cursor:pointer">Ver ponto de embarque</button>
+            </div>
+          </section>
+
+          <section style="display:flex;gap:12px">
+            <div style="flex:1;background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:16px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <svg width="24" height="24" style="display:block;color:#B8863B" aria-hidden="true"><use href="#tc-sun"></use></svg>
+                <span style="font-size:28px;font-weight:700;font-variant-numeric:tabular-nums">24°</span>
+              </div>
+              <div style="font-size:14px;line-height:20px;color:#4B5962;margin-top:6px">Sol com nuvens<br />14° / 26° · sem chuva</div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#684817;margin-top:8px">
+                <svg width="14" height="14" style="display:block;flex:0 0 auto" aria-hidden="true"><use href="#tc-offline"></use></svg>
+                Sem internet · previsão de 08:14
+              </div>
+            </div>
+            <div style="flex:1;background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:16px">
+              <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#65717A">Vista</div>
+              <div style="font-size:14px;line-height:20px;margin-top:4px">camiseta, calça leve, tênis</div>
+              <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#65717A;margin-top:10px">Leve</div>
+              <div style="font-size:14px;line-height:20px;margin-top:4px">água, protetor, casaco fino</div>
+            </div>
+          </section>
+
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:4px">
+            <h2 style="margin:0;font-size:20px;line-height:26px;font-weight:500">O dia inteiro</h2>
+            <span style="font-size:14px;font-weight:500;color:#1F6F78">Ver dia completo</span>
+          </div>
+
+          <section style="background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:18px 16px 4px">
+            <div style="display:grid;grid-template-columns:58px 18px 1fr;gap:12px;min-height:78px;opacity:.6">
+              <div style="font-weight:700;font-size:14px;padding-top:2px;font-variant-numeric:tabular-nums">08:00</div>
+              <div style="position:relative;display:flex;justify-content:center">
+                <span aria-hidden="true" style="position:absolute;top:18px;bottom:-8px;width:2px;background:#DDDCD4"></span>
+                <span aria-hidden="true" style="margin-top:4px;width:12px;height:12px;border-radius:999px;background:#A4ACA9;z-index:1;border:3px solid #FFFDF8;box-sizing:content-box"></span>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:16px;line-height:24px;margin-bottom:4px">Café no Hotel Latinski Most</div>
+                <div style="font-size:14px;color:#65717A;line-height:1.45">Incluído na reserva</div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:58px 18px 1fr;gap:12px;min-height:78px">
+              <div style="font-weight:700;font-size:14px;padding-top:2px;font-variant-numeric:tabular-nums;color:#1F6F78">09:40</div>
+              <div style="position:relative;display:flex;justify-content:center">
+                <span aria-hidden="true" style="position:absolute;top:18px;bottom:-8px;width:2px;background:#DDDCD4"></span>
+                <span aria-hidden="true" style="margin-top:4px;width:12px;height:12px;border-radius:999px;background:#1F6F78;z-index:1;border:3px solid #FFFDF8;box-sizing:content-box"></span>
+              </div>
+              <div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+                  <div style="font-weight:700;font-size:16px;line-height:24px;margin-bottom:4px">Baščaršija</div>
+                  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:#E4F0F0;color:#185860;font-size:12px;font-weight:500;flex:0 0 auto">Agora</span>
+                </div>
+                <div style="font-size:14px;color:#65717A;line-height:1.45">Bazar otomano · audioguia 12 min</div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:58px 18px 1fr;gap:12px;min-height:78px">
+              <div style="font-weight:700;font-size:14px;padding-top:2px;font-variant-numeric:tabular-nums">11:00</div>
+              <div style="position:relative;display:flex;justify-content:center">
+                <span aria-hidden="true" style="position:absolute;top:18px;bottom:-8px;width:2px;background:#DDDCD4"></span>
+                <span aria-hidden="true" style="margin-top:4px;width:12px;height:12px;border-radius:999px;background:#A4ACA9;z-index:1;border:3px solid #FFFDF8;box-sizing:content-box"></span>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:16px;line-height:24px;margin-bottom:4px">Caminhada Histórica de Sarajevo</div>
+                <div style="font-size:14px;color:#65717A;line-height:1.45">Sai da fonte Sebilj · 7 histórias · 75 min</div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:58px 18px 1fr;gap:12px;min-height:78px">
+              <div style="font-weight:700;font-size:14px;padding-top:2px;font-variant-numeric:tabular-nums">13:30</div>
+              <div style="position:relative;display:flex;justify-content:center">
+                <span aria-hidden="true" style="position:absolute;top:18px;bottom:-8px;width:2px;background:#DDDCD4"></span>
+                <span aria-hidden="true" style="margin-top:4px;width:12px;height:12px;border-radius:999px;background:#A4ACA9;z-index:1;border:3px solid #FFFDF8;box-sizing:content-box"></span>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:16px;line-height:24px;margin-bottom:4px">Almoço · Ćevabdžinica Željo</div>
+                <div style="font-size:14px;color:#65717A;line-height:1.45">Ćevapi · só dinheiro (marcos)</div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:58px 18px 1fr;gap:12px;min-height:78px">
+              <div style="font-weight:700;font-size:14px;padding-top:2px;font-variant-numeric:tabular-nums">16:00</div>
+              <div style="position:relative;display:flex;justify-content:center">
+                <span aria-hidden="true" style="position:absolute;top:18px;bottom:-8px;width:2px;background:#DDDCD4"></span>
+                <span aria-hidden="true" style="margin-top:4px;width:12px;height:12px;border-radius:999px;background:#A4ACA9;z-index:1;border:3px solid #FFFDF8;box-sizing:content-box"></span>
+              </div>
+              <div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+                  <div style="font-weight:700;font-size:16px;line-height:24px;margin-bottom:4px">Túnel da Esperança</div>
+                  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:#F3E8D0;color:#684817;font-size:12px;font-weight:500;flex:0 0 auto">Comprar</span>
+                </div>
+                <div style="font-size:14px;color:#65717A;line-height:1.45">Museu do Túnel · 10 KM por pessoa</div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:58px 18px 1fr;gap:12px;min-height:78px">
+              <div style="font-weight:700;font-size:14px;padding-top:2px;font-variant-numeric:tabular-nums;color:#7A2E2E">19:30</div>
+              <div style="position:relative;display:flex;justify-content:center">
+                <span aria-hidden="true" style="position:absolute;top:18px;bottom:-8px;width:2px;background:#DDDCD4"></span>
+                <span aria-hidden="true" style="margin-top:4px;width:12px;height:12px;border-radius:999px;background:#7A2E2E;z-index:1;border:3px solid #FFFDF8;box-sizing:content-box"></span>
+              </div>
+              <div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+                  <div style="font-weight:700;font-size:16px;line-height:24px;margin-bottom:4px">Ônibus Sarajevo → Mostar</div>
+                  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:#E7EDE3;color:#3D5337;font-size:12px;font-weight:500;flex:0 0 auto">Reservado</span>
+                </div>
+                <div style="font-size:14px;color:#65717A;line-height:1.45">Centrotrans · plataforma 4 · chegada 22:10</div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:58px 18px 1fr;gap:12px;min-height:64px">
+              <div style="font-weight:700;font-size:14px;padding-top:2px;font-variant-numeric:tabular-nums">22:30</div>
+              <div style="position:relative;display:flex;justify-content:center">
+                <span aria-hidden="true" style="margin-top:4px;width:12px;height:12px;border-radius:999px;background:#A4ACA9;z-index:1;border:3px solid #FFFDF8;box-sizing:content-box"></span>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:16px;line-height:24px;margin-bottom:4px">Check-in · Villa Fortuna, Mostar</div>
+                <div style="font-size:14px;color:#65717A;line-height:1.45">Recepção avisada da chegada tarde</div>
+              </div>
+            </div>
+          </section>
+
+          <section style="display:flex;flex-direction:column;gap:10px">
+            <button type="button" style="display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:0 16px;text-align:left;background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;cursor:pointer;color:#16232E">
+              <svg width="22" height="22" style="display:block;color:#1F6F78;flex:0 0 auto" aria-hidden="true"><use href="#tc-ticket"></use></svg>
+              <span style="flex:1;font-size:16px;font-weight:500">Passagem Sarajevo → Mostar</span>
+              <span style="font-size:12px;font-weight:500;color:#65717A">Offline</span>
+              <svg width="20" height="20" style="display:block;color:#7E898F;flex:0 0 auto" aria-hidden="true"><use href="#tc-chevron-right"></use></svg>
+            </button>
+            <button type="button" style="display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:0 16px;text-align:left;background:#F3E8D0;border:1px solid #E4D2AD;border-radius:14px;cursor:pointer;color:#16232E">
+              <svg width="22" height="22" style="display:block;color:#684817;flex:0 0 auto" aria-hidden="true"><use href="#tc-alt-route"></use></svg>
+              <span style="flex:1;font-size:16px;font-weight:500">Plano B · se perder o ônibus</span>
+              <svg width="20" height="20" style="display:block;color:#684817;flex:0 0 auto" aria-hidden="true"><use href="#tc-chevron-right"></use></svg>
+            </button>
+            <button type="button" onClick="{{ goMemory }}" style="display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:0 16px;text-align:left;background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;cursor:pointer;color:#16232E">
+              <svg width="22" height="22" style="display:block;color:#7A2E2E;flex:0 0 auto" aria-hidden="true"><use href="#tc-mic"></use></svg>
+              <span style="flex:1;font-size:16px;font-weight:500">Gravar memória</span>
+              <svg width="20" height="20" style="display:block;color:#7E898F;flex:0 0 auto" aria-hidden="true"><use href="#tc-chevron-right"></use></svg>
+            </button>
+          </section>
+        </div>
+
+        <nav style="display:grid;grid-template-columns:repeat(5,1fr);align-items:center;height:66px;background:#FFFDF8;border-top:1px solid #DDDCD4;flex:0 0 auto">
+          <span style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#1F6F78;font-size:11px;font-weight:500">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-sun"></use></svg>
+            Hoje
+          </span>
+          <span style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#65717A;font-size:11px;font-weight:500">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-calendar"></use></svg>
+            Viagem
+          </span>
+          <span style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#65717A;font-size:11px;font-weight:500">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-compass"></use></svg>
+            Explorar
+          </span>
+          <span style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#65717A;font-size:11px;font-weight:500">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-wallet"></use></svg>
+            Carteira
+          </span>
+          <span style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#65717A;font-size:11px;font-weight:500">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-more-horiz"></use></svg>
+            Mais
+          </span>
+        </nav>
+
+        <div style="height:22px;display:grid;place-items:center;background:#FFFDF8;flex:0 0 auto">
+          <span style="width:112px;height:4px;border-radius:999px;background:#C8CCC5"></span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 03 — Atração -->
+    <sc-if value="{{ sAtracao }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F5F1E8">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 20px;font-size:12px;font-weight:500;color:#16232E;flex:0 0 auto">
+          <span>09:44</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-offline"></use></svg>
+            <span>82%</span>
+          </span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 12px 10px;flex:0 0 auto">
+          <button type="button" onClick="{{ goHoje }}" aria-label="Voltar" style="width:48px;height:48px;display:grid;place-items:center;border:0;background:transparent;border-radius:999px;cursor:pointer;color:#16232E">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-arrow-left"></use></svg>
+          </button>
+          <span style="font-size:16px;font-weight:500">Atração</span>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;padding:0 20px 24px;display:flex;flex-direction:column;gap:18px">
+          <article style="flex:0 0 auto;background:#FFFDF8;border:1px solid #DDDCD4;border-radius:20px;overflow:hidden">
+            <div style="position:relative;min-height:200px;padding:20px;display:flex;align-items:flex-end;background-image:repeating-linear-gradient(115deg,#8FA3A0 0 12px,#7F948F 12px 24px);color:#FFFFFF">
+              <span style="position:absolute;top:12px;left:16px;font-family:'Roboto Mono',monospace;font-size:11px;padding:4px 7px;border-radius:6px;background:rgba(22,35,46,.42);color:#F2EFE7">foto — Baščaršija, fonte Sebilj</span>
+              <div>
+                <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.85">Sarajevo · Bósnia e Herzegovina</div>
+                <h1 style="margin:4px 0;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:30px;line-height:1.1">Baščaršija</h1>
+                <div style="font-size:14px">Bazar otomano · desde 1462</div>
+              </div>
+            </div>
+            <div style="padding:18px">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+                <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:#E4F0F0;color:#185860;font-size:12px;font-weight:500">Audioguia 12 min</span>
+                <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:#ECE9E1;color:#4B5962;font-size:12px;font-weight:500">Salvo offline</span>
+                <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:#ECE9E1;color:#4B5962;font-size:12px;font-weight:500">Entrada livre</span>
+              </div>
+              <p style="margin:0;font-size:18px;line-height:27px;color:#33414B;text-wrap:pretty">O bazar nasceu em 1462 como parada de caravanas entre o Adriático e Istambul. Ainda hoje o som de martelo em cobre vem das oficinas da Kazandžiluk, e o cheiro de café molido a pilão sai das portas abertas.</p>
+            </div>
+          </article>
+
+          <section style="background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px">
+            <div style="font-size:24px;font-weight:700;font-variant-numeric:tabular-nums">11:00</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:16px;font-weight:700;line-height:22px">Caminhada Histórica sai daqui</div>
+              <div style="font-size:14px;color:#65717A">Encontro na fonte Sebilj · 7 histórias</div>
+            </div>
+          </section>
+
+          <section style="display:flex;flex-direction:column;gap:10px">
+            <button type="button" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:52px;border:0;border-radius:14px;background:#E4F0F0;color:#185860;font-size:16px;font-weight:500;cursor:pointer">
+              <svg width="20" height="20" style="display:block" aria-hidden="true"><use href="#tc-play"></use></svg>
+              Ouvir audioguia · 12 min
+            </button>
+            <div style="display:flex;gap:10px">
+              <button type="button" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border:1px solid #C8CCC5;border-radius:14px;background:#FFFDF8;color:#16232E;font-size:16px;font-weight:500;cursor:pointer">
+                <svg width="20" height="20" style="display:block" aria-hidden="true"><use href="#tc-map"></use></svg>
+                Abrir no Maps
+              </button>
+              <button type="button" style="flex:1;min-height:52px;border:1px solid #C8CCC5;border-radius:14px;background:#FFFDF8;color:#16232E;font-size:16px;font-weight:500;cursor:pointer">Como chegar</button>
+            </div>
+          </section>
+
+          <section>
+            <h2 style="margin:0 0 10px;font-size:20px;line-height:26px;font-weight:500">O que observar</h2>
+            <div style="display:flex;flex-direction:column;gap:10px;font-size:16px;line-height:24px;color:#33414B">
+              <div style="display:flex;gap:10px"><span style="color:#B8863B;font-weight:700">01</span><span>A fonte Sebilj de 1753, reconstruída depois de um incêndio.</span></div>
+              <div style="display:flex;gap:10px"><span style="color:#B8863B;font-weight:700">02</span><span>A linha no chão da Ferhadija: onde o Oriente encontra o Ocidente.</span></div>
+              <div style="display:flex;gap:10px"><span style="color:#B8863B;font-weight:700">03</span><span>Marcas de morteiro preenchidas de resina vermelha, as rosas de Sarajevo.</span></div>
+            </div>
+          </section>
+
+          <section style="border-radius:14px;border:1px solid #E4D2AD;background:#F3E8D0;padding:16px">
+            <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#684817">Plano B</div>
+            <div style="font-size:16px;font-weight:700;margin:6px 0 4px">Se chover forte</div>
+            <p style="margin:0;font-size:14px;line-height:20px;color:#5D4B2C">O audioguia da cidade funciona sentado no Café Divan, dentro do Morića Han, a 80 m da fonte.</p>
+          </section>
+        </div>
+
+        <div style="padding:12px 20px 10px;background:#FFFDF8;border-top:1px solid #DDDCD4;flex:0 0 auto">
+          <button type="button" onClick="{{ goPre }}" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;border:0;border-radius:14px;background:#1F6F78;color:#FFFFFF;font-size:16px;font-weight:500;cursor:pointer">
+            <svg width="20" height="20" style="display:block" aria-hidden="true"><use href="#tc-near-me"></use></svg>
+            Iniciar passeio
+          </button>
+        </div>
+
+        <div style="height:22px;display:grid;place-items:center;background:#FFFDF8;flex:0 0 auto">
+          <span style="width:112px;height:4px;border-radius:999px;background:#C8CCC5"></span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 04 — Iniciar passeio -->
+    <sc-if value="{{ sPre }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F5F1E8">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 20px;font-size:12px;font-weight:500;color:#16232E;flex:0 0 auto">
+          <span>10:52</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-headphones"></use></svg>
+            <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-offline"></use></svg>
+            <span>80%</span>
+          </span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 12px 10px;flex:0 0 auto">
+          <button type="button" onClick="{{ goAtracao }}" aria-label="Voltar" style="width:48px;height:48px;display:grid;place-items:center;border:0;background:transparent;border-radius:999px;cursor:pointer;color:#16232E">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-arrow-left"></use></svg>
+          </button>
+          <span style="font-size:16px;font-weight:500">Passeio</span>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;padding:0 20px 24px;display:flex;flex-direction:column;gap:16px">
+          <section style="border-radius:20px;background:#16232E;color:#FFFFFF;padding:20px">
+            <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8DC5C8">Caminhada guiada · começa às 11:00</div>
+            <h1 style="margin:14px 0 10px;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:28px;line-height:1.1">Caminhada Histórica de Sarajevo</h1>
+            <div style="display:flex;gap:18px;font-size:14px;color:#D5DEE2">
+              <span>2,4 km</span>
+              <span>75 min</span>
+              <span>7 histórias</span>
+            </div>
+            <div style="padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.07);margin-top:16px;font-size:14px;line-height:20px;color:#D5DEE2">
+              <strong style="display:block;color:#FFFFFF;margin-bottom:4px">Rota</strong>
+              Sebilj → Ferhadija → Catedral → Ponte Latina → Vijećnica
+            </div>
+          </section>
+
+          <section style="background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:4px 16px">
+            <div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #ECE9E1">
+              <svg width="22" height="22" style="display:block;color:#1F6F78;flex:0 0 auto" aria-hidden="true"><use href="#tc-headphones"></use></svg>
+              <span style="flex:1;font-size:16px">Fones conectados</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:#E7EDE3;color:#3D5337;font-size:12px;font-weight:500">
+                <span style="width:8px;height:8px;border-radius:999px;background:#4C6444"></span>
+                Prontos
+              </span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #ECE9E1">
+              <svg width="22" height="22" style="display:block;color:#1F6F78;flex:0 0 auto" aria-hidden="true"><use href="#tc-pin"></use></svg>
+              <span style="flex:1;font-size:16px">Histórias pelo caminho</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:#E4F0F0;color:#185860;font-size:12px;font-weight:500">Ativado</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:14px 0">
+              <svg width="22" height="22" style="display:block;color:#65717A;flex:0 0 auto;margin-top:2px" aria-hidden="true"><use href="#tc-offline"></use></svg>
+              <span style="flex:1;font-size:14px;line-height:20px;color:#4B5962">Durante o passeio, o app avisa quando vocês chegarem perto de um lugar interessante, mesmo com a tela apagada. Os áudios já estão no aparelho.</span>
+            </div>
+          </section>
+
+          <section>
+            <h2 style="margin:0 0 10px;font-size:20px;line-height:26px;font-weight:500">Quem vai ouvir</h2>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <span style="display:inline-flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid #DDDCD4;border-radius:999px;background:#FFFDF8;font-size:13px">
+                <span style="width:25px;height:25px;border-radius:999px;background:#16232E;color:#FFFDF8;display:grid;place-items:center;font-size:10px;font-weight:700">{{ initial }}</span>
+                <span style="width:8px;height:8px;border-radius:999px;background:#4C6444"></span>
+                {{ participant }} · você
+              </span>
+              <span style="display:inline-flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid #DDDCD4;border-radius:999px;background:#FFFDF8;font-size:13px">
+                <span style="width:25px;height:25px;border-radius:999px;background:#16232E;color:#FFFDF8;display:grid;place-items:center;font-size:10px;font-weight:700">{{ otherInitial }}</span>
+                <span style="width:8px;height:8px;border-radius:999px;background:#4C6444"></span>
+                {{ other }} · por perto
+              </span>
+            </div>
+          </section>
+        </div>
+
+        <div style="padding:12px 20px 10px;background:#FFFDF8;border-top:1px solid #DDDCD4;flex:0 0 auto;display:flex;flex-direction:column;gap:8px">
+          <button type="button" onClick="{{ goWalk }}" style="width:100%;min-height:56px;border:0;border-radius:14px;background:#1F6F78;color:#FFFFFF;font-size:16px;font-weight:500;cursor:pointer">Começar passeio</button>
+          <p style="margin:0;text-align:center;font-size:13px;color:#65717A">Pode guardar o celular no bolso. O passeio continua com a tela apagada.</p>
+        </div>
+
+        <div style="height:22px;display:grid;place-items:center;background:#FFFDF8;flex:0 0 auto">
+          <span style="width:112px;height:4px;border-radius:999px;background:#C8CCC5"></span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 05 — Passeio ativo -->
+    <sc-if value="{{ sWalk }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#16232E;color:#FFFFFF">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 20px;font-size:12px;font-weight:500;color:#DCE4E8;flex:0 0 auto">
+          <span>11:24</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-headphones"></use></svg>
+            <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-offline"></use></svg>
+            <span>76%</span>
+          </span>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px 4px;flex:0 0 auto">
+          <div style="display:flex;align-items:center;gap:10px;padding-left:8px">
+            <span style="font-size:14px;font-weight:700;font-variant-numeric:tabular-nums">3 de 7</span>
+            <span style="font-size:14px;color:#C6D3D8">≈ 40 min restantes</span>
+          </div>
+          <button type="button" onClick="{{ goEnd }}" aria-label="Encerrar passeio" style="width:48px;height:48px;display:grid;place-items:center;border:0;background:transparent;border-radius:999px;cursor:pointer;color:#C6D3D8">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-close"></use></svg>
+          </button>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;padding:6px 20px 20px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;gap:6px;flex:0 0 auto">
+            <span style="flex:1;height:5px;border-radius:999px;background:#67B6BB"></span>
+            <span style="flex:1;height:5px;border-radius:999px;background:#67B6BB"></span>
+            <span style="flex:1;height:5px;border-radius:999px;background:#67B6BB"></span>
+            <span style="flex:1;height:5px;border-radius:999px;background:rgba(255,255,255,.18)"></span>
+            <span style="flex:1;height:5px;border-radius:999px;background:rgba(255,255,255,.18)"></span>
+            <span style="flex:1;height:5px;border-radius:999px;background:rgba(255,255,255,.18)"></span>
+            <span style="flex:1;height:5px;border-radius:999px;background:rgba(255,255,255,.18)"></span>
+          </div>
+
+          <div>
+            <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 11px;border-radius:999px;background:rgba(255,255,255,.08);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8DC5C8">
+              <span style="width:8px;height:8px;border-radius:999px;background:#67B6BB;animation:tcPulse 2s ease-in-out infinite"></span>
+              Tocando agora
+            </div>
+            <h1 style="margin:14px 0 0;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:34px;line-height:1.08">A Ponte Latina</h1>
+            <div style="font-size:14px;color:#C6D3D8;margin-top:6px">História 3 de 7 · Caminhada Histórica de Sarajevo</div>
+          </div>
+
+          <div style="padding:20px;border-radius:20px;background:rgba(255,255,255,.07)">
+            <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#BFD1D8">Continue</div>
+            <p style="margin:8px 0 0;font-size:22px;line-height:30px;font-weight:500;text-wrap:pretty">Siga pela margem do Miljacka por 200 m, mantendo o rio à sua direita.</p>
+          </div>
+
+          <div style="padding:16px;border-radius:14px;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:12px">
+            <svg width="22" height="22" style="display:block;color:#8DC5C8;flex:0 0 auto" aria-hidden="true"><use href="#tc-pin"></use></svg>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#BFD1D8">Próxima história</div>
+              <div style="font-size:16px;font-weight:500;margin-top:3px">Vijećnica · 350 m</div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:#C6D3D8">
+            <span style="width:8px;height:8px;border-radius:999px;background:#4C6444"></span>
+            Localização ativa
+            <span style="margin-left:auto;display:inline-flex;align-items:center;gap:8px">
+              <span style="width:8px;height:8px;border-radius:999px;background:#4C6444"></span>
+              {{ other }} por perto
+            </span>
+          </div>
+
+          <button type="button" onClick="{{ goStory }}" style="width:100%;min-height:48px;text-align:left;padding:14px 16px;border-radius:14px;border:1px dashed rgba(255,255,255,.25);background:transparent;color:#C6D3D8;font-size:13px;cursor:pointer">Protótipo · simular chegada num ponto de história →</button>
+        </div>
+
+        <div style="padding:16px 20px 12px;background:#101A21;border-top:1px solid rgba(255,255,255,.12);flex:0 0 auto;display:flex;flex-direction:column;gap:14px">
+          <div>
+            <div style="height:6px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden">
+              <span style="display:block;height:100%;width:{{ progressPct }};background:#67B6BB"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#C6D3D8;margin-top:7px;font-variant-numeric:tabular-nums">
+              <span>{{ elapsed }}</span>
+              <span>04:20</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <button type="button" aria-label="Voltar 15 segundos" style="width:56px;height:56px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#FFFFFF;font-size:13px;font-weight:700;cursor:pointer">−15</button>
+            <button type="button" aria-label="Pausar" style="width:76px;height:76px;border-radius:999px;border:0;background:#FFFFFF;color:#16232E;display:grid;place-items:center;cursor:pointer">
+              <svg width="32" height="32" style="display:block" aria-hidden="true"><use href="#tc-pause"></use></svg>
+            </button>
+            <button type="button" aria-label="Avançar 15 segundos" style="width:56px;height:56px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#FFFFFF;font-size:13px;font-weight:700;cursor:pointer">+15</button>
+          </div>
+          <button type="button" onClick="{{ goSync }}" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:52px;border:0;border-radius:14px;background:rgba(255,255,255,.08);color:#FFFFFF;font-size:16px;font-weight:500;cursor:pointer">
+            <svg width="20" height="20" style="display:block" aria-hidden="true"><use href="#tc-group"></use></svg>
+            Ouvir juntos
+          </button>
+        </div>
+
+        <div style="height:22px;display:grid;place-items:center;background:#101A21;flex:0 0 auto">
+          <span style="width:112px;height:4px;border-radius:999px;background:rgba(255,255,255,.3)"></span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 06 — Participantes sincronizados -->
+    <sc-if value="{{ sSync }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#16232E;color:#FFFFFF">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 20px;font-size:12px;font-weight:500;color:#DCE4E8;flex:0 0 auto">
+          <span>11:26</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-headphones"></use></svg>
+            <span>76%</span>
+          </span>
+        </div>
+
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;padding:24px 20px">
+          <div style="text-align:center">
+            <div style="font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8DC5C8">Ouvir juntos</div>
+            <h1 style="margin:12px 0 0;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:32px;line-height:1.15">A Ponte Latina</h1>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:28px">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+              <span style="width:72px;height:72px;border-radius:999px;background:rgba(255,255,255,.08);border:2px solid #4C6444;display:grid;place-items:center;font-size:24px;font-weight:700">{{ initial }}</span>
+              <span style="font-size:14px;font-weight:500">{{ participant }}</span>
+              <span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#C6D3D8">
+                <span style="width:8px;height:8px;border-radius:999px;background:#4C6444"></span>
+                Sincronizado
+              </span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+              <span style="width:72px;height:72px;border-radius:999px;background:rgba(255,255,255,.08);border:2px solid #4C6444;display:grid;place-items:center;font-size:24px;font-weight:700">{{ otherInitial }}</span>
+              <span style="font-size:14px;font-weight:500">{{ other }}</span>
+              <span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#C6D3D8">
+                <span style="width:8px;height:8px;border-radius:999px;background:#4C6444"></span>
+                Sincronizado
+              </span>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+            <div style="width:120px;height:120px;border-radius:999px;border:2px solid rgba(255,255,255,.25);display:grid;place-items:center;font-size:56px;font-weight:700;font-variant-numeric:tabular-nums">{{ countdown }}</div>
+            <div style="font-size:16px;color:#DCE4E8">Começando juntos</div>
+          </div>
+
+          <p style="margin:0;max-width:280px;text-align:center;font-size:14px;line-height:20px;color:#C6D3D8">Os dois aparelhos vão tocar a mesma parte da história. Podem guardar o celular.</p>
+        </div>
+
+        <div style="height:22px;display:grid;place-items:center;flex:0 0 auto">
+          <span style="width:112px;height:4px;border-radius:999px;background:rgba(255,255,255,.3)"></span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 07 — Ouvir juntos -->
+    <sc-if value="{{ sTogether }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F5F1E8">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 20px;font-size:12px;font-weight:500;color:#16232E;flex:0 0 auto">
+          <span>11:29</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-headphones"></use></svg>
+            <span>75%</span>
+          </span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 12px 10px;flex:0 0 auto">
+          <button type="button" onClick="{{ goWalk }}" aria-label="Voltar ao passeio" style="width:48px;height:48px;display:grid;place-items:center;border:0;background:transparent;border-radius:999px;cursor:pointer;color:#16232E">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-arrow-left"></use></svg>
+          </button>
+          <span style="font-size:16px;font-weight:500">Ouvindo juntos</span>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;padding:0 20px 24px;display:flex;flex-direction:column;gap:18px">
+          <div style="position:relative;height:230px;border-radius:20px;background-image:repeating-linear-gradient(115deg,#8FA3A0 0 12px,#7F948F 12px 24px);display:flex;align-items:flex-end;padding:18px;color:#FFFFFF">
+            <span style="position:absolute;top:12px;left:14px;font-family:'Roboto Mono',monospace;font-size:11px;padding:4px 7px;border-radius:6px;background:rgba(22,35,46,.42);color:#F2EFE7">foto — Ponte Latina, Miljacka</span>
+            <div style="font-family:Fraunces,Georgia,serif;font-weight:600;font-size:26px;line-height:1.1">A Ponte Latina</div>
+          </div>
+
+          <section style="background:#E4F0F0;border:1px solid #C8DEDE;border-radius:18px;padding:18px">
+            <div style="font-size:16px;font-weight:700">Capítulo 3 · A esquina de 1914</div>
+            <div style="font-size:12px;color:#65717A;margin-top:3px">Caminhada Histórica de Sarajevo</div>
+
+            <div style="height:6px;border-radius:999px;background:#C3D9D9;margin:16px 0 8px;overflow:hidden">
+              <span style="display:block;height:100%;width:{{ progressPct }};background:#1F6F78"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#65717A;font-variant-numeric:tabular-nums">
+              <span>{{ elapsed }}</span>
+              <span>04:20</span>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:center;gap:20px;margin-top:18px">
+              <button type="button" aria-label="Voltar 15 segundos" style="width:52px;height:52px;border-radius:999px;border:0;background:#FFFDF8;color:#185860;font-size:13px;font-weight:700;cursor:pointer">−15</button>
+              <button type="button" aria-label="Pausar" style="width:68px;height:68px;border-radius:999px;border:0;background:#1F6F78;color:#FFFFFF;display:grid;place-items:center;cursor:pointer">
+                <svg width="28" height="28" style="display:block" aria-hidden="true"><use href="#tc-pause"></use></svg>
+              </button>
+              <button type="button" aria-label="Avançar 15 segundos" style="width:52px;height:52px;border-radius:999px;border:0;background:#FFFDF8;color:#185860;font-size:13px;font-weight:700;cursor:pointer">+15</button>
+            </div>
+          </section>
+
+          <section style="background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:16px">
+            <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#65717A">Ouvindo juntos</div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="width:32px;height:32px;border-radius:999px;background:#16232E;color:#FFFDF8;display:grid;place-items:center;font-size:12px;font-weight:700">{{ initial }}</span>
+                <span style="flex:1;font-size:16px">{{ participant }} · você</span>
+                <span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#3D5337">
+                  <span style="width:8px;height:8px;border-radius:999px;background:#4C6444"></span>
+                  Sincronizado
+                </span>
+              </div>
+              <sc-if value="{{ groupOk }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="width:32px;height:32px;border-radius:999px;background:#16232E;color:#FFFDF8;display:grid;place-items:center;font-size:12px;font-weight:700">{{ otherInitial }}</span>
+                  <span style="flex:1;font-size:16px">{{ other }}</span>
+                  <span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#3D5337">
+                    <span style="width:8px;height:8px;border-radius:999px;background:#4C6444"></span>
+                    Sincronizado
+                  </span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ groupResync }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span style="width:32px;height:32px;border-radius:999px;background:#16232E;color:#FFFDF8;display:grid;place-items:center;font-size:12px;font-weight:700">{{ otherInitial }}</span>
+                    <span style="flex:1;font-size:16px">{{ other }}</span>
+                    <span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#684817">
+                      <span style="width:8px;height:8px;border-radius:999px;background:#B8863B;animation:tcPulse 1.6s ease-in-out infinite"></span>
+                      Sincronizando novamente
+                    </span>
+                  </div>
+                  <p style="margin:12px 0 0;padding:12px 14px;border-radius:12px;background:#F3E8D0;font-size:14px;line-height:20px;color:#5D4B2C">Não foi possível sincronizar o grupo agora. Seu audioguia continua funcionando normalmente.</p>
+                </div>
+              </sc-if>
+            </div>
+          </section>
+
+          <div style="display:flex;gap:10px">
+            <button type="button" style="flex:1;min-height:52px;border:1px solid #C8CCC5;border-radius:14px;background:#FFFDF8;color:#16232E;font-size:16px;font-weight:500;cursor:pointer">Transcrição</button>
+            <button type="button" onClick="{{ goStory }}" style="flex:1;min-height:52px;border:1px solid #C8CCC5;border-radius:14px;background:#FFFDF8;color:#16232E;font-size:16px;font-weight:500;cursor:pointer">Próxima história</button>
+          </div>
+        </div>
+
+        <div style="height:22px;display:grid;place-items:center;flex:0 0 auto">
+          <span style="width:112px;height:4px;border-radius:999px;background:#C8CCC5"></span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 08 — História disparada pela localização -->
+    <sc-if value="{{ sStory }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#16232E">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 20px;font-size:12px;font-weight:500;color:#DCE4E8;flex:0 0 auto">
+          <span>11:38</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-headphones"></use></svg>
+            <span>74%</span>
+          </span>
+        </div>
+
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:20px 20px 0;color:#FFFFFF">
+          <div style="opacity:.55;display:flex;flex-direction:column;gap:10px;margin-bottom:26px">
+            <div style="font-size:14px;font-weight:700;font-variant-numeric:tabular-nums">4 de 7 · ≈ 28 min restantes</div>
+            <div style="font-family:Fraunces,Georgia,serif;font-weight:600;font-size:28px;line-height:1.1">Caminhada Histórica de Sarajevo</div>
+          </div>
+
+          <section style="background:#F5F1E8;color:#16232E;border-radius:28px 28px 0 0;padding:24px 20px 20px;margin:0 -20px 0">
+            <div style="width:44px;height:4px;border-radius:999px;background:#C8CCC5;margin:0 auto 18px"></div>
+            <span style="display:inline-flex;align-items:center;gap:8px;padding:6px 11px;border-radius:999px;background:#E4F0F0;color:#185860;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">
+              <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-pin"></use></svg>
+              História pelo caminho
+            </span>
+            <h1 style="margin:16px 0 10px;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:32px;line-height:1.12;text-wrap:pretty">A esquina de 28 de junho de 1914</h1>
+            <p style="margin:0 0 14px;font-size:18px;line-height:27px;color:#33414B;text-wrap:pretty">Você está no cruzamento onde Gavrilo Princip esperou. O carro do arquiduque errou o caminho, deu ré nesta curva, e a Europa entrou em outro século.</p>
+            <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#65717A;margin-bottom:18px">
+              <svg width="18" height="18" style="display:block;color:#1F6F78" aria-hidden="true"><use href="#tc-near-me"></use></svg>
+              A 20 m de você · Ponte Latina, margem norte · 6 min de áudio
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <button type="button" onClick="{{ goTogether }}" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;border:0;border-radius:14px;background:#1F6F78;color:#FFFFFF;font-size:16px;font-weight:500;cursor:pointer">
+                <svg width="20" height="20" style="display:block" aria-hidden="true"><use href="#tc-play"></use></svg>
+                Ouvir agora
+              </button>
+              <div style="display:flex;gap:10px">
+                <button type="button" style="flex:1;min-height:52px;border:1px solid #C8CCC5;border-radius:14px;background:#FFFDF8;color:#16232E;font-size:16px;font-weight:500;cursor:pointer">Ler</button>
+                <button type="button" onClick="{{ goWalk }}" style="flex:1;min-height:52px;border:0;border-radius:14px;background:transparent;color:#1F6F78;font-size:16px;font-weight:500;cursor:pointer">Depois</button>
+              </div>
+            </div>
+            <p style="margin:14px 0 0;text-align:center;font-size:13px;color:#7E898F">Um toque suave avisou nos fones. O celular pode continuar no bolso.</p>
+          </section>
+        </div>
+
+        <div style="height:22px;display:grid;place-items:center;background:#F5F1E8;flex:0 0 auto">
+          <span style="width:112px;height:4px;border-radius:999px;background:#C8CCC5"></span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 09 — Fim do passeio -->
+    <sc-if value="{{ sEnd }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F5F1E8">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 20px;font-size:12px;font-weight:500;color:#16232E;flex:0 0 auto">
+          <span>12:39</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-offline"></use></svg>
+            <span>68%</span>
+          </span>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;padding:18px 20px 24px;display:flex;flex-direction:column;gap:18px">
+          <span style="display:inline-flex;align-self:flex-start;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:#E7EDE3;color:#3D5337;font-size:12px;font-weight:500">
+            <svg width="16" height="16" style="display:block" aria-hidden="true"><use href="#tc-check"></use></svg>
+            Passeio concluído
+          </span>
+
+          <div>
+            <h1 style="margin:0;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:36px;line-height:1.1">Sete histórias<br />depois</h1>
+            <p style="margin:10px 0 0;font-size:16px;line-height:24px;color:#4B5962">Caminhada Histórica de Sarajevo · terminada na Vijećnica, 12:37.</p>
+          </div>
+
+          <section style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:16px">
+              <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#65717A">Duração</div>
+              <div style="font-size:24px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums">1h 12min</div>
+            </div>
+            <div style="background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:16px">
+              <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#65717A">Distância</div>
+              <div style="font-size:24px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums">2,4 km</div>
+            </div>
+            <div style="background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:16px">
+              <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#65717A">Histórias</div>
+              <div style="font-size:24px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums">7 de 7</div>
+            </div>
+            <div style="background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:16px">
+              <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#65717A">Ouviram</div>
+              <div style="font-size:16px;font-weight:500;margin-top:8px">{{ participant }} e {{ other }}</div>
+            </div>
+          </section>
+
+          <section style="background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:16px">
+            <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#65717A">Ainda hoje</div>
+            <div style="display:flex;align-items:baseline;gap:14px;margin-top:12px">
+              <span style="font-size:16px;font-weight:700;font-variant-numeric:tabular-nums">13:30</span>
+              <span style="font-size:16px">Almoço · Ćevabdžinica Željo</span>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:14px;margin-top:10px;padding-top:12px;border-top:1px solid #ECE9E1">
+              <span style="font-size:16px;font-weight:700;color:#7A2E2E;font-variant-numeric:tabular-nums">19:30</span>
+              <span style="font-size:16px;flex:1">Ônibus para Mostar · esteja na estação até 19:00</span>
+            </div>
+          </section>
+
+          <section style="display:flex;flex-direction:column;gap:10px">
+            <button type="button" onClick="{{ goMemory }}" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;border:0;border-radius:14px;background:#1F6F78;color:#FFFFFF;font-size:16px;font-weight:500;cursor:pointer">
+              <svg width="20" height="20" style="display:block" aria-hidden="true"><use href="#tc-mic"></use></svg>
+              Gravar memória
+            </button>
+            <button type="button" onClick="{{ goHoje }}" style="width:100%;min-height:52px;border:1px solid #C8CCC5;border-radius:14px;background:#FFFDF8;color:#16232E;font-size:16px;font-weight:500;cursor:pointer">Voltar para Hoje</button>
+          </section>
+        </div>
+
+        <div style="height:22px;display:grid;place-items:center;flex:0 0 auto">
+          <span style="width:112px;height:4px;border-radius:999px;background:#C8CCC5"></span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 10 — Gravar memória por voz -->
+    <sc-if value="{{ sMemory }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F5F1E8">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 20px;font-size:12px;font-weight:500;color:#16232E;flex:0 0 auto">
+          <span>12:52</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-offline"></use></svg>
+            <span>67%</span>
+          </span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 12px 10px;flex:0 0 auto">
+          <button type="button" onClick="{{ goEnd }}" aria-label="Voltar" style="width:48px;height:48px;display:grid;place-items:center;border:0;background:transparent;border-radius:999px;cursor:pointer;color:#16232E">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-arrow-left"></use></svg>
+          </button>
+          <span style="font-size:16px;font-weight:500">Memória por voz</span>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;padding:0 20px 24px;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#65717A">
+            <svg width="18" height="18" style="display:block;color:#1F6F78" aria-hidden="true"><use href="#tc-pin"></use></svg>
+            Sarajevo · Vijećnica · 12:52
+          </div>
+
+          <sc-if value="{{ recIdle }}" hint-placeholder-val="{{ true }}">
+            <section style="text-align:center;padding:28px;border:1px solid #DDDCD4;border-radius:20px;background:#FFFDF8">
+              <button type="button" onClick="{{ recStart }}" aria-label="Gravar memória" style="width:82px;height:82px;border-radius:999px;background:#7A2E2E;display:grid;place-items:center;margin:8px auto 18px;box-shadow:0 10px 30px rgba(122,46,46,.22);border:0;cursor:pointer">
+                <span aria-hidden="true" style="width:28px;height:28px;border-radius:999px;background:#FFFDF8"></span>
+              </button>
+              <h2 style="margin:0 0 6px;font-size:20px;line-height:26px;font-weight:500">Registrar memória</h2>
+              <p style="margin:0;color:#65717A;font-size:16px;line-height:24px">Toque e conte como foi este momento. O local e a hora entram sozinhos.</p>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{ recActive }}" hint-placeholder-val="{{ false }}">
+            <section style="text-align:center;padding:28px;border:1px solid #DDDCD4;border-radius:20px;background:#FFFDF8">
+              <span style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:#FDECEC;color:#7A2E2E;font-size:12px;font-weight:500">
+                <span style="width:8px;height:8px;border-radius:999px;background:#7A2E2E;animation:tcPulse 1.4s ease-in-out infinite"></span>
+                Gravando
+              </span>
+              <div style="font-size:38px;font-weight:700;margin:16px 0 0;font-variant-numeric:tabular-nums">{{ recElapsed }}</div>
+              <div style="height:56px;display:flex;align-items:center;justify-content:center;gap:5px;margin:14px 0">
+                <span style="display:block;width:4px;height:22px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out infinite"></span>
+                <span style="display:block;width:4px;height:44px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out .12s infinite"></span>
+                <span style="display:block;width:4px;height:30px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out .24s infinite"></span>
+                <span style="display:block;width:4px;height:52px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out .36s infinite"></span>
+                <span style="display:block;width:4px;height:26px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out .48s infinite"></span>
+                <span style="display:block;width:4px;height:40px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out .6s infinite"></span>
+                <span style="display:block;width:4px;height:18px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out .72s infinite"></span>
+                <span style="display:block;width:4px;height:34px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out .84s infinite"></span>
+              </div>
+              <div style="font-size:13px;color:#65717A;margin-bottom:18px">{{ participant }} · Sarajevo, Vijećnica</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+                <button type="button" style="min-height:52px;padding:0 18px;border:1px solid #C8CCC5;border-radius:14px;background:#FFFDF8;color:#16232E;font-size:16px;font-weight:500;cursor:pointer">Pausar</button>
+                <button type="button" onClick="{{ recFinish }}" style="min-height:52px;padding:0 18px;border:0;border-radius:14px;background:#1F6F78;color:#FFFFFF;font-size:16px;font-weight:500;cursor:pointer">Concluir</button>
+              </div>
+              <button type="button" onClick="{{ recCancel }}" style="margin-top:14px;min-height:44px;padding:0 12px;border:0;background:transparent;color:#7A2E2E;font-size:16px;font-weight:500;cursor:pointer">Cancelar</button>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{ recSaved }}" hint-placeholder-val="{{ false }}">
+            <section style="text-align:center;padding:28px;border:1px solid #DDDCD4;border-radius:20px;background:#FFFDF8">
+              <span style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:#E7EDE3;color:#3D5337;font-size:12px;font-weight:500">
+                <svg width="16" height="16" style="display:block" aria-hidden="true"><use href="#tc-check"></use></svg>
+                Memória salva
+              </span>
+              <p style="margin:14px 0 0;color:#4B5962;font-size:16px;line-height:24px">Memória salva em Sarajevo · 12:54 · {{ recElapsed }}</p>
+              <button type="button" onClick="{{ goHoje }}" style="margin-top:18px;width:100%;min-height:52px;border:1px solid #C8CCC5;border-radius:14px;background:#FFFDF8;color:#16232E;font-size:16px;font-weight:500;cursor:pointer">Voltar para Hoje</button>
+            </section>
+          </sc-if>
+
+          <section>
+            <h2 style="margin:0 0 10px;font-size:20px;line-height:26px;font-weight:500">Memórias desta viagem</h2>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:12px;background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:14px 16px">
+                <svg width="22" height="22" style="display:block;color:#1F6F78;flex:0 0 auto" aria-hidden="true"><use href="#tc-play"></use></svg>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:16px;font-weight:500">Ponte Latina</div>
+                  <div style="font-size:13px;color:#65717A">Hoje, 11:41 · Érika · 00:48</div>
+                </div>
+                <span style="font-size:12px;color:#7E898F;font-variant-numeric:tabular-nums">00:48</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:14px 16px">
+                <svg width="22" height="22" style="display:block;color:#1F6F78;flex:0 0 auto" aria-hidden="true"><use href="#tc-play"></use></svg>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:16px;font-weight:500">Ksamil, última manhã</div>
+                  <div style="font-size:13px;color:#65717A">14 de setembro · Vinícius · 01:22</div>
+                </div>
+                <span style="font-size:12px;color:#7E898F;font-variant-numeric:tabular-nums">01:22</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div style="height:22px;display:grid;place-items:center;flex:0 0 auto">
+          <span style="width:112px;height:4px;border-radius:999px;background:#C8CCC5"></span>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+  </div>
+
+  <sc-if value="{{ showRail }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:640px">
+      <button type="button" onClick="{{ goWho }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">01 Quem é você?</button>
+      <button type="button" onClick="{{ goHoje }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">02 Hoje</button>
+      <button type="button" onClick="{{ goAtracao }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">03 Atração</button>
+      <button type="button" onClick="{{ goPre }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">04 Iniciar passeio</button>
+      <button type="button" onClick="{{ goWalk }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">05 Passeio ativo</button>
+      <button type="button" onClick="{{ goSync }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">06 Sincronizados</button>
+      <button type="button" onClick="{{ goTogether }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">07 Ouvir juntos</button>
+      <button type="button" onClick="{{ goStory }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">08 História no caminho</button>
+      <button type="button" onClick="{{ goEnd }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">09 Fim do passeio</button>
+      <button type="button" onClick="{{ goMemory }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">10 Gravar memória</button>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:480,&quot;height&quot;:1080},&quot;participant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Vinícius&quot;,&quot;Érika&quot;],&quot;default&quot;:&quot;Vinícius&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Viagem&quot;},&quot;groupState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;sincronizado&quot;,&quot;reconectando&quot;],&quot;default&quot;:&quot;sincronizado&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Ouvir juntos&quot;},&quot;showFlowRail&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Protótipo&quot;}}">
+class Component extends DCLogic {
+  state = { screen: "who", participant: null, countdown: 3, t: 168, rec: "idle", recT: 0 };
+
+  componentDidMount() {
+    this.tick = setInterval(() => {
+      const s = this.state.screen;
+      if (s === "walk" || s === "together") this.setState({ t: (this.state.t + 1) % 260 });
+      if (this.state.rec === "recording") this.setState({ recT: this.state.recT + 1 });
+    }, 1000);
+  }
+  componentWillUnmount() {
+    clearInterval(this.tick);
+    clearInterval(this.cd);
+  }
+
+  go = (screen) => () => {
+    clearInterval(this.cd);
+    this.setState({ screen, countdown: 3 });
+  };
+
+  startSync = () => {
+    clearInterval(this.cd);
+    this.setState({ screen: "sync", countdown: 3 });
+    this.cd = setInterval(() => {
+      const n = this.state.countdown - 1;
+      if (n <= 0) {
+        clearInterval(this.cd);
+        this.setState({ countdown: 3, screen: "together" });
+      } else {
+        this.setState({ countdown: n });
+      }
+    }, 1000);
+  };
+
+  mmss(sec) {
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+
+  renderVals() {
+    const s = this.state.screen;
+    const me = this.state.participant || this.props.participant || "Vinícius";
+    const other = me === "Érika" ? "Vinícius" : "Érika";
+    const group = this.props.groupState || "sincronizado";
+    const total = 260;
+    return {
+      sWho: s === "who", sHoje: s === "hoje", sAtracao: s === "atracao", sPre: s === "pre",
+      sWalk: s === "walk", sSync: s === "sync", sTogether: s === "together",
+      sStory: s === "story", sEnd: s === "end", sMemory: s === "memory",
+      participant: me, other, initial: me.slice(0, 1), otherInitial: other.slice(0, 1),
+      groupOk: group === "sincronizado", groupResync: group === "reconectando",
+      countdown: this.state.countdown,
+      elapsed: this.mmss(this.state.t),
+      progressPct: Math.round((this.state.t / total) * 100) + "%",
+      recIdle: this.state.rec === "idle",
+      recActive: this.state.rec === "recording",
+      recSaved: this.state.rec === "saved",
+      recElapsed: this.mmss(this.state.recT),
+      showRail: this.props.showFlowRail !== false,
+      goWho: this.go("who"), goHoje: this.go("hoje"), goAtracao: this.go("atracao"),
+      goPre: this.go("pre"), goWalk: this.go("walk"), goTogether: this.go("together"),
+      goStory: this.go("story"), goEnd: this.go("end"), goMemory: this.go("memory"),
+      goSync: this.startSync,
+      pickVinicius: () => this.setState({ participant: "Vinícius", screen: "hoje" }),
+      pickErika: () => this.setState({ participant: "Érika", screen: "hoje" }),
+      recStart: () => this.setState({ rec: "recording", recT: 0 }),
+      recFinish: () => this.setState({ rec: "saved" }),
+      recCancel: () => this.setState({ rec: "idle", recT: 0 })
+    };
+  }
+}
+
+</script>
+</body>
+</html>

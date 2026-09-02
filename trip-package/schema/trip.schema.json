@@ -1,0 +1,1484 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://travel-companion.local/schema/trip.schema.json",
+  "title": "Travel Companion Trip Package",
+  "description": "Static, build-time trip content. Runtime/device state is intentionally excluded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "metadata",
+    "trip",
+    "assets",
+    "cities",
+    "attractions",
+    "walks",
+    "stories",
+    "audioGuides",
+    "accommodations",
+    "transports",
+    "documents",
+    "planBs",
+    "emergencyProfiles",
+    "usefulApps",
+    "days"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "metadata": {
+      "$ref": "#/$defs/packageMetadata"
+    },
+    "trip": {
+      "$ref": "#/$defs/trip"
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/asset"
+      }
+    },
+    "cities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/city"
+      }
+    },
+    "attractions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/attraction"
+      }
+    },
+    "walks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/walk"
+      }
+    },
+    "stories": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/story"
+      }
+    },
+    "audioGuides": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/audioGuide"
+      }
+    },
+    "accommodations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/accommodation"
+      }
+    },
+    "transports": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/transport"
+      }
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/document"
+      }
+    },
+    "planBs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/planB"
+      }
+    },
+    "emergencyProfiles": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/emergencyProfile"
+      }
+    },
+    "usefulApps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/usefulApp"
+      }
+    },
+    "days": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/day"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "nonEmpty": {
+      "type": "string",
+      "minLength": 1
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "time": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+    },
+    "localDateTime": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$"
+    },
+    "geoPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "latitude",
+        "longitude"
+      ],
+      "properties": {
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "address": {
+          "type": "string"
+        },
+        "geo": {
+          "$ref": "#/$defs/geoPoint"
+        },
+        "mapsQuery": {
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "name"
+          ]
+        },
+        {
+          "required": [
+            "address"
+          ]
+        },
+        {
+          "required": [
+            "geo"
+          ]
+        },
+        {
+          "required": [
+            "mapsQuery"
+          ]
+        }
+      ]
+    },
+    "actionLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "kind",
+        "uri"
+      ],
+      "properties": {
+        "label": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "maps",
+            "web",
+            "phone",
+            "whatsapp",
+            "app",
+            "email",
+            "document"
+          ]
+        },
+        "uri": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "fallbackUri": {
+          "type": "string"
+        },
+        "requiresInternet": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "packageMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contentStatus",
+        "generatedAt"
+      ],
+      "properties": {
+        "contentStatus": {
+          "type": "string",
+          "enum": [
+            "prototype",
+            "draft",
+            "production"
+          ]
+        },
+        "isMockContent": {
+          "type": "boolean"
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "participant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "avatarAssetId": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "syncConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "groupId"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "groupId": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "trip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "startDate",
+        "endDate",
+        "locale",
+        "participants",
+        "defaultCountryCode",
+        "sync"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "startDate": {
+          "$ref": "#/$defs/date"
+        },
+        "endDate": {
+          "$ref": "#/$defs/date"
+        },
+        "locale": {
+          "type": "string",
+          "minLength": 2
+        },
+        "defaultCountryCode": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "coverAssetId": {
+          "$ref": "#/$defs/id"
+        },
+        "participants": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/participant"
+          }
+        },
+        "sync": {
+          "$ref": "#/$defs/syncConfig"
+        }
+      }
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "path"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "image",
+            "audio",
+            "document",
+            "transcript"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "sensitive": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "editorialSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "body"
+      ],
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "body": {
+          "$ref": "#/$defs/nonEmpty"
+        }
+      }
+    },
+    "restaurant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "description": {
+          "type": "string"
+        },
+        "distanceWalkMinutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "priceNote": {
+          "type": "string"
+        },
+        "practicalNote": {
+          "type": "string"
+        },
+        "location": {
+          "$ref": "#/$defs/location"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/actionLink"
+          }
+        }
+      }
+    },
+    "city": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "countryCode",
+        "countryName",
+        "intro"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "countryCode": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "countryName": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "heroAssetId": {
+          "$ref": "#/$defs/id"
+        },
+        "intro": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "historySections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/editorialSection"
+          }
+        },
+        "audioGuideId": {
+          "$ref": "#/$defs/id"
+        },
+        "attractionIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "walkIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "storyIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "restaurants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/restaurant"
+          }
+        }
+      }
+    },
+    "practicalInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "openingHours": {
+          "type": "string"
+        },
+        "price": {
+          "type": "string"
+        },
+        "recommendedDurationMinutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reservationRequired": {
+          "type": "boolean"
+        },
+        "accessibility": {
+          "type": "string"
+        },
+        "bestTime": {
+          "type": "string"
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "attraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "cityId",
+        "name",
+        "summary"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "cityId": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "heroAssetId": {
+          "$ref": "#/$defs/id"
+        },
+        "summary": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "historySections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/editorialSection"
+          }
+        },
+        "interestingFacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "whatToObserve": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "location": {
+          "$ref": "#/$defs/location"
+        },
+        "practical": {
+          "$ref": "#/$defs/practicalInfo"
+        },
+        "audioGuideId": {
+          "$ref": "#/$defs/id"
+        },
+        "documentIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "planBId": {
+          "$ref": "#/$defs/id"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/actionLink"
+          }
+        }
+      }
+    },
+    "audioChapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "startSeconds"
+      ],
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "startSeconds": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "audioGuide": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "audioAssetId",
+        "durationSeconds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "audioAssetId": {
+          "$ref": "#/$defs/id"
+        },
+        "transcriptAssetId": {
+          "$ref": "#/$defs/id"
+        },
+        "durationSeconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "chapters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/audioChapter"
+          }
+        }
+      }
+    },
+    "locationTrigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "geo",
+        "radiusMeters"
+      ],
+      "properties": {
+        "geo": {
+          "$ref": "#/$defs/geoPoint"
+        },
+        "radiusMeters": {
+          "type": "number",
+          "minimum": 25,
+          "maximum": 2000
+        },
+        "notifyOncePerTrip": {
+          "type": "boolean",
+          "default": true
+        },
+        "autoPlayInWalk": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "story": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "cityId",
+        "title",
+        "hook",
+        "body"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "cityId": {
+          "$ref": "#/$defs/id"
+        },
+        "walkId": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "hook": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "body": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "readDurationMinutes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "audioGuideId": {
+          "$ref": "#/$defs/id"
+        },
+        "trigger": {
+          "$ref": "#/$defs/locationTrigger"
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "low",
+            "normal",
+            "high"
+          ]
+        }
+      }
+    },
+    "walkStop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "storyId",
+        "order"
+      ],
+      "properties": {
+        "storyId": {
+          "$ref": "#/$defs/id"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "instructionToNext": {
+          "type": "string"
+        }
+      }
+    },
+    "walk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "cityId",
+        "title",
+        "distanceMeters",
+        "durationMinutes",
+        "stops"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "cityId": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "heroAssetId": {
+          "$ref": "#/$defs/id"
+        },
+        "distanceMeters": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "durationMinutes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "routeLabel": {
+          "type": "string"
+        },
+        "startLocation": {
+          "$ref": "#/$defs/location"
+        },
+        "stops": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/walkStop"
+          }
+        },
+        "automaticStoriesDefault": {
+          "type": "boolean",
+          "default": true
+        },
+        "sharedAudioSupported": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "timeWindow": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/time"
+        },
+        "until": {
+          "$ref": "#/$defs/time"
+        }
+      },
+      "minProperties": 1
+    },
+    "criticalItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "instruction"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "nominalTime": {
+          "$ref": "#/$defs/time"
+        },
+        "actionByTime": {
+          "$ref": "#/$defs/time"
+        },
+        "instruction": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "actionLinks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/actionLink"
+          }
+        }
+      }
+    },
+    "accommodation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "cityId",
+        "checkIn",
+        "checkOut"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "cityId": {
+          "$ref": "#/$defs/id"
+        },
+        "heroAssetId": {
+          "$ref": "#/$defs/id"
+        },
+        "location": {
+          "$ref": "#/$defs/location"
+        },
+        "checkIn": {
+          "$ref": "#/$defs/timeWindow"
+        },
+        "checkOut": {
+          "$ref": "#/$defs/timeWindow"
+        },
+        "bookingStatus": {
+          "type": "string",
+          "enum": [
+            "reserved",
+            "paid",
+            "verify",
+            "buy"
+          ]
+        },
+        "bookingReference": {
+          "type": "string"
+        },
+        "documentIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "contactName": {
+          "type": "string"
+        },
+        "contactPhone": {
+          "type": "string"
+        },
+        "instructions": {
+          "type": "string"
+        },
+        "criticalItems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/criticalItem"
+          }
+        },
+        "planBId": {
+          "$ref": "#/$defs/id"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/actionLink"
+          }
+        }
+      }
+    },
+    "transportEndpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "dateTime"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "dateTime": {
+          "$ref": "#/$defs/localDateTime"
+        },
+        "location": {
+          "$ref": "#/$defs/location"
+        },
+        "platform": {
+          "type": "string"
+        }
+      }
+    },
+    "transport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "origin",
+        "destination"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "flight",
+            "bus",
+            "ferry",
+            "train",
+            "transfer",
+            "taxi",
+            "urban",
+            "walk",
+            "other"
+          ]
+        },
+        "operator": {
+          "type": "string"
+        },
+        "serviceNumber": {
+          "type": "string"
+        },
+        "origin": {
+          "$ref": "#/$defs/transportEndpoint"
+        },
+        "destination": {
+          "$ref": "#/$defs/transportEndpoint"
+        },
+        "bookingStatus": {
+          "type": "string",
+          "enum": [
+            "reserved",
+            "paid",
+            "verify",
+            "buy",
+            "included"
+          ]
+        },
+        "bookingReference": {
+          "type": "string"
+        },
+        "seat": {
+          "type": "string"
+        },
+        "price": {
+          "type": "string"
+        },
+        "documentIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "criticalItems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/criticalItem"
+          }
+        },
+        "planBId": {
+          "$ref": "#/$defs/id"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/actionLink"
+          }
+        }
+      }
+    },
+    "documentQr": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "none",
+            "embedded",
+            "generated-from-text"
+          ]
+        },
+        "embeddedAssetId": {
+          "$ref": "#/$defs/id"
+        },
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "title",
+        "assetId",
+        "availableOffline"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "ticket",
+            "accommodation",
+            "insurance",
+            "personal",
+            "voucher",
+            "reservation",
+            "other"
+          ]
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "assetId": {
+          "$ref": "#/$defs/id"
+        },
+        "availableOffline": {
+          "type": "boolean"
+        },
+        "sensitive": {
+          "type": "boolean",
+          "default": false
+        },
+        "participantIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "validFrom": {
+          "$ref": "#/$defs/date"
+        },
+        "validUntil": {
+          "$ref": "#/$defs/date"
+        },
+        "locator": {
+          "type": "string"
+        },
+        "qr": {
+          "$ref": "#/$defs/documentQr"
+        }
+      }
+    },
+    "planBStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "instruction"
+      ],
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "instruction": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "deadline": {
+          "type": "string"
+        },
+        "expectedOutcome": {
+          "type": "string"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/actionLink"
+          }
+        }
+      }
+    },
+    "planB": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "scenario",
+        "reassurance",
+        "steps"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "scenario": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "reassurance": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/planBStep"
+          }
+        },
+        "relatedDocumentIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    "emergencyContact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "phone"
+      ],
+      "properties": {
+        "label": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "phone": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "emergencyProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "countryCode",
+        "countryName",
+        "generalEmergency"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "countryCode": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "countryName": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "generalEmergency": {
+          "$ref": "#/$defs/emergencyContact"
+        },
+        "police": {
+          "$ref": "#/$defs/emergencyContact"
+        },
+        "ambulance": {
+          "$ref": "#/$defs/emergencyContact"
+        },
+        "insurance": {
+          "$ref": "#/$defs/emergencyContact"
+        },
+        "consular": {
+          "$ref": "#/$defs/emergencyContact"
+        },
+        "showToSomeone": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "localLanguageText",
+            "translation"
+          ],
+          "properties": {
+            "localLanguageText": {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            "translation": {
+              "$ref": "#/$defs/nonEmpty"
+            },
+            "audioAssetId": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        }
+      }
+    },
+    "usefulApp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "action"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "countryCodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          }
+        },
+        "dayIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "action": {
+          "$ref": "#/$defs/actionLink"
+        }
+      }
+    },
+    "weatherFallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "minC": {
+          "type": "number"
+        },
+        "maxC": {
+          "type": "number"
+        },
+        "rainNote": {
+          "type": "string"
+        },
+        "windNote": {
+          "type": "string"
+        }
+      }
+    },
+    "outfit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "wear": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "carry": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "special": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "timelineItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "startTime",
+        "kind",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "startTime": {
+          "$ref": "#/$defs/time"
+        },
+        "endTime": {
+          "$ref": "#/$defs/time"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "attraction",
+            "transport",
+            "accommodation",
+            "meal",
+            "free-time",
+            "walk",
+            "custom"
+          ]
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "refId": {
+          "$ref": "#/$defs/id"
+        },
+        "bookingStatus": {
+          "type": "string",
+          "enum": [
+            "reserved",
+            "paid",
+            "verify",
+            "buy",
+            "included"
+          ]
+        },
+        "criticalItemIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    "day": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "date",
+        "dayNumber",
+        "cityIds",
+        "timeline"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "date": {
+          "$ref": "#/$defs/date"
+        },
+        "dayNumber": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "title": {
+          "type": "string"
+        },
+        "cityIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "baseCityId": {
+          "$ref": "#/$defs/id"
+        },
+        "timeline": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/timelineItem"
+          }
+        },
+        "criticalItems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/criticalItem"
+          }
+        },
+        "documentIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "transportIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "accommodationIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "planBId": {
+          "$ref": "#/$defs/id"
+        },
+        "weatherFallback": {
+          "$ref": "#/$defs/weatherFallback"
+        },
+        "outfit": {
+          "$ref": "#/$defs/outfit"
+        },
+        "usefulAppIds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    }
+  }
+}

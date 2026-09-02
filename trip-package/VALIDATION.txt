@@ -1,0 +1,3 @@
+PASS: trip-package/starter/trip.json
+PASS: trip-package/sample/sample-trip.json
+PASS: app/src/main/assets/trip/trip.json

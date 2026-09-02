@@ -1,0 +1,28 @@
+{
+  "name": "travel-companion-android",
+  "generatedAt": "2026-09-01",
+  "purpose": "Git-ready Android starter repository for Claude Code",
+  "designStatus": "v1.0 locked",
+  "canonicalScreens": 19,
+  "tripSchemaVersion": "1.0",
+  "firebaseWired": false,
+  "android": {
+    "applicationId": "com.travelcompanion.app",
+    "minSdk": 26,
+    "compileSdk": 36,
+    "targetSdk": 36,
+    "agp": "8.13.2",
+    "gradle": "8.13",
+    "kotlin": "2.3.20",
+    "composeBom": "2026.06.00",
+    "media3": "1.10.1",
+    "playServicesLocation": "21.4.0"
+  },
+  "generationValidation": [
+    "PASS: trip-package/starter/trip.json",
+    "PASS: trip-package/sample/sample-trip.json",
+    "PASS: app/src/main/assets/trip/trip.json"
+  ],
+  "androidBuildRun": false,
+  "androidBuildNotRunReason": "Android SDK is not installed in the artifact-generation environment."
+}

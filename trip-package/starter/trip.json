@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "1.0",
+  "metadata": {
+    "contentStatus": "prototype",
+    "isMockContent": true,
+    "generatedAt": "2026-09-01T18:00:00Z",
+    "notes": "Minimal starter dataset used only to bootstrap the Android app."
+  },
+  "trip": {
+    "id": "balkans-2026",
+    "title": "Mochilão pelos Bálcãs",
+    "subtitle": "Starter local dataset",
+    "startDate": "2026-09-13",
+    "endDate": "2026-10-02",
+    "locale": "pt-BR",
+    "defaultCountryCode": "BA",
+    "participants": [
+      {
+        "id": "vinicius",
+        "name": "Vinícius"
+      },
+      {
+        "id": "erika",
+        "name": "Érika"
+      }
+    ],
+    "sync": {
+      "enabled": true,
+      "groupId": "balkans-2026"
+    }
+  },
+  "assets": [],
+  "cities": [
+    {
+      "id": "sarajevo",
+      "name": "Sarajevo",
+      "countryCode": "BA",
+      "countryName": "Bósnia e Herzegovina",
+      "intro": "Conteúdo inicial para validar carregamento e navegação."
+    }
+  ],
+  "attractions": [],
+  "walks": [],
+  "stories": [],
+  "audioGuides": [],
+  "accommodations": [],
+  "transports": [],
+  "documents": [],
+  "planBs": [],
+  "emergencyProfiles": [],
+  "usefulApps": [],
+  "days": [
+    {
+      "id": "day09",
+      "date": "2026-09-21",
+      "dayNumber": 9,
+      "title": "Sarajevo",
+      "cityIds": [
+        "sarajevo"
+      ],
+      "baseCityId": "sarajevo",
+      "timeline": [
+        {
+          "id": "day09.timeline.walk",
+          "startTime": "11:00",
+          "kind": "custom",
+          "title": "Explorar Sarajevo",
+          "detail": "Starter item — substituir pelo conteúdo real."
+        }
+      ],
+      "weatherFallback": {
+        "summary": "Planejamento climático local disponível offline."
+      },
+      "outfit": {
+        "wear": [
+          "Camiseta",
+          "Calça leve",
+          "Tênis confortável"
+        ],
+        "carry": [
+          "Corta-vento leve",
+          "Água",
+          "Powerbank"
+        ]
+      }
+    }
+  ]
+}

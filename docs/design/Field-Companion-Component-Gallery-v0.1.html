@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Travel Companion — Component Gallery v0.1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ink:#16232E;
+      --paper:#F5F1E8;
+      --surface:#FFFDF8;
+      --teal:#1F6F78;
+      --teal-dark:#185860;
+      --teal-soft:#E4F0F0;
+      --gold:#B8863B;
+      --gold-soft:#F3E8D0;
+      --gold-dark:#684817;
+      --oxblood:#7A2E2E;
+      --critical-soft:#FDECEC;
+      --moss:#4C6444;
+      --moss-soft:#E7EDE3;
+      --neutral-800:#33414B;
+      --neutral-700:#4B5962;
+      --neutral-600:#65717A;
+      --neutral-500:#7E898F;
+      --neutral-400:#A4ACA9;
+      --neutral-300:#C8CCC5;
+      --neutral-200:#DDDCD4;
+      --neutral-100:#ECE9E1;
+      --white:#FFFDF8;
+      --r-xs:6px;
+      --r-sm:10px;
+      --r-md:14px;
+      --r-lg:20px;
+      --r-xl:28px;
+      --shadow-1:0 8px 24px rgba(22,35,46,.07);
+      --shadow-2:0 14px 42px rgba(22,35,46,.12);
+      --gutter:20px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 20% 10%, rgba(184,134,59,.04), transparent 22%),
+        linear-gradient(var(--paper),var(--paper));
+      font-family:Roboto, Arial, sans-serif;
+    }
+    .shell{max-width:1440px;margin:0 auto;padding:32px 24px 80px}
+    .topbar{
+      position:sticky;top:0;z-index:20;
+      margin:-32px -24px 28px;
+      padding:18px 24px;
+      display:flex;align-items:center;justify-content:space-between;gap:16px;
+      background:rgba(245,241,232,.92);
+      border-bottom:1px solid var(--neutral-200);
+      backdrop-filter:blur(18px);
+    }
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand-mark{
+      width:42px;height:42px;border-radius:13px;
+      background:var(--ink);color:white;display:grid;place-items:center;
+      font-weight:700;letter-spacing:-.02em
+    }
+    .brand-title{font-family:Fraunces, Georgia, serif;font-size:24px;line-height:1}
+    .brand-sub{font-size:12px;color:var(--neutral-600);margin-top:3px}
+    .version{
+      font-size:12px;font-weight:700;padding:8px 10px;border-radius:999px;
+      background:var(--teal-soft);color:var(--teal-dark)
+    }
+
+    .hero{
+      display:grid;grid-template-columns:1.4fr .6fr;gap:24px;
+      align-items:stretch;margin-bottom:28px
+    }
+    .hero-copy,.hero-note{
+      border:1px solid var(--neutral-200);background:var(--surface);border-radius:var(--r-xl);
+      padding:28px;box-shadow:var(--shadow-1)
+    }
+    .eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--teal)}
+    h1,h2,h3,p{margin-top:0}
+    h1{font-family:Fraunces,Georgia,serif;font-size:48px;line-height:1.02;margin-bottom:16px;letter-spacing:-.03em}
+    h2{font-size:24px;margin-bottom:8px}
+    h3{font-size:18px;margin-bottom:6px}
+    .lead{font-size:18px;line-height:1.5;color:var(--neutral-700);max-width:820px}
+    .hero-note{background:var(--ink);color:white}
+    .hero-note p{color:#D6DFE5;line-height:1.55}
+    .hero-note strong{color:white}
+
+    .section{
+      background:rgba(255,253,248,.62);
+      border:1px solid var(--neutral-200);
+      border-radius:var(--r-xl);
+      padding:24px;margin-top:20px
+    }
+    .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px}
+    .section-head p{margin:0;color:var(--neutral-600);font-size:14px}
+    .gallery-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+    .span-12{grid-column:span 12}.span-8{grid-column:span 8}.span-7{grid-column:span 7}
+    .span-6{grid-column:span 6}.span-5{grid-column:span 5}.span-4{grid-column:span 4}.span-3{grid-column:span 3}
+
+    .specimen{
+      background:var(--surface);border:1px solid var(--neutral-200);
+      border-radius:var(--r-lg);padding:20px;min-height:100%;
+      box-shadow:0 1px 0 rgba(22,35,46,.02)
+    }
+    .specimen-label{
+      font-size:11px;font-weight:700;color:var(--neutral-500);
+      text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px
+    }
+
+    .colors{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+    .swatch{border:1px solid var(--neutral-200);border-radius:14px;overflow:hidden;background:white}
+    .swatch-color{height:86px}
+    .swatch-meta{padding:10px;font-size:12px}
+    .swatch-meta b{display:block;margin-bottom:3px}
+
+    .type-demo{border-top:1px solid var(--neutral-200);padding:14px 0}
+    .type-demo:first-of-type{border-top:0}
+    .display{font-family:Fraunces,Georgia,serif;font-size:40px;line-height:1.1;font-weight:600}
+    .h1{font-size:28px;line-height:34px;font-weight:700}
+    .body-lg{font-size:18px;line-height:27px}
+    .meta{font-size:12px;color:var(--neutral-500);margin-top:6px}
+
+    .row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+    button,.btn{
+      border:0;font:inherit;font-weight:500;cursor:pointer;min-height:52px;
+      padding:0 18px;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;gap:8px
+    }
+    .btn-primary{background:var(--teal);color:white}
+    .btn-secondary{background:var(--surface);color:var(--ink);border:1px solid var(--neutral-300)}
+    .btn-tonal{background:var(--teal-soft);color:var(--teal-dark)}
+    .btn-critical{background:var(--oxblood);color:white}
+    .btn-text{background:transparent;color:var(--teal);padding:0 8px;min-height:44px}
+
+    .chip{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:700}
+    .chip-success{background:var(--moss-soft);color:#3D5337}
+    .chip-warning{background:var(--gold-soft);color:var(--gold-dark)}
+    .chip-critical{background:var(--critical-soft);color:var(--oxblood)}
+    .chip-primary{background:var(--teal-soft);color:var(--teal-dark)}
+    .chip-neutral{background:var(--neutral-100);color:var(--neutral-700)}
+    .dot{width:8px;height:8px;border-radius:999px;background:currentColor}
+
+    .now-card{
+      padding:22px;border-radius:20px;background:var(--ink);color:white;position:relative;overflow:hidden
+    }
+    .now-card:after{
+      content:"";position:absolute;width:170px;height:170px;border-radius:999px;right:-60px;top:-80px;
+      background:rgba(31,111,120,.45)
+    }
+    .now-card .label{font-size:12px;color:#BFD1D8;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+    .now-time{font-size:34px;line-height:1;font-weight:700;margin:9px 0}
+    .now-title{font-size:24px;font-weight:700;margin-bottom:7px}
+    .now-card p{color:#DCE4E8;max-width:480px}
+    .now-actions{display:flex;flex-wrap:wrap;gap:8px;position:relative;z-index:2}
+    .now-actions .btn{min-height:44px}
+    .now-actions .btn-primary{background:white;color:var(--ink)}
+    .now-actions .btn-secondary{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:white}
+
+    .critical{
+      border-radius:14px;border:1px solid #E7C9C7;border-left:5px solid var(--oxblood);
+      background:var(--critical-soft);padding:18px
+    }
+    .critical-label{font-size:12px;font-weight:700;color:var(--oxblood);text-transform:uppercase;letter-spacing:.08em}
+    .critical-time{font-size:24px;font-weight:700;margin:7px 0 3px}
+    .critical p{color:#673B3A;margin-bottom:14px}
+
+    .timeline{padding:4px 0}
+    .tl-item{display:grid;grid-template-columns:58px 18px 1fr;gap:12px;min-height:86px}
+    .tl-time{font-weight:700;font-size:14px;padding-top:2px}
+    .tl-track{position:relative;display:flex;justify-content:center}
+    .tl-track:before{content:"";position:absolute;top:18px;bottom:-8px;width:2px;background:var(--neutral-200)}
+    .tl-item:last-child .tl-track:before{display:none}
+    .tl-dot{margin-top:4px;width:12px;height:12px;border-radius:999px;background:var(--neutral-400);z-index:1;border:3px solid var(--surface);box-sizing:content-box}
+    .tl-item.active .tl-dot{background:var(--teal)}
+    .tl-item.critical-item .tl-dot{background:var(--oxblood)}
+    .tl-title{font-weight:700;margin-bottom:4px}
+    .tl-copy{font-size:14px;color:var(--neutral-600);line-height:1.45}
+
+    .image-card{overflow:hidden;padding:0}
+    .image-placeholder{
+      min-height:190px;padding:20px;display:flex;align-items:flex-end;
+      background:
+        linear-gradient(to top,rgba(22,35,46,.7),rgba(22,35,46,.05)),
+        linear-gradient(135deg,#89A7A5,#D2C6A8 46%,#728B85);
+      color:white
+    }
+    .image-placeholder .small{font-size:12px;opacity:.8}
+    .image-placeholder h3{font-family:Fraunces,Georgia,serif;font-size:30px;margin:4px 0}
+    .image-body{padding:18px}
+    .image-body p{font-size:14px;color:var(--neutral-600);line-height:1.5}
+    .quick-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+    .transport{
+      border:1px solid var(--neutral-200);border-radius:14px;padding:18px;background:var(--surface)
+    }
+    .route{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin:16px 0}
+    .route .city:last-child{text-align:right}
+    .route .time{font-size:24px;font-weight:700}
+    .route .place{font-size:13px;color:var(--neutral-600)}
+    .route-line{display:flex;align-items:center;color:var(--neutral-500);font-size:20px}
+
+    .audio{
+      background:var(--teal-soft);border:1px solid #C8DEDE;border-radius:18px;padding:18px
+    }
+    .audio-head{display:flex;align-items:center;gap:12px}
+    .audio-play{width:46px;height:46px;border-radius:999px;background:var(--teal);color:white;display:grid;place-items:center;font-size:19px}
+    .audio-title{font-weight:700}
+    .audio-sub{font-size:12px;color:var(--neutral-600);margin-top:2px}
+    .progress{height:6px;border-radius:999px;background:#C3D9D9;margin:15px 0 8px;overflow:hidden}
+    .progress > span{display:block;height:100%;width:53%;background:var(--teal)}
+    .audio-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--neutral-600)}
+
+    .participants{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .participant{display:inline-flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--neutral-200);border-radius:999px;background:var(--surface);font-size:13px}
+    .avatar{width:25px;height:25px;border-radius:999px;background:var(--ink);color:white;display:grid;place-items:center;font-size:10px;font-weight:700}
+    .status-dot{width:8px;height:8px;border-radius:999px;background:var(--moss)}
+    .status-dot.warn{background:var(--gold)}
+    .status-dot.offline{background:var(--neutral-400)}
+
+    .walk{
+      border-radius:20px;background:var(--ink);color:white;padding:20px
+    }
+    .walk-top{display:flex;justify-content:space-between;gap:10px;color:#C6D3D8;font-size:12px}
+    .walk h3{font-family:Fraunces,Georgia,serif;font-size:28px;margin:16px 0 8px}
+    .walk p{color:#D5DEE2;line-height:1.5}
+    .walk-step{padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.07);margin-top:12px}
+    .walk-step strong{display:block;margin-bottom:4px}
+
+    .recorder{
+      text-align:center;padding:28px;border:1px solid var(--neutral-200);border-radius:20px;background:var(--surface)
+    }
+    .record-button{
+      width:82px;height:82px;border-radius:999px;background:var(--oxblood);display:grid;place-items:center;
+      color:white;margin:8px auto 18px;box-shadow:0 10px 30px rgba(122,46,46,.22)
+    }
+    .record-core{width:28px;height:28px;border-radius:999px;background:white}
+    .wave{height:44px;display:flex;align-items:center;justify-content:center;gap:4px;margin:14px 0}
+    .wave span{display:block;width:4px;border-radius:999px;background:var(--oxblood);opacity:.78}
+    .wave span:nth-child(1){height:10px}.wave span:nth-child(2){height:26px}.wave span:nth-child(3){height:38px}
+    .wave span:nth-child(4){height:20px}.wave span:nth-child(5){height:34px}.wave span:nth-child(6){height:15px}
+    .wave span:nth-child(7){height:29px}.wave span:nth-child(8){height:11px}
+
+    .doc-row{
+      display:flex;align-items:center;gap:14px;padding:14px;border:1px solid var(--neutral-200);border-radius:14px;background:var(--surface)
+    }
+    .doc-icon{width:42px;height:42px;border-radius:12px;background:var(--neutral-100);display:grid;place-items:center;font-size:20px}
+    .doc-info{flex:1;min-width:0}
+    .doc-title{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .doc-meta{font-size:12px;color:var(--neutral-600);margin-top:3px}
+    .doc-action{font-weight:700;color:var(--teal);font-size:13px}
+
+    .emergency{
+      background:var(--oxblood);color:white;border-radius:20px;padding:22px
+    }
+    .emergency .number{font-size:48px;line-height:1;font-weight:700;margin:10px 0}
+    .emergency p{color:#F4D9D7}
+    .emergency .btn{background:white;color:var(--oxblood)}
+
+    .planb{background:var(--gold-soft);border:1px solid #E4D2AD;border-radius:16px;padding:18px}
+    .planb .label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--gold-dark);font-weight:700}
+    .planb ol{padding-left:20px;margin-bottom:0;color:#5D4B2C}
+    .planb li{margin:8px 0;line-height:1.4}
+
+    .tokens-row{display:flex;gap:8px;flex-wrap:wrap}
+    .token-box{padding:10px 12px;border-radius:10px;background:var(--neutral-100);font-size:12px;font-family:ui-monospace,Consolas,monospace}
+
+    .footer{margin-top:32px;color:var(--neutral-600);font-size:13px;text-align:center}
+
+    @media(max-width:1000px){
+      .hero{grid-template-columns:1fr}
+      .colors{grid-template-columns:repeat(4,1fr)}
+      .span-8,.span-7,.span-6,.span-5,.span-4,.span-3{grid-column:span 12}
+    }
+    @media(max-width:640px){
+      .shell{padding:18px 14px 54px}
+      .topbar{margin:-18px -14px 20px;padding:14px}
+      .brand-sub{display:none}
+      h1{font-size:38px}
+      .hero-copy,.hero-note,.section{padding:18px}
+      .colors{grid-template-columns:repeat(2,1fr)}
+      .section-head{align-items:flex-start;flex-direction:column}
+      .gallery-grid{gap:12px}
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">TC</div>
+        <div>
+          <div class="brand-title">Travel Companion</div>
+          <div class="brand-sub">Component Gallery · Field Companion</div>
+        </div>
+      </div>
+      <div class="version">v0.1</div>
+    </div>
+
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">Component Gallery</div>
+        <h1>Field guide por fora.<br>Instrumento de viagem por dentro.</h1>
+        <p class="lead">
+          Esta galeria aplica o Design System v0.1 em componentes reais. O objetivo é validar hierarquia,
+          legibilidade, semântica e personalidade antes de desenhar telas completas.
+        </p>
+        <div class="tokens-row">
+          <div class="token-box">20dp gutter</div>
+          <div class="token-box">4dp grid</div>
+          <div class="token-box">48dp touch min.</div>
+          <div class="token-box">Fraunces + Roboto</div>
+        </div>
+      </div>
+      <div class="hero-note">
+        <div class="eyebrow" style="color:#8DC5C8">Regra de produto</div>
+        <h2>Calmo por padrão.<br>Alto quando necessário.</h2>
+        <p>
+          Conteúdo editorial pode respirar. Horário, transporte, voucher e risco precisam ser
+          <strong>impossíveis de confundir</strong>.
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><div class="eyebrow">Foundation</div><h2>Paleta</h2></div>
+        <p>Semântica consistente entre telas.</p>
+      </div>
+      <div class="colors">
+        <div class="swatch"><div class="swatch-color" style="background:#16232E"></div><div class="swatch-meta"><b>Ink</b>#16232E</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#F5F1E8"></div><div class="swatch-meta"><b>Paper</b>#F5F1E8</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#FFFDF8"></div><div class="swatch-meta"><b>Surface</b>#FFFDF8</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#1F6F78"></div><div class="swatch-meta"><b>Teal</b>#1F6F78</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#B8863B"></div><div class="swatch-meta"><b>Gold</b>#B8863B</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#7A2E2E"></div><div class="swatch-meta"><b>Oxblood</b>#7A2E2E</div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#4C6444"></div><div class="swatch-meta"><b>Moss</b>#4C6444</div></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><div class="eyebrow">Foundation</div><h2>Tipografia</h2></div>
+        <p>Editorial para descoberta. Roboto para operação.</p>
+      </div>
+      <div class="gallery-grid">
+        <div class="specimen span-6">
+          <div class="specimen-label">Fraunces · Display</div>
+          <div class="type-demo">
+            <div class="display">Sarajevo</div>
+            <div class="meta">Display Large · 40/44</div>
+          </div>
+          <div class="type-demo">
+            <div style="font-family:Fraunces,Georgia,serif;font-size:28px;font-weight:600">Stari Most</div>
+            <div class="meta">Display Small · 28/34</div>
+          </div>
+        </div>
+        <div class="specimen span-6">
+          <div class="specimen-label">Roboto · Interface</div>
+          <div class="type-demo"><div class="h1">Hoje em Ksamil</div><div class="meta">Heading 1 · 28/34</div></div>
+          <div class="type-demo"><div class="body-lg">A informação operacional precisa continuar fácil de ler sob sol forte e em movimento.</div><div class="meta">Body Large · 18/27</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><div class="eyebrow">Controls</div><h2>Botões e status</h2></div>
+        <p>Ação principal muda com o contexto.</p>
+      </div>
+      <div class="gallery-grid">
+        <div class="specimen span-7">
+          <div class="specimen-label">Buttons</div>
+          <div class="row">
+            <button class="btn-primary">Começar passeio</button>
+            <button class="btn-secondary">Abrir no Maps</button>
+            <button class="btn-tonal">🎧 Audioguia</button>
+            <button class="btn-critical">Ligar 112</button>
+            <button class="btn-text">Ver detalhes</button>
+          </div>
+        </div>
+        <div class="specimen span-5">
+          <div class="specimen-label">Status chips</div>
+          <div class="row">
+            <span class="chip chip-success"><span class="dot"></span>Confirmado</span>
+            <span class="chip chip-warning"><span class="dot"></span>Verificar</span>
+            <span class="chip chip-critical"><span class="dot"></span>Crítico</span>
+            <span class="chip chip-primary"><span class="dot"></span>Audioguia</span>
+            <span class="chip chip-neutral">Offline</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><div class="eyebrow">Today</div><h2>Agora + Critical Item</h2></div>
+        <p>Os dois componentes mais fortes da tela inicial.</p>
+      </div>
+      <div class="gallery-grid">
+        <div class="span-7">
+          <div class="now-card">
+            <div class="label">Agora · 08:30</div>
+            <div class="now-time">08:30</div>
+            <div class="now-title">Butrinto</div>
+            <p>Cidade arqueológica, Patrimônio Mundial. Reserve cerca de 2h30 para o percurso principal.</p>
+            <div class="now-actions">
+              <button class="btn btn-primary">Ver atração</button>
+              <button class="btn btn-secondary">Abrir no Maps</button>
+            </div>
+          </div>
+        </div>
+        <div class="span-5">
+          <div class="critical">
+            <div class="critical-label">Não pode dar errado</div>
+            <div class="critical-time">19:30</div>
+            <h3>Ônibus para Budva</h3>
+            <p>Esteja no ponto até 19:00. Leve o passaporte e deixe o bilhete aberto offline.</p>
+            <div class="row">
+              <button class="btn-primary">Mostrar passagem</button>
+              <button class="btn-secondary">Maps</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><div class="eyebrow">Today</div><h2>Timeline</h2></div>
+        <p>Escaneável, sem transformar cada item em um card.</p>
+      </div>
+      <div class="gallery-grid">
+        <div class="specimen span-6">
+          <div class="specimen-label">Day timeline</div>
+          <div class="timeline">
+            <div class="tl-item active">
+              <div class="tl-time">08:30</div><div class="tl-track"><span class="tl-dot"></span></div>
+              <div><div class="tl-title">Butrinto</div><div class="tl-copy">Atração · audioguia disponível</div></div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-time">13:00</div><div class="tl-track"><span class="tl-dot"></span></div>
+              <div><div class="tl-title">Retorno para Ksamil</div><div class="tl-copy">Ônibus local · pagar em dinheiro</div></div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-time">15:00</div><div class="tl-track"><span class="tl-dot"></span></div>
+              <div><div class="tl-title">Praia</div><div class="tl-copy">Tempo livre</div></div>
+            </div>
+            <div class="tl-item critical-item">
+              <div class="tl-time">19:30</div><div class="tl-track"><span class="tl-dot"></span></div>
+              <div><div class="tl-title">Ônibus para Budva</div><div class="tl-copy">Chegar ao ponto às 19:00</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="specimen span-6">
+          <div class="specimen-label">Clima + roupa</div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+            <div>
+              <div style="font-size:44px;font-weight:700;line-height:1">26°</div>
+              <div style="color:var(--neutral-600);margin-top:5px">Ensolarado · chuva 10%</div>
+            </div>
+            <span class="chip chip-primary">Atualizado há 24 min</span>
+          </div>
+          <div style="border-top:1px solid var(--neutral-200);margin-top:18px;padding-top:16px">
+            <h3>Vista hoje</h3>
+            <p style="color:var(--neutral-600);line-height:1.55">Camiseta, shorts, tênis confortável e protetor solar.</p>
+            <h3 style="margin-top:16px">Leve na mochila</h3>
+            <p style="color:var(--neutral-600);margin-bottom:0">Repelente · água · powerbank.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><div class="eyebrow">Explore</div><h2>Atração + transporte</h2></div>
+        <p>Editorial e operacional coexistem sem parecer o mesmo componente.</p>
+      </div>
+      <div class="gallery-grid">
+        <div class="specimen image-card span-6">
+          <div class="image-placeholder">
+            <div><div class="small">MOSTAR · BÓSNIA E HERZEGOVINA</div><h3>Stari Most</h3><div>Patrimônio Mundial · ~1h30</div></div>
+          </div>
+          <div class="image-body">
+            <p>A ponte otomana é o símbolo mais conhecido de Mostar e um dos pontos onde a história recente da cidade fica mais visível.</p>
+            <div class="quick-actions">
+              <button class="btn-tonal">🎧 Ouvir audioguia</button>
+              <button class="btn-secondary">Abrir no Maps</button>
+            </div>
+          </div>
+        </div>
+        <div class="specimen span-6">
+          <div class="specimen-label">Transport card</div>
+          <div class="transport">
+            <div class="row" style="justify-content:space-between">
+              <span class="chip chip-success">Reservado</span>
+              <span style="font-size:12px;color:var(--neutral-600)">Drita Travel</span>
+            </div>
+            <div class="route">
+              <div class="city"><div class="time">19:30</div><div class="place">Ksamil</div></div>
+              <div class="route-line">→</div>
+              <div class="city"><div class="time">11:07</div><div class="place">Budva · +1 dia</div></div>
+            </div>
+            <div style="font-size:13px;color:var(--neutral-600);margin-bottom:14px">Ônibus internacional · passaporte obrigatório</div>
+            <div class="row">
+              <button class="btn-primary">Mostrar passagem</button>
+              <button class="btn-secondary">Ver embarque</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><div class="eyebrow">Audio</div><h2>Player + participantes</h2></div>
+        <p>Áudio local; estado compartilhado.</p>
+      </div>
+      <div class="gallery-grid">
+        <div class="specimen span-7">
+          <div class="specimen-label">Compact / shared player</div>
+          <div class="audio">
+            <div class="audio-head">
+              <div class="audio-play">▶</div>
+              <div>
+                <div class="audio-title">Latin Bridge</div>
+                <div class="audio-sub">Sarajevo Historical Walk · capítulo 5</div>
+              </div>
+            </div>
+            <div class="progress"><span></span></div>
+            <div class="audio-meta"><span>04:32</span><span>08:41</span></div>
+            <div class="participants">
+              <div class="participant"><div class="avatar">V</div><span class="status-dot"></span>Vinícius · sincronizado</div>
+              <div class="participant"><div class="avatar">É</div><span class="status-dot"></span>Érika · sincronizada</div>
+            </div>
+          </div>
+        </div>
+        <div class="specimen span-5">
+          <div class="specimen-label">Participant states</div>
+          <div style="display:grid;gap:10px">
+            <div class="participant"><div class="avatar">V</div><span class="status-dot"></span>Sincronizado</div>
+            <div class="participant"><div class="avatar">É</div><span class="status-dot warn"></span>Sincronizando novamente</div>
+            <div class="participant"><div class="avatar">A</div><span class="status-dot offline"></span>Offline</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><div class="eyebrow">Walk Mode</div><h2>Passeio ativo</h2></div>
+        <p>Projetado para funcionar com o celular no bolso.</p>
+      </div>
+      <div class="gallery-grid">
+        <div class="span-7">
+          <div class="walk">
+            <div class="walk-top"><span>3 de 7 histórias</span><span>~28 min restantes</span></div>
+            <h3>Sarajevo Historical Walk</h3>
+            <p>Continuem pela Ferhadija. Em alguns minutos vocês vão perceber uma mudança muito clara na arquitetura.</p>
+            <div class="walk-step">
+              <strong>Próxima história</strong>
+              Sarajevo Meeting of Cultures · ~180 m
+            </div>
+            <div class="participants">
+              <div class="participant" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);color:white"><span class="status-dot"></span>Vinícius</div>
+              <div class="participant" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);color:white"><span class="status-dot"></span>Érika</div>
+            </div>
+          </div>
+        </div>
+        <div class="specimen span-5">
+          <div class="specimen-label">Story trigger</div>
+          <span class="chip chip-primary">História pelo caminho</span>
+          <h3 style="margin-top:14px">Onde Oriente e Ocidente se encontram</h3>
+          <p style="color:var(--neutral-600);line-height:1.5">Vocês estão chegando a um ponto onde a arquitetura otomana encontra a austro-húngara.</p>
+          <div class="row">
+            <button class="btn-tonal">▶ Ouvir</button>
+            <button class="btn-secondary">Ler</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><div class="eyebrow">Memory</div><h2>Gravador de voz</h2></div>
+        <p>Sem título obrigatório, sem formulário.</p>
+      </div>
+      <div class="gallery-grid">
+        <div class="specimen span-5">
+          <div class="specimen-label">Idle</div>
+          <div class="recorder">
+            <div class="record-button"><div class="record-core"></div></div>
+            <h3>Registrar memória</h3>
+            <p style="color:var(--neutral-600);margin-bottom:0">Toque e conte como foi este momento.</p>
+          </div>
+        </div>
+        <div class="specimen span-7">
+          <div class="specimen-label">Recording</div>
+          <div class="recorder">
+            <span class="chip chip-critical">Gravando</span>
+            <div style="font-size:38px;font-weight:700;margin:16px 0 0">02:41</div>
+            <div class="wave"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+            <div style="font-size:13px;color:var(--neutral-600);margin-bottom:18px">Žabljak · Bobotov Kuk · Vinícius</div>
+            <div class="row" style="justify-content:center">
+              <button class="btn-secondary">Pausar</button>
+              <button class="btn-primary">Concluir</button>
+              <button class="btn-text" style="color:var(--oxblood)">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><div class="eyebrow">Wallet</div><h2>Documento + QR</h2></div>
+        <p>Acesso rápido supera decoração.</p>
+      </div>
+      <div class="gallery-grid">
+        <div class="specimen span-7">
+          <div class="specimen-label">Document row</div>
+          <div style="display:grid;gap:10px">
+            <div class="doc-row">
+              <div class="doc-icon">🎫</div>
+              <div class="doc-info"><div class="doc-title">Ônibus Ksamil → Budva</div><div class="doc-meta">16 set · disponível offline</div></div>
+              <div class="doc-action">Abrir</div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-icon">🏨</div>
+              <div class="doc-info"><div class="doc-title">Vila Emiljano — voucher</div><div class="doc-meta">15–16 set · hospedagem</div></div>
+              <div class="doc-action">Abrir</div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-icon">🛡️</div>
+              <div class="doc-info"><div class="doc-title">Seguro viagem</div><div class="doc-meta">Toda a viagem · PDF</div></div>
+              <div class="doc-action">Abrir</div>
+            </div>
+          </div>
+        </div>
+        <div class="specimen span-5">
+          <div class="specimen-label">QR mode concept</div>
+          <div style="border:1px solid var(--neutral-200);border-radius:18px;padding:18px;text-align:center;background:white">
+            <div style="font-size:12px;font-weight:700;margin-bottom:14px">CARTÃO DE EMBARQUE</div>
+            <div style="width:150px;height:150px;margin:0 auto;background:
+              linear-gradient(90deg,#111 12%,transparent 12% 24%,#111 24% 36%,transparent 36% 48%,#111 48% 60%,transparent 60% 72%,#111 72% 84%,transparent 84%),
+              linear-gradient(#111 12%,transparent 12% 24%,#111 24% 36%,transparent 36% 48%,#111 48% 60%,transparent 60% 72%,#111 72% 84%,transparent 84%);
+              background-size:24px 24px"></div>
+            <div style="font-size:12px;color:var(--neutral-600);margin-top:14px">Brilho máximo · tela sempre ativa</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><div class="eyebrow">Recovery</div><h2>Emergência + Plano B</h2></div>
+        <p>Urgência e contingência não são a mesma coisa.</p>
+      </div>
+      <div class="gallery-grid">
+        <div class="span-5">
+          <div class="emergency">
+            <div class="eyebrow" style="color:#F0BAB6">Emergência · Montenegro</div>
+            <div class="number">112</div>
+            <h3>Emergência geral</h3>
+            <p>Use apenas quando houver necessidade imediata de polícia, ambulância ou bombeiros.</p>
+            <button class="btn">Ligar 112</button>
+          </div>
+        </div>
+        <div class="span-7">
+          <div class="planb">
+            <div class="label">Plano B</div>
+            <h3 style="margin-top:8px">Se perdermos o ônibus para Budva</h3>
+            <ol>
+              <li>Vá até o ponto/rodoviária e confirme a próxima saída.</li>
+              <li>Verifique conexão por Sarandë ou Shkodër.</li>
+              <li>Se não houver opção segura, use a hospedagem emergencial cadastrada.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      Travel Companion · Component Gallery v0.1 · Baseada no Design System “Field Companion”
+    </div>
+  </div>
+</body>
+</html>

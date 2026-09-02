@@ -1,0 +1,600 @@
+{
+  "schemaVersion": "1.0",
+  "metadata": {
+    "contentStatus": "prototype",
+    "isMockContent": true,
+    "generatedAt": "2026-09-01T18:00:00Z",
+    "notes": "Representative Day 9 content based on the approved prototype. The attraction already described in this package is also placed on the day timeline so the approved 02 Hoje -> 05 Atracao flow is reachable. Operational details are mock/prototype content unless replaced by verified trip data."
+  },
+  "trip": {
+    "id": "balkans-2026",
+    "title": "Mochilão pelos Bálcãs",
+    "subtitle": "21 dias · 7 países · setembro de 2026",
+    "startDate": "2026-09-13",
+    "endDate": "2026-10-02",
+    "locale": "pt-BR",
+    "defaultCountryCode": "BA",
+    "coverAssetId": "img.trip.cover",
+    "participants": [
+      {
+        "id": "vinicius",
+        "name": "Vinícius",
+        "subtitle": "Reservas e transportes no nome dele"
+      },
+      {
+        "id": "erika",
+        "name": "Érika",
+        "subtitle": "Seguro e documentos no nome dela"
+      }
+    ],
+    "sync": {
+      "enabled": true,
+      "groupId": "balkans-2026"
+    }
+  },
+  "assets": [
+    {
+      "id": "img.trip.cover",
+      "type": "image",
+      "path": "images/trip/cover.jpg",
+      "mimeType": "image/jpeg",
+      "description": "Trip cover"
+    },
+    {
+      "id": "img.sarajevo.hero",
+      "type": "image",
+      "path": "images/cities/sarajevo.jpg",
+      "mimeType": "image/jpeg"
+    },
+    {
+      "id": "img.latin-bridge.hero",
+      "type": "image",
+      "path": "images/attractions/latin-bridge.jpg",
+      "mimeType": "image/jpeg"
+    },
+    {
+      "id": "audio.sarajevo.city",
+      "type": "audio",
+      "path": "audio/cities/sarajevo-overview.mp3",
+      "mimeType": "audio/mpeg"
+    },
+    {
+      "id": "audio.latin-bridge",
+      "type": "audio",
+      "path": "audio/stories/latin-bridge.mp3",
+      "mimeType": "audio/mpeg"
+    },
+    {
+      "id": "doc.bus.sarajevo-mostar",
+      "type": "document",
+      "path": "documents/tickets/sarajevo-mostar.pdf",
+      "mimeType": "application/pdf"
+    },
+    {
+      "id": "doc.hotel.sarajevo",
+      "type": "document",
+      "path": "documents/accommodations/sarajevo-voucher.pdf",
+      "mimeType": "application/pdf"
+    }
+  ],
+  "cities": [
+    {
+      "id": "sarajevo",
+      "name": "Sarajevo",
+      "countryCode": "BA",
+      "countryName": "Bósnia e Herzegovina",
+      "heroAssetId": "img.sarajevo.hero",
+      "intro": "Quatro religiões dividem poucas quadras e diferentes períodos históricos aparecem lado a lado enquanto se atravessa o centro a pé.",
+      "historySections": [
+        {
+          "title": "Período otomano",
+          "body": "Contexto editorial de exemplo para o protótipo."
+        },
+        {
+          "title": "Século XX",
+          "body": "Contexto editorial de exemplo para o protótipo."
+        }
+      ],
+      "audioGuideId": "ag.sarajevo.city",
+      "attractionIds": [
+        "latin-bridge"
+      ],
+      "walkIds": [
+        "walk.sarajevo.historical"
+      ],
+      "storyIds": [
+        "story.meeting-of-cultures",
+        "story.latin-bridge"
+      ],
+      "restaurants": [
+        {
+          "id": "rest.sample.sarajevo",
+          "name": "Restaurante local — exemplo",
+          "description": "Placeholder de conteúdo; substituir por recomendação verificada.",
+          "distanceWalkMinutes": 8,
+          "practicalNote": "Exemplo de nota prática.",
+          "actions": [
+            {
+              "label": "Abrir no Maps",
+              "kind": "maps",
+              "uri": "geo:0,0?q=Sarajevo",
+              "requiresInternet": false
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "attractions": [
+    {
+      "id": "latin-bridge",
+      "cityId": "sarajevo",
+      "name": "Latin Bridge",
+      "subtitle": "Ponto histórico no centro de Sarajevo",
+      "heroAssetId": "img.latin-bridge.hero",
+      "summary": "Uma parada importante para compreender acontecimentos que marcaram o início do século XX.",
+      "historySections": [
+        {
+          "title": "Contexto",
+          "body": "Texto editorial de exemplo. Conteúdo histórico definitivo deve ser pesquisado e validado antes da build de produção."
+        }
+      ],
+      "interestingFacts": [
+        "Conteúdo de exemplo para validar o layout."
+      ],
+      "whatToObserve": [
+        "Observe a ponte e a relação dela com as ruas ao redor.",
+        "Repare na escala do local em relação à importância histórica."
+      ],
+      "location": {
+        "name": "Latin Bridge",
+        "geo": {
+          "latitude": 43.8578,
+          "longitude": 18.4289
+        },
+        "mapsQuery": "Latin Bridge Sarajevo"
+      },
+      "practical": {
+        "recommendedDurationMinutes": 30
+      },
+      "audioGuideId": "ag.latin-bridge",
+      "planBId": "planb.day09",
+      "actions": [
+        {
+          "label": "Abrir no Maps",
+          "kind": "maps",
+          "uri": "geo:43.8578,18.4289?q=Latin+Bridge",
+          "requiresInternet": false
+        }
+      ]
+    }
+  ],
+  "walks": [
+    {
+      "id": "walk.sarajevo.historical",
+      "cityId": "sarajevo",
+      "title": "Caminhada Histórica de Sarajevo",
+      "subtitle": "Baščaršija → centro histórico",
+      "distanceMeters": 1800,
+      "durationMinutes": 45,
+      "routeLabel": "Baščaršija → Meeting of Cultures → Latin Bridge",
+      "startLocation": {
+        "name": "Baščaršija",
+        "mapsQuery": "Baščaršija Sarajevo"
+      },
+      "stops": [
+        {
+          "storyId": "story.meeting-of-cultures",
+          "order": 1,
+          "instructionToNext": "Continue pela Ferhadija em direção ao centro."
+        },
+        {
+          "storyId": "story.latin-bridge",
+          "order": 2,
+          "instructionToNext": "Siga em direção à Latin Bridge."
+        }
+      ],
+      "automaticStoriesDefault": true,
+      "sharedAudioSupported": true
+    }
+  ],
+  "stories": [
+    {
+      "id": "story.meeting-of-cultures",
+      "cityId": "sarajevo",
+      "walkId": "walk.sarajevo.historical",
+      "title": "Onde Oriente e Ocidente se encontram",
+      "hook": "A arquitetura muda de forma perceptível em poucos metros.",
+      "body": "Narrativa de exemplo para a história disparada por localização.",
+      "readDurationMinutes": 2,
+      "trigger": {
+        "geo": {
+          "latitude": 43.859,
+          "longitude": 18.4257
+        },
+        "radiusMeters": 120,
+        "notifyOncePerTrip": true,
+        "autoPlayInWalk": true
+      },
+      "priority": "normal"
+    },
+    {
+      "id": "story.latin-bridge",
+      "cityId": "sarajevo",
+      "walkId": "walk.sarajevo.historical",
+      "title": "Latin Bridge",
+      "hook": "Uma ponte pequena com uma história desproporcional ao seu tamanho.",
+      "body": "Narrativa de exemplo.",
+      "readDurationMinutes": 3,
+      "audioGuideId": "ag.latin-bridge",
+      "trigger": {
+        "geo": {
+          "latitude": 43.8578,
+          "longitude": 18.4289
+        },
+        "radiusMeters": 100,
+        "notifyOncePerTrip": true,
+        "autoPlayInWalk": true
+      },
+      "priority": "high"
+    }
+  ],
+  "audioGuides": [
+    {
+      "id": "ag.sarajevo.city",
+      "title": "Audioguia de Sarajevo",
+      "audioAssetId": "audio.sarajevo.city",
+      "durationSeconds": 2040,
+      "chapters": [
+        {
+          "title": "Introdução",
+          "startSeconds": 0
+        },
+        {
+          "title": "Período otomano",
+          "startSeconds": 360
+        },
+        {
+          "title": "Século XX",
+          "startSeconds": 980
+        }
+      ]
+    },
+    {
+      "id": "ag.latin-bridge",
+      "title": "Latin Bridge",
+      "audioAssetId": "audio.latin-bridge",
+      "durationSeconds": 521,
+      "chapters": [
+        {
+          "title": "A ponte",
+          "startSeconds": 0
+        },
+        {
+          "title": "O acontecimento",
+          "startSeconds": 170
+        },
+        {
+          "title": "O local hoje",
+          "startSeconds": 390
+        }
+      ]
+    }
+  ],
+  "accommodations": [
+    {
+      "id": "stay.sarajevo",
+      "name": "Hospedagem em Sarajevo — exemplo",
+      "cityId": "sarajevo",
+      "location": {
+        "name": "Hospedagem em Sarajevo",
+        "mapsQuery": "Sarajevo Bosnia and Herzegovina"
+      },
+      "checkIn": {
+        "from": "14:00",
+        "until": "23:00"
+      },
+      "checkOut": {
+        "until": "10:00"
+      },
+      "bookingStatus": "paid",
+      "documentIds": [
+        "voucher.sarajevo"
+      ],
+      "contactName": "Anfitrião",
+      "contactPhone": "+387000000000",
+      "instructions": "Conteúdo de exemplo. Substituir pelas instruções reais.",
+      "criticalItems": [
+        {
+          "id": "critical.stay.sarajevo.reception",
+          "title": "Recepção fecha às 23:00",
+          "actionByTime": "22:45",
+          "instruction": "Se houver atraso, ligue para o anfitrião antes de 22:45."
+        }
+      ],
+      "planBId": "planb.day09",
+      "actions": [
+        {
+          "label": "Abrir no Maps",
+          "kind": "maps",
+          "uri": "geo:0,0?q=Sarajevo",
+          "requiresInternet": false
+        },
+        {
+          "label": "Ligar para o anfitrião",
+          "kind": "phone",
+          "uri": "tel:+387000000000",
+          "requiresInternet": false
+        }
+      ]
+    }
+  ],
+  "transports": [
+    {
+      "id": "transport.sarajevo-mostar.bus",
+      "type": "bus",
+      "operator": "Operadora — exemplo",
+      "origin": {
+        "name": "Sarajevo · Autobuska stanica",
+        "dateTime": "2026-09-21T19:30",
+        "platform": "A confirmar",
+        "location": {
+          "name": "Sarajevo Bus Station",
+          "mapsQuery": "Sarajevo Bus Station"
+        }
+      },
+      "destination": {
+        "name": "Mostar · Bus Station",
+        "dateTime": "2026-09-21T22:00",
+        "location": {
+          "name": "Mostar Bus Station",
+          "mapsQuery": "Mostar Bus Station"
+        }
+      },
+      "bookingStatus": "reserved",
+      "bookingReference": "MOCK-ABC123",
+      "documentIds": [
+        "ticket.sarajevo-mostar"
+      ],
+      "criticalItems": [
+        {
+          "id": "critical.bus.sarajevo-mostar",
+          "title": "Ônibus para Mostar",
+          "nominalTime": "19:30",
+          "actionByTime": "19:00",
+          "instruction": "Esteja na estação até 19:00.",
+          "reason": "Evitar risco de perder o embarque.",
+          "actionLinks": [
+            {
+              "label": "Mostrar passagem",
+              "kind": "document",
+              "uri": "document:ticket.sarajevo-mostar",
+              "requiresInternet": false
+            },
+            {
+              "label": "Ver ponto de embarque",
+              "kind": "maps",
+              "uri": "geo:0,0?q=Sarajevo+Bus+Station",
+              "requiresInternet": false
+            }
+          ]
+        }
+      ],
+      "planBId": "planb.day09"
+    }
+  ],
+  "documents": [
+    {
+      "id": "ticket.sarajevo-mostar",
+      "type": "ticket",
+      "title": "Passagem Sarajevo → Mostar",
+      "subtitle": "Ônibus · 2 pessoas",
+      "assetId": "doc.bus.sarajevo-mostar",
+      "availableOffline": true,
+      "participantIds": [
+        "vinicius",
+        "erika"
+      ],
+      "validFrom": "2026-09-21",
+      "validUntil": "2026-09-21",
+      "locator": "MOCK-ABC123",
+      "qr": {
+        "mode": "generated-from-text",
+        "text": "MOCK-ABC123"
+      }
+    },
+    {
+      "id": "voucher.sarajevo",
+      "type": "accommodation",
+      "title": "Hospedagem Sarajevo — voucher",
+      "assetId": "doc.hotel.sarajevo",
+      "availableOffline": true,
+      "participantIds": [
+        "vinicius",
+        "erika"
+      ],
+      "validFrom": "2026-09-21",
+      "validUntil": "2026-09-22",
+      "qr": {
+        "mode": "none"
+      }
+    }
+  ],
+  "planBs": [
+    {
+      "id": "planb.day09",
+      "scenario": "Se perderem o transporte principal do fim do dia",
+      "reassurance": "O plano é priorizar uma alternativa segura sem comprometer o restante da viagem.",
+      "steps": [
+        {
+          "title": "Confirmar a próxima saída",
+          "instruction": "Vá ao balcão/estação e confirme a próxima opção disponível.",
+          "expectedOutcome": "Entender se ainda é possível seguir no mesmo dia."
+        },
+        {
+          "title": "Avisar a hospedagem",
+          "instruction": "Informe o novo horário de chegada.",
+          "actions": [
+            {
+              "label": "Ligar para a hospedagem",
+              "kind": "phone",
+              "uri": "tel:+387000000000",
+              "requiresInternet": false
+            }
+          ]
+        },
+        {
+          "title": "Dormir em Sarajevo se necessário",
+          "instruction": "Se não houver transporte seguro, fique mais uma noite e retome pela manhã."
+        }
+      ],
+      "relatedDocumentIds": [
+        "ticket.sarajevo-mostar"
+      ]
+    }
+  ],
+  "emergencyProfiles": [
+    {
+      "id": "emergency.ba",
+      "countryCode": "BA",
+      "countryName": "Bósnia e Herzegovina",
+      "generalEmergency": {
+        "label": "Emergência geral",
+        "phone": "112"
+      },
+      "police": {
+        "label": "Polícia",
+        "phone": "122"
+      },
+      "ambulance": {
+        "label": "Ambulância",
+        "phone": "124"
+      },
+      "insurance": {
+        "label": "Seguro viagem",
+        "phone": "+000000000",
+        "note": "Substituir pelo contato real"
+      },
+      "consular": {
+        "label": "Representação brasileira",
+        "phone": "+000000000",
+        "note": "Substituir por informação verificada"
+      },
+      "showToSomeone": {
+        "localLanguageText": "Trebam pomoć. Molim vas, pozovite hitnu službu.",
+        "translation": "Preciso de ajuda. Por favor, chame o serviço de emergência."
+      }
+    }
+  ],
+  "usefulApps": [
+    {
+      "id": "app.google-maps",
+      "name": "Google Maps",
+      "countryCodes": [
+        "BA"
+      ],
+      "dayIds": [
+        "day09"
+      ],
+      "action": {
+        "label": "Abrir o Google Maps",
+        "kind": "maps",
+        "uri": "geo:0,0?q=Sarajevo",
+        "requiresInternet": false
+      }
+    }
+  ],
+  "days": [
+    {
+      "id": "day09",
+      "date": "2026-09-21",
+      "dayNumber": 9,
+      "title": "Sarajevo",
+      "cityIds": [
+        "sarajevo"
+      ],
+      "baseCityId": "sarajevo",
+      "timeline": [
+        {
+          "id": "day09.timeline.latin-bridge",
+          "startTime": "09:40",
+          "endTime": "10:40",
+          "kind": "attraction",
+          "title": "Latin Bridge",
+          "detail": "Ponto histórico no centro · audioguia 9 min",
+          "refId": "latin-bridge"
+        },
+        {
+          "id": "day09.timeline.walk",
+          "startTime": "11:00",
+          "endTime": "12:00",
+          "kind": "walk",
+          "title": "Caminhada Histórica de Sarajevo",
+          "detail": "Audioguia e histórias pelo caminho",
+          "refId": "walk.sarajevo.historical"
+        },
+        {
+          "id": "day09.timeline.bus",
+          "startTime": "19:30",
+          "kind": "transport",
+          "title": "Ônibus para Mostar",
+          "detail": "Estar na estação às 19:00",
+          "refId": "transport.sarajevo-mostar.bus",
+          "bookingStatus": "reserved",
+          "criticalItemIds": [
+            "critical.bus.sarajevo-mostar"
+          ]
+        }
+      ],
+      "criticalItems": [
+        {
+          "id": "critical.bus.sarajevo-mostar",
+          "title": "Ônibus para Mostar",
+          "nominalTime": "19:30",
+          "actionByTime": "19:00",
+          "instruction": "Esteja na estação até 19:00.",
+          "actionLinks": [
+            {
+              "label": "Mostrar passagem",
+              "kind": "document",
+              "uri": "document:ticket.sarajevo-mostar",
+              "requiresInternet": false
+            }
+          ]
+        }
+      ],
+      "documentIds": [
+        "ticket.sarajevo-mostar",
+        "voucher.sarajevo"
+      ],
+      "transportIds": [
+        "transport.sarajevo-mostar.bus"
+      ],
+      "accommodationIds": [
+        "stay.sarajevo"
+      ],
+      "planBId": "planb.day09",
+      "weatherFallback": {
+        "summary": "Clima esperado ameno; confirmar previsão ao vivo quando disponível.",
+        "minC": 13,
+        "maxC": 24,
+        "rainNote": "Levar uma camada leve caso haja mudança."
+      },
+      "outfit": {
+        "wear": [
+          "Camiseta",
+          "Calça leve",
+          "Tênis confortável"
+        ],
+        "carry": [
+          "Corta-vento leve",
+          "Água",
+          "Powerbank"
+        ]
+      },
+      "usefulAppIds": [
+        "app.google-maps"
+      ]
+    }
+  ]
+}
