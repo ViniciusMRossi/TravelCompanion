@@ -58,7 +58,9 @@ AI writes to:
 
 `trip-package/generated/`
 
-A human reviews it.
+That directory is not versioned — only its `.gitkeep` is (D028) — because the generated `trip.json` carries booking locators, QR payloads and document references derived from `source/private/`.
+
+A human reviews it, on the local files.
 
 Only explicitly approved content is promoted to:
 

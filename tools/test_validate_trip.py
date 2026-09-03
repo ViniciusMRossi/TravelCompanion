@@ -51,6 +51,20 @@ class TimezoneProblemsTest(unittest.TestCase):
             f"expected the misspelled zone to be flagged, got: {problems}",
         )
 
+    def test_fixed_offset_zones_are_rejected(self):
+        # These resolve in the tz database, so the "unknown name" check lets
+        # them through, but they carry no DST rule — the very thing schema 1.1
+        # exists to prevent (CONTENT-GENERATOR.md §8).
+        for zone in ("Etc/GMT+2", "UTC", "Etc/UTC", "GMT", "Zulu"):
+            with self.subTest(zone=zone):
+                self.assertIn(zone, self.timezones, "fixture assumes a real tz name")
+                trip = _trip(zone, "Europe/Sarajevo")
+                problems = timezone_problems(trip, self.timezones)
+                self.assertTrue(
+                    any("fixed UTC offset" in p for p in problems),
+                    f"expected {zone} to be rejected as a fixed offset, got: {problems}",
+                )
+
     def test_override_equal_to_day_zone_is_not_flagged(self):
         # Redundant, but valid per schema/package: the override just repeats
         # the zone it already inherits from. Not a validator error (D026).

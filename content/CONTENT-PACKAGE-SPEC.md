@@ -85,6 +85,8 @@ This is AI output.
 
 It is a review workspace, not production.
 
+It is not versioned. Only `generated/.gitkeep` is committed (D028): the generated `trip.json` carries booking locators, QR payloads and document references derived from `source/private/`, and `research/` carries the material behind them. Human review happens on these local files.
+
 ## `trip.json`
 
 Candidate runtime JSON.

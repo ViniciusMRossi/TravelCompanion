@@ -204,8 +204,14 @@ is `production`. Every declared time zone against the tz database (D026) is
 checked separately and always fails, prototype/draft included — a wrong zone
 is a real defect regardless of how finished the package is. A missing tz
 database is not a warning either: the validator stops (exit 2).
-`tools/content_preflight.py` resolves the same check through
-`validate_trip.known_timezones()` so the two scripts cannot disagree.
+Zone names that resolve but carry no DST rule — anything under `Etc/`, plus
+`UTC`, `GMT`, `Zulu` and the other fixed-offset aliases — are rejected too:
+they are in the tz database, so the "unknown name" check let them through,
+and they are exactly what naming the zone was meant to avoid.
+`tools/content_preflight.py` runs the schema validation and the zone check
+through `validate_trip.py` itself (`schema_errors`, `timezone_problem`), so it
+cannot pass a package that `validate_trip.py` would reject, and a package
+declaring no zone at all is an error rather than a quiet pass.
 
 Currently reported for the packaged trip: the two ticket/voucher PDFs are
 declared offline but their files are not packaged yet. The UI reflects this —
@@ -219,6 +225,13 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug lintDebug`
 
-Unit tests: 76 passing. Lint: 0 errors, 25 warnings (dependency-hygiene
-notices; no lint baseline is used). Instrumented/device tests: not run — no
+Unit tests: 76 passing. Lint: 0 errors, and no lint baseline is used. The
+warnings are dependency-hygiene notices only (`GradleDependency`,
+`UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
+with what has been published upstream since the last run, so no number is
+promised here. Instrumented/device tests: not run — no
 emulator or device is available in this environment.
+
+`git diff --check` reports trailing whitespace inside `content/templates/`.
+Those are Markdown hard line breaks on the fill-in label lines, where dropping
+them would run the labels together into one paragraph; they are deliberate.

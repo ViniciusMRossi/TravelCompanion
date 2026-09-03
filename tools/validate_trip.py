@@ -43,6 +43,32 @@ def known_timezones() -> set[str]:
         return set()
 
 
+# In the tz database but not regions: every name under `Etc/` and these
+# top-level aliases is a fixed offset with no DST rule, which is the mistake
+# schema 1.1 exists to prevent (CONTENT-GENERATOR.md §8). `Etc/GMT+2` also
+# has its sign inverted from what most people expect.
+FIXED_OFFSET_ZONE_NAMES = frozenset(
+    {"UTC", "UCT", "GMT", "GMT0", "GMT+0", "GMT-0", "Greenwich", "Universal", "Zulu"}
+)
+
+
+def timezone_problem(value: str, timezones: set[str]) -> str | None:
+    """Why this zone name cannot carry a wall-clock time, or None if it can.
+
+    Shared with `content_preflight.py` so the two scripts cannot drift into
+    disagreeing about what a usable zone is.
+    """
+    if value not in timezones:
+        return f"'{value}' is not an IANA time zone name"
+    if value.startswith("Etc/") or value in FIXED_OFFSET_ZONE_NAMES:
+        return (
+            f"'{value}' is a fixed UTC offset, not a region. Schema 1.1 needs the "
+            "region whose clock the time is written in, so daylight saving is "
+            "applied (for example Europe/Sarajevo)"
+        )
+    return None
+
+
 def _iso(value):
     try:
         return date.fromisoformat(value)
@@ -61,8 +87,11 @@ def timezone_problems(trip: dict, timezones: set[str]) -> list[str]:
     problems: list[str] = []
 
     def tz(value, where):
-        if value is not None and value not in timezones:
-            problems.append(f"{where}: '{value}' is not an IANA time zone name")
+        if value is None:
+            return
+        problem = timezone_problem(value, timezones)
+        if problem:
+            problems.append(f"{where}: {problem}")
 
     for city in trip.get("cities", []):
         tz(city.get("timeZone"), f"city '{city['id']}'")
@@ -79,6 +108,21 @@ def timezone_problems(trip: dict, timezones: set[str]) -> list[str]:
             tz(item.get("timeZone"), f"{where} timeline '{item['id']}'")
 
     return problems
+
+
+def schema_errors(trip: dict, schema: dict) -> list[str]:
+    """Schema violations as `path: message`, ordered by where they occur.
+
+    Extracted so `content_preflight.py` can run the same validation instead of
+    passing a package this script would reject.
+    """
+    validator_cls = jsonschema.validators.validator_for(schema)
+    validator_cls.check_schema(schema)
+    validator = validator_cls(schema, format_checker=jsonschema.FormatChecker())
+    return [
+        f"{'.'.join(str(p) for p in error.absolute_path) or '<root>'}: {error.message}"
+        for error in sorted(validator.iter_errors(trip), key=lambda e: list(e.absolute_path))
+    ]
 
 
 def content_checks(trip: dict, assets_root: Path) -> list[str]:
@@ -200,16 +244,11 @@ def main() -> int:
     trip = json.loads(trip_path.read_text(encoding="utf-8"))
     schema = json.loads(Path(args.schema).read_text(encoding="utf-8"))
 
-    validator_cls = jsonschema.validators.validator_for(schema)
-    validator_cls.check_schema(schema)
-    validator = validator_cls(schema, format_checker=jsonschema.FormatChecker())
-    errors = sorted(validator.iter_errors(trip), key=lambda e: list(e.absolute_path))
-
+    errors = schema_errors(trip, schema)
     if errors:
         print(f"FAIL: {len(errors)} schema error(s)")
         for error in errors[:50]:
-            path = ".".join(str(p) for p in error.absolute_path) or "<root>"
-            print(f"- {path}: {error.message}")
+            print(f"- {error}")
         return 1
 
     timezones = known_timezones()

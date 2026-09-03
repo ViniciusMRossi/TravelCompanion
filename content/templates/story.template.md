@@ -34,4 +34,4 @@ Confidence:
 
 # Fact-check notes
 
-- 
+-

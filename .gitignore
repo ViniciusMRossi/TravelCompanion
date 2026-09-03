@@ -21,6 +21,11 @@ secrets.properties
 # descending into it, and then no negation inside could re-include anything.
 trip-package/production/*
 !trip-package/production/.gitkeep
+# The review workspace is closed for the same reason (D028): generated/trip.json
+# carries booking locators, QR payloads and document references derived from
+# source/private/. Same form as above, and for the same reason.
+trip-package/generated/*
+!trip-package/generated/.gitkeep
 app/src/main/assets/trip-production/
 .venv/
 __pycache__/

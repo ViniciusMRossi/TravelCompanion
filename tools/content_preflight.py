@@ -2,28 +2,34 @@
 """Preflight checks for a generated authoring package, before it is reviewed
 for promotion to `trip-package/production/`.
 
-Time zone validity is delegated to `validate_trip.known_timezones()` so this
-script and `validate_trip.py` resolve every IANA name against the same tz
-database instead of two independently-written checks silently drifting apart.
+Schema validation and time zone validity are delegated to `validate_trip.py`,
+so a package this script passes is one that script would also accept. Two
+independently-written checks would drift apart, and a preflight that passes a
+schema-invalid package is worse than no preflight at all.
 """
 from __future__ import annotations
 
 import argparse
 import json
 from pathlib import Path
+import re
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from validate_trip import known_timezones
+from validate_trip import known_timezones, schema_errors, timezone_problem
 
-FORBIDDEN_OPERATIONAL_MARKERS = (
-    "MOCK-",
-    "PLACEHOLDER",
-    "TODO",
-    "TBD",
-    "A CONFIRMAR",
-    "+000000",
-)
+# Word-shaped markers need boundaries. As a bare substring "TODO" matches
+# "todos" and "método" in Portuguese copy, and real editorial content would
+# fill the warning list with noise until nobody read it.
+WORD_MARKERS = ("PLACEHOLDER", "TODO", "TBD", "A CONFIRMAR")
+
+# Punctuated markers are distinctive on their own, and must keep matching
+# inside a longer run: "+000000" is how "+000000000" gives itself away.
+LITERAL_MARKERS = ("MOCK-", "+000000")
+
+MARKER_PATTERNS = tuple(
+    re.compile(rf"(?<!\w){re.escape(m)}(?!\w)") for m in WORD_MARKERS
+) + tuple(re.compile(re.escape(m)) for m in LITERAL_MARKERS)
 
 REQUIRED_AUTHORING_FILES = (
     "trip.json",
@@ -76,6 +82,11 @@ def main() -> int:
         help="Generated authoring package directory",
     )
     parser.add_argument(
+        "--schema",
+        default="trip-package/schema/trip.schema.json",
+        help="Schema the package is validated against.",
+    )
+    parser.add_argument(
         "--allow-incomplete-authoring-files",
         action="store_true",
         help="Do not fail when standard authoring report files are absent.",
@@ -86,16 +97,27 @@ def main() -> int:
     errors = []
     warnings = []
 
+    schema = json.loads(Path(args.schema).read_text(encoding="utf-8"))
+    # Derived, never a literal: a hardcoded version diverges from the schema at
+    # the next bump and the preflight starts rejecting valid packages.
+    expected_version = schema["properties"]["schemaVersion"]["const"]
+
     trip_path = root / "trip.json"
     if not trip_path.exists():
         errors.append(f"Missing {trip_path}")
     else:
         trip = json.loads(trip_path.read_text(encoding="utf-8"))
 
-        if trip.get("schemaVersion") != "1.1":
+        if trip.get("schemaVersion") != expected_version:
             errors.append(
-                f"Expected schemaVersion 1.1, got {trip.get('schemaVersion')!r}"
+                f"Expected schemaVersion {expected_version}, "
+                f"got {trip.get('schemaVersion')!r}"
             )
+
+        # Before anything of our own: a package that does not satisfy the
+        # schema cannot be judged on completeness.
+        for problem in schema_errors(trip, schema)[:50]:
+            errors.append(f"Schema: {problem}")
 
         meta = trip.get("metadata", {})
         if meta.get("contentStatus") == "production" and meta.get("isMockContent"):
@@ -103,23 +125,31 @@ def main() -> int:
 
         for path, value in walk_strings(trip):
             upper = value.upper()
-            for marker in FORBIDDEN_OPERATIONAL_MARKERS:
-                if marker in upper:
-                    warnings.append(f"Possible unresolved placeholder at {path}: {value!r}")
+            if any(pattern.search(upper) for pattern in MARKER_PATTERNS):
+                warnings.append(f"Possible unresolved placeholder at {path}: {value!r}")
+
+        # Unconditional: a package declaring no zone at all is the case schema
+        # 1.1 exists to prevent, so it must not pass quietly for lack of
+        # anything to check.
+        timezones = known_timezones()
+        if not timezones:
+            print(
+                "FAIL: no IANA tz database available, so declared time zones cannot "
+                "be verified. Install it with: python -m pip install -r tools/requirements.txt",
+                file=sys.stderr,
+            )
+            return 2
 
         zones = collect_timezones(trip)
-        if zones:
-            timezones = known_timezones()
-            if not timezones:
-                print(
-                    "FAIL: no IANA tz database available, so declared time zones cannot "
-                    "be verified. Install it with: python -m pip install -r tools/requirements.txt",
-                    file=sys.stderr,
-                )
-                return 2
-            for path, zone in zones:
-                if zone not in timezones:
-                    errors.append(f"Invalid/unavailable IANA timezone at {path}: {zone}")
+        if not zones:
+            errors.append(
+                "No time zone is declared anywhere in the package; schema 1.1 "
+                "requires one on every city, day and transport endpoint"
+            )
+        for path, zone in zones:
+            problem = timezone_problem(zone, timezones)
+            if problem:
+                errors.append(f"Time zone at {path}: {problem}")
 
     if not args.allow_incomplete_authoring_files:
         for rel in REQUIRED_AUTHORING_FILES:
