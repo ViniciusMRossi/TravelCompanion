@@ -4,9 +4,14 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!--
+        Foreground location only. Walk Mode holds location behind a foreground
+        service while a walk runs (D030); nothing in the app requests location
+        in the background, so ACCESS_BACKGROUND_LOCATION is not declared. Add
+        it back in the phase that implements passive geofencing, not before.
+    -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
