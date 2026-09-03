@@ -27,6 +27,7 @@ class MainActivity : ComponentActivity() {
                 TravelCompanionRoot(
                     viewModel = rootViewModel,
                     playbackController = container.playbackController,
+                    walkModeController = container.walkModeController,
                 )
             }
         }

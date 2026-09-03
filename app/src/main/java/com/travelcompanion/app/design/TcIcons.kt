@@ -167,6 +167,22 @@ object TcIcons {
         icon("tc-check", stroke = "M5 13 L9.5 17.5 L19 6.5")
     }
 
+    /** Screen 07's 48dp "Encerrar passeio". */
+    val Close: ImageVector by lazy {
+        icon("tc-close", stroke = "M6 6 L18 18 M18 6 L6 18")
+    }
+
+    /** The "Ouvir juntos" action on screen 07. */
+    val Group: ImageVector by lazy {
+        icon(
+            "tc-group",
+            stroke = "M6 9 a3.5 3.5 0 1 0 7 0 a3.5 3.5 0 1 0 -7 0 z " +
+                "M3.5 19.5 a6 6 0 0 1 12 0 " +
+                "M16.2 6.2 a3.5 3.5 0 0 1 0 5.6 " +
+                "M17.6 14.7 a6 6 0 0 1 2.9 4.8",
+        )
+    }
+
     private fun icon(
         name: String,
         stroke: String? = null,

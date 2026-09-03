@@ -47,8 +47,10 @@ import com.travelcompanion.app.feature.attraction.AttractionViewModel
 import com.travelcompanion.app.feature.placeholder.PlaceholderScreen
 import com.travelcompanion.app.feature.today.TodayScreen
 import com.travelcompanion.app.feature.today.TodayViewModel
+import com.travelcompanion.app.feature.walk.WalkRoute
 import com.travelcompanion.app.service.external.ExternalActionLauncher
 import com.travelcompanion.app.service.playback.PlaybackController
+import com.travelcompanion.app.service.walk.WalkModeController
 import com.travelcompanion.app.service.playback.PlaybackState
 
 private object Routes {
@@ -63,6 +65,7 @@ private object Routes {
     const val DOCUMENT = "document/{documentId}"
     const val PLAN_B = "plan-b/{planBId}"
     const val WALK = "walk/{walkId}"
+    const val LISTEN_TOGETHER = "listen-together"
     const val MEMORY = "memory"
 
     fun attraction(id: String) = "attraction/$id"
@@ -90,6 +93,7 @@ fun AppNavigation(
     content: TripContent,
     participantId: String,
     playbackController: PlaybackController,
+    walkModeController: WalkModeController,
     onResetParticipant: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -183,10 +187,20 @@ fun AppNavigation(
                         onAction = navController::popBackStack,
                     )
                 }
-                composable(Routes.WALK) {
+                composable(Routes.WALK) { entry ->
+                    WalkRoute(
+                        content = content,
+                        walkId = entry.arguments?.getString("walkId").orEmpty(),
+                        walkModeController = walkModeController,
+                        playbackController = playbackController,
+                        onExit = navController::popBackStack,
+                        onListenTogether = { navController.navigate(Routes.LISTEN_TOGETHER) },
+                    )
+                }
+                composable(Routes.LISTEN_TOGETHER) {
                     PlaceholderScreen(
-                        title = "Iniciar passeio",
-                        message = "Telas 06 a 11 do Modo Passeio — fase 3.",
+                        title = "Ouvir juntos",
+                        message = "Telas 08 Participantes sincronizados e 09 Ouvir juntos — fase 4.",
                         actionLabel = "Voltar",
                         onAction = navController::popBackStack,
                     )
@@ -203,7 +217,10 @@ fun AppNavigation(
         }
 
         val playback by playbackController.state.collectAsStateWithLifecycle()
-        if (playback.isActive) {
+        val walkState by walkModeController.state.collectAsStateWithLifecycle()
+        // Screen 07 carries its own transport on an ink field; showing the
+        // persistent player under it would offer the same controls twice.
+        if (playback.isActive && !walkState.isRunning) {
             TcAudioPlayer(
                 title = playback.title.orEmpty(),
                 subtitle = playback.compactSubtitle(),

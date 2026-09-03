@@ -8,15 +8,23 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.travelcompanion.app.data.preferences.ParticipantPreferences
 import com.travelcompanion.app.data.trip.AssetTripRepository
 import com.travelcompanion.app.data.trip.TripRepository
+import com.travelcompanion.app.data.walk.DataStoreStoryTriggerStore
+import com.travelcompanion.app.service.location.FusedLocationSource
 import com.travelcompanion.app.service.playback.DataStorePlaybackPositionStore
 import com.travelcompanion.app.service.playback.Media3AudioEngine
 import com.travelcompanion.app.service.playback.PlaybackController
+import com.travelcompanion.app.service.walk.AndroidWalkPresence
+import com.travelcompanion.app.service.walk.WalkModeController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
 private val Context.playbackDataStore: DataStore<Preferences> by preferencesDataStore(
     name = "playback_state",
+)
+
+private val Context.walkDataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "walk_state",
 )
 
 /**
@@ -45,6 +53,20 @@ class AppContainer(context: Context) {
     val playbackController = PlaybackController(
         engine = audioEngine,
         positions = DataStorePlaybackPositionStore(appContext.playbackDataStore),
+        scope = playbackScope,
+    )
+
+    /**
+     * Application-scoped for the same reason as playback: a walk continues
+     * with the screen off and through Activity recreation, and screen 07 is
+     * what the traveller sees when they take the phone out, not what keeps
+     * the walk running.
+     */
+    val walkModeController = WalkModeController(
+        locationSource = FusedLocationSource(appContext),
+        triggerStore = DataStoreStoryTriggerStore(appContext.walkDataStore),
+        playbackController = playbackController,
+        presence = AndroidWalkPresence(appContext),
         scope = playbackScope,
     )
 }

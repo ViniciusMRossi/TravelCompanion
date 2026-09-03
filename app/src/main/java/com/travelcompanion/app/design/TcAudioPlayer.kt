@@ -36,7 +36,9 @@ import androidx.compose.ui.unit.sp
  * - [TcAudioPlayerVariant.Compact] — the persistent player that stays
  *   available while navigating (46dp toggle, no transport).
  * - [TcAudioPlayerVariant.Full] — the shared audioguide screen's player
- *   (52 / 68 / 52dp movement transport). Used by screens 07 and 09.
+ *   (52 / 68 / 52dp movement transport), screen 09. Screen 07 does not use it:
+ *   the approved prototype gives Walk Mode its own ink transport at
+ *   56 / 76 / 56dp, which is [TcWalkTransport].
  */
 enum class TcAudioPlayerVariant { Compact, Full }
 

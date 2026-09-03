@@ -31,6 +31,16 @@
         </activity>
 
         <!--
+            Keeps the process foreground while a walk is running: Android only
+            allows location in the background behind a service of this type,
+            and that service must show a notification (brief, Location).
+        -->
+        <service
+            android:name=".service.walk.WalkModeService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
+        <!--
             Hosts audioguide playback outside the Activity so audio keeps
             running with the screen off, and so the notification, lock screen
             and headset controls work while the phone is in a pocket.

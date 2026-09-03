@@ -143,8 +143,96 @@ and the stated duration matches the file on the device. Its three chapters are
 marked by audible tones at 0 / 4 / 8 min; the titles are labelled as prototype
 rather than posing as narration.
 
-## Phase 3
-- [ ] Walk Mode / location / stories
+## Phase 3 — Walk Mode, location and stories
+
+**Verified on hardware.** Samsung SM-S921B (Galaxy S24), Android 16 (API 36),
+over ADB on 2026-09-03, against the final binary.
+
+- [x] Screen 06 Iniciar passeio: the ink card, the readiness checklist and the
+      participant pills, all read from the packaged trip and the device
+- [x] Screen 07 Passeio ativo: ink field, segmented walk progress, the walking
+      instruction as the most legible thing on screen, next stop, and the
+      location state as a dot and a word
+- [x] The §19 state machine explicit rather than inferred — Idle, Preparing,
+      Active, Paused, Finishing, Completed — as pure functions in `domain/walk`
+- [x] §20 story triggering: idempotent, `notifyOncePerTrip` enforced against a
+      persisted record, and the active walk's route taking precedence over
+      passive geofence behaviour
+- [x] Foreground location while the walk runs, behind the persistent
+      notification Android requires, and released the moment it ends
+- [x] The −15 / +15 transport on screen 07 (D025's deferred seek, D029)
+- [x] Location permission asked immediately before Walk Mode needs it, never at
+      first launch
+- [x] Headphone connection reported from the device rather than asserted
+- [ ] **Screen 10 História pelo caminho and screen 11 Fim do passeio are not
+      implemented.** Closing the walk completes it and returns; a story
+      triggered outside a walk posts a notification that opens the app. Both
+      canonical screens remain placeholders, as later-phase screens already are.
+- [ ] **Passive background geofencing is not implemented.** The decision layer
+      carries the outside-a-walk branch and is tested, but registration of
+      background geofences — and the background-location permission flow it
+      needs — was not in this phase's scope. Only the foreground strategy runs.
+- [ ] **The `Paused` phase has no approved trigger yet.** §19 lists it and the
+      state machine implements it, but screen 07's only transport is the
+      audio's; nothing in the approved design pauses the walk itself, so
+      `WalkModeController.pause()` has no caller. Kept because the brief asks
+      for the state, recorded here rather than left to be discovered.
+
+### Confirmed by observation on the device
+
+Each item below was watched on the Galaxy S24 against the final binary, with
+`dumpsys`, the app's own DataStore and logcat as evidence. No crash, ANR or
+ExoPlayer/Media3 error appeared.
+
+- the walk surviving the screen going off: `mAwake=false` with the service
+  still `types=0x00000008` and the notification reading "Parada 1 de 2", and
+  `ProviderRequest[@+5s0ms, HIGH_ACCURACY, WorkSource{com.travelcompanion.app}]`
+  still registered on the gps provider;
+- audio and story triggering with Wi-Fi and mobile data off — two stories
+  triggered and recorded with `Active default network: none` and no IP route;
+- headset media buttons during the walk, from the Bluetooth headset's own
+  button (`MediaKeyEvt pkg=com.android.bluetooth`), pause and play both ways,
+  with the walk still in the foreground;
+- `notifyOncePerTrip` surviving process death: after `force-stop` and a fresh
+  walk, three arrivals at already-triggered stories added no record and moved
+  the walk not at all;
+- −15 / +15 moving the position for real (−14472 ms and +33200 ms measured,
+  each including the seconds that played during the measurement);
+- a refused location permission leaving the walk and the audio running, with
+  no foreground service and no GPS request at all.
+
+**Not observed, and not claimed:** arrival at the real Baščaršija coordinates.
+Story triggering was driven through the approved prototype's debug-only
+scaffold (D031), which feeds the packaged story's own coordinates through the
+same `onLocation` a GPS fix uses — the decision exercised is identical, only
+the source of the coordinate differs. That real fixes arrive at all *was*
+observed: screen 07's "Localização ativa" only turns on when a fix reaches the
+controller, and the gps provider shows the app's request with a real position.
+
+### Found by running it on a device
+
+Four defects that the unit tests did not catch, all fixed and re-verified:
+
+- refusing the location permission **crashed the app**. Android refuses a
+  foreground service of type `location` without a location permission, and the
+  refusal is a `SecurityException` thrown inside `onStartCommand` — past the
+  `runCatching` that guarded the call site. Worse, the unit test asserted the
+  wrong behaviour: it expected the service to start anyway. Code and test are
+  both corrected (D030);
+- `playedAt` was recorded for a story whose audio is not packaged. The record
+  claimed audio that never reached the traveller, because `audioGuideRequest`
+  answers `NotPackaged` rather than null. §20 keeps `playedAt` separate from
+  `triggeredAt` precisely so the two can disagree;
+- the debug-only scaffold **was not debug-only**. Behind `BuildConfig.DEBUG` in
+  `main`, and with no R8 in this project, both `simulateArrival` and the string
+  "simular chegada" were present in the release DEX — unreachable, but shipped.
+  Reading the binary is what showed it; the source looked correct. It now lives
+  in `src/debug` with a null-returning counterpart in `src/release`, and the
+  rebuilt release DEX carries neither (D031);
+- ending a walk could leave an undismissable notification. `stopWalk()` relied
+  on the foreground service owning it, but since D030 no service is started
+  without a location permission, and the walk still posts progress. The
+  notification is now cancelled explicitly (D032).
 
 ## Phase 4
 - [ ] Firebase group synchronization

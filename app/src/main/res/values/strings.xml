@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Travel Companion</string>
+
+    <!-- Notification channels. Named for what the traveller sees, not for the
+         subsystem that posts them. -->
+    <string name="walk_channel_name">Passeio</string>
+    <string name="walk_channel_description">Mantém o passeio ativo com a tela apagada.</string>
+    <string name="stories_channel_name">Histórias pelo caminho</string>
+    <string name="stories_channel_description">Avisa quando você chega perto de um lugar com história.</string>
 </resources>

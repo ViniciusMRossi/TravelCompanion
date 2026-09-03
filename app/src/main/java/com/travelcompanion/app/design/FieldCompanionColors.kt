@@ -53,6 +53,22 @@ object FieldCompanionColors {
     val OnInkMeta = Color(0xFFC6D3D8)
 
     /**
+     * Walk Mode's ink surfaces (screen 07), where ink is the whole background
+     * rather than one card. The alpha fills are the prototype's white
+     * overlays: they keep their relationship to ink without introducing new
+     * opaque greys into the palette.
+     */
+    val InkDeep = Color(0xFF101A21)
+    val TealBright = Color(0xFF67B6BB)
+    val OnInkAccent = Color(0xFF8DC5C8)
+    val OnInkPill = Color(0x14FFFFFF)
+    val OnInkCard = Color(0x12FFFFFF)
+    val OnInkFill = Color(0x0FFFFFFF)
+    val OnInkBorder = Color(0x40FFFFFF)
+    val OnInkHairline = Color(0x1FFFFFFF)
+    val OnInkTrack = Color(0x2EFFFFFF)
+
+    /**
      * Striped placeholder used wherever trip photography is not packaged yet.
      * Replacing the photo must not change the layout around it.
      */
