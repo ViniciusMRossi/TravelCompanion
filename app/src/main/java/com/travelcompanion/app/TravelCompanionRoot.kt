@@ -17,10 +17,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.travelcompanion.app.design.FieldCompanionColors
 import com.travelcompanion.app.design.TcType
 import com.travelcompanion.app.feature.shell.AppNavigation
+import com.travelcompanion.app.service.playback.PlaybackController
 import com.travelcompanion.app.feature.whoareyou.WhoAreYouScreen
 
 @Composable
-fun TravelCompanionRoot(viewModel: RootViewModel) {
+fun TravelCompanionRoot(
+    viewModel: RootViewModel,
+    playbackController: PlaybackController,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val content = state.content
 
@@ -69,6 +73,7 @@ fun TravelCompanionRoot(viewModel: RootViewModel) {
             AppNavigation(
                 content = content,
                 participantId = state.participantId!!,
+                playbackController = playbackController,
                 onResetParticipant = viewModel::resetParticipant,
             )
         }

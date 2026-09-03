@@ -70,11 +70,21 @@ class AttractionStateTest {
     }
 
     @Test
-    fun audioGuideDurationComesFromContentAndOfflineStateIsHonest() {
+    fun audioGuideDurationComesFromContentNotFromAConstant() {
         val state = bascarsija()
 
+        // The approved prototype states 12 min, and the packaged placeholder
+        // runs the full 720s, so the label and the file agree.
         assertEquals("Ouvir audioguia · 12 min", state.audioLabel)
-        assertFalse("no audio binary is packaged yet", state.audioAvailableOffline)
+    }
+
+    @Test
+    fun offlineStateIsHonestWhenTheBinaryIsAbsent() {
+        val withoutBinaries = packagedContent(exists = { false })
+
+        val state = buildAttractionState(withoutBinaries, "bascarsija", dayDate)!!
+
+        assertFalse(state.audioAvailableOffline)
         assertFalse("so it must not claim to be saved", state.chips.contains("Salvo offline"))
     }
 

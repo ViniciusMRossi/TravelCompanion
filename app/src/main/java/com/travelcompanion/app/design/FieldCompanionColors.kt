@@ -20,6 +20,9 @@ object FieldCompanionColors {
     val TealSoft = Color(0xFFE4F0F0)
     val TealBorder = Color(0xFFC8DEDE)
 
+    /** Unfilled portion of the audioguide progress track. */
+    val TealTrack = Color(0xFFC3D9D9)
+
     val Gold = Color(0xFFB8863B)
     val GoldSoft = Color(0xFFF3E8D0)
     val GoldBorder = Color(0xFFE4D2AD)

@@ -5,8 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.travelcompanion.app.data.preferences.ParticipantPreferences
-import com.travelcompanion.app.data.trip.AssetTripRepository
 import com.travelcompanion.app.design.FieldCompanionTheme
 
 class MainActivity : ComponentActivity() {
@@ -14,18 +12,22 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val tripRepository = AssetTripRepository(applicationContext)
-        val participantPreferences = ParticipantPreferences(applicationContext)
+        // Dependencies live on the application, not here: audioguide playback
+        // must outlive this Activity being recreated.
+        val container = appContainer
 
         setContent {
             FieldCompanionTheme {
                 val rootViewModel: RootViewModel = viewModel(
                     factory = RootViewModel.factory(
-                        tripRepository = tripRepository,
-                        participantPreferences = participantPreferences,
+                        tripRepository = container.tripRepository,
+                        participantPreferences = container.participantPreferences,
                     ),
                 )
-                TravelCompanionRoot(rootViewModel)
+                TravelCompanionRoot(
+                    viewModel = rootViewModel,
+                    playbackController = container.playbackController,
+                )
             }
         }
     }

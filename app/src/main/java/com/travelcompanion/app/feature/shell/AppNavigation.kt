@@ -37,17 +37,21 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.travelcompanion.app.data.trip.TripContent
 import com.travelcompanion.app.design.FieldCompanionColors
+import com.travelcompanion.app.design.TcAudioPlayer
+import com.travelcompanion.app.design.TcAudioPlayerVariant
 import com.travelcompanion.app.design.TcHairline
 import com.travelcompanion.app.design.TcIcons
 import com.travelcompanion.app.design.TcType
+import com.travelcompanion.app.design.formatPlaybackTime
 import com.travelcompanion.app.domain.today.ShortcutUi
 import com.travelcompanion.app.feature.attraction.AttractionScreen
-import com.travelcompanion.app.feature.attraction.buildAttractionState
+import com.travelcompanion.app.feature.attraction.AttractionViewModel
 import com.travelcompanion.app.feature.placeholder.PlaceholderScreen
 import com.travelcompanion.app.feature.today.TodayScreen
 import com.travelcompanion.app.feature.today.TodayViewModel
 import com.travelcompanion.app.service.external.ExternalActionLauncher
-import java.time.LocalDate
+import com.travelcompanion.app.service.playback.PlaybackController
+import com.travelcompanion.app.service.playback.PlaybackState
 
 private object Routes {
     const val TODAY = "today"
@@ -62,7 +66,6 @@ private object Routes {
     const val PLAN_B = "plan-b/{planBId}"
     const val WALK = "walk/{walkId}"
     const val MEMORY = "memory"
-    const val AUDIO_GUIDE = "audio-guide"
 
     fun attraction(id: String) = "attraction/$id"
     fun document(id: String) = "document/$id"
@@ -88,6 +91,7 @@ private val rootDestinations = listOf(
 fun AppNavigation(
     content: TripContent,
     participantId: String,
+    playbackController: PlaybackController,
     onResetParticipant: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -141,26 +145,13 @@ fun AppNavigation(
 
                 composable(Routes.ATTRACTION) { entry ->
                     val attractionId = entry.arguments?.getString("attractionId").orEmpty()
-                    val state = remember(attractionId) {
-                        buildAttractionState(content, attractionId, LocalDate.now())
-                    }
-                    if (state == null) {
-                        PlaceholderScreen(
-                            title = "Atração",
-                            message = "Este ponto não existe no conteúdo desta viagem.",
-                            actionLabel = "Voltar",
-                            onAction = navController::popBackStack,
-                        )
-                    } else {
-                        AttractionScreen(
-                            state = state,
-                            onBack = navController::popBackStack,
-                            onPlayAudioGuide = { navController.navigate(Routes.AUDIO_GUIDE) },
-                            onOpenMaps = { uri -> launcher.open(uri) },
-                            onDirections = { uri, fallback -> launcher.open(uri, fallback) },
-                            onStartWalk = { walkId -> navController.navigate(Routes.walk(walkId)) },
-                        )
-                    }
+                    AttractionRoute(
+                        content = content,
+                        attractionId = attractionId,
+                        playbackController = playbackController,
+                        navController = navController,
+                        launcher = launcher,
+                    )
                 }
 
                 composable(Routes.FULL_DAY) {
@@ -204,15 +195,23 @@ fun AppNavigation(
                         onAction = navController::popBackStack,
                     )
                 }
-                composable(Routes.AUDIO_GUIDE) {
-                    PlaceholderScreen(
-                        title = "Audioguia",
-                        message = "Reprodução local com Media3 — fase 2.",
-                        actionLabel = "Voltar",
-                        onAction = navController::popBackStack,
-                    )
-                }
             }
+        }
+
+        val playback by playbackController.state.collectAsStateWithLifecycle()
+        if (playback.isActive) {
+            TcAudioPlayer(
+                title = playback.title.orEmpty(),
+                subtitle = playback.compactSubtitle(),
+                progress = playback.progress,
+                elapsed = formatPlaybackTime(playback.positionMs),
+                total = formatPlaybackTime(playback.durationMs),
+                isPlaying = playback.isPlaying,
+                isBuffering = playback.status == PlaybackState.Status.Buffering,
+                variant = TcAudioPlayerVariant.Compact,
+                onTogglePlayPause = playbackController::togglePlayPause,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+            )
         }
 
         if (showsBottomNav) {
@@ -222,6 +221,39 @@ fun AppNavigation(
             )
         }
     }
+}
+
+@Composable
+private fun AttractionRoute(
+    content: TripContent,
+    attractionId: String,
+    playbackController: PlaybackController,
+    navController: NavHostController,
+    launcher: ExternalActionLauncher,
+) {
+    val viewModel: AttractionViewModel = viewModel(
+        key = attractionId,
+        factory = AttractionViewModel.factory(content, attractionId, playbackController),
+    )
+    val state = viewModel.state
+    if (state == null) {
+        PlaceholderScreen(
+            title = "Atração",
+            message = "Este ponto não existe no conteúdo desta viagem.",
+            actionLabel = "Voltar",
+            onAction = navController::popBackStack,
+        )
+        return
+    }
+
+    AttractionScreen(
+        state = state,
+        onBack = navController::popBackStack,
+        onPlayAudioGuide = viewModel::onPlayAudioGuide,
+        onOpenMaps = { uri -> launcher.open(uri) },
+        onDirections = { uri, fallback -> launcher.open(uri, fallback) },
+        onStartWalk = { walkId -> navController.navigate(Routes.walk(walkId)) },
+    )
 }
 
 @Composable

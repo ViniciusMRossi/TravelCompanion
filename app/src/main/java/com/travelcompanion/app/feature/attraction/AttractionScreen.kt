@@ -99,12 +99,7 @@ fun AttractionScreen(
             state.departure?.let { departure -> DepartureStrip(departure) }
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                state.audioLabel?.let { label ->
-                    TcAudioButton(
-                        onClick = onPlayAudioGuide,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text(label) }
-                }
+                AudioGuideAction(state = state, onPlayAudioGuide = onPlayAudioGuide)
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     state.mapsAction?.let { action ->
                         TcSecondaryButton(
@@ -160,6 +155,48 @@ fun AttractionScreen(
             }
         }
     }
+}
+
+/**
+ * The approved audioguide action.
+ *
+ * Screen 05 specifies one action — "Ouvir audioguia · N min" — and that is all
+ * it is. Playback itself surfaces in the persistent compact player, which is
+ * the design system's answer for audio outside the shared-player screen; the
+ * full transport belongs to screens 07 and 09.
+ *
+ * When the audio file is not packaged the action is replaced by a plain
+ * statement, because offering "Ouvir" for audio that is not on the device is
+ * the same broken promise as badging a missing document "Offline".
+ */
+@Composable
+private fun AudioGuideAction(
+    state: AttractionUiState,
+    onPlayAudioGuide: () -> Unit,
+) {
+    val label = state.audioLabel ?: return
+
+    if (!state.audioAvailableOffline) {
+        TcCard(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "Audioguia".uppercase(),
+                style = TcType.eyebrow,
+                color = FieldCompanionColors.Neutral600,
+            )
+            Text(
+                text = "O áudio deste guia ainda não está salvo neste aparelho.",
+                style = TcType.meta,
+                color = FieldCompanionColors.Neutral700,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+        }
+        return
+    }
+
+    TcAudioButton(
+        onClick = onPlayAudioGuide,
+        modifier = Modifier.fillMaxWidth(),
+    ) { Text(label) }
 }
 
 /** Editorial hero: photography, name in Fraunces, then the opening paragraph. */

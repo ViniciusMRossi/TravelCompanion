@@ -98,6 +98,16 @@ object TcIcons {
         icon("tc-play", fill = "M8 5.5 L19 12 L8 18.5 Z")
     }
 
+    val Pause: ImageVector by lazy {
+        icon(
+            "tc-pause",
+            fill = "M9.25 5 h0 a1.75 1.75 0 0 1 1.75 1.75 v10.5 a1.75 1.75 0 0 1 -3.5 0 " +
+                "v-10.5 a1.75 1.75 0 0 1 1.75 -1.75 z " +
+                "M14.75 5 h0 a1.75 1.75 0 0 1 1.75 1.75 v10.5 a1.75 1.75 0 0 1 -3.5 0 " +
+                "v-10.5 a1.75 1.75 0 0 1 1.75 -1.75 z",
+        )
+    }
+
     val Map: ImageVector by lazy {
         icon(
             "tc-map",

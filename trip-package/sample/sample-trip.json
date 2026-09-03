@@ -4,7 +4,7 @@
     "contentStatus": "prototype",
     "isMockContent": true,
     "generatedAt": "2026-09-01T18:00:00Z",
-    "notes": "Representative Day 9 content based on the approved prototype. Baščaršija, its audioguide and its rain Plan B are transcribed from the approved prototype so the 02 Hoje -> 05 Atracao flow opens the attraction the design actually specifies, and the walk names its starting attraction explicitly. Operational details are mock/prototype content unless replaced by verified trip data."
+    "notes": "Representative Day 9 content based on the approved prototype. Bascarsija, its audioguide and its rain Plan B are transcribed from the approved prototype so the 02 Hoje -> 05 Atracao flow opens the attraction the design actually specifies, and the walk names its starting attraction explicitly. The Bascarsija audio asset is a clearly labelled synthetic placeholder of the approved 12 min length (see trip/audio/README.md); its chapter titles describe the placeholder, not real narration. Operational details are mock/prototype content unless replaced by verified trip data."
   },
   "trip": {
     "id": "balkans-2026",
@@ -86,8 +86,9 @@
     {
       "id": "audio.bascarsija",
       "type": "audio",
-      "path": "audio/attractions/bascarsija.mp3",
-      "mimeType": "audio/mpeg"
+      "path": "audio/attractions/bascarsija.prototype.wav",
+      "mimeType": "audio/wav",
+      "description": "PROTOTIPO - marcador sintetico gerado por tools/make_prototype_audio.py. Nao e o audioguia real; ver app/src/main/assets/trip/audio/README.md"
     }
   ],
   "cities": [
@@ -293,7 +294,21 @@
       "id": "ag.bascarsija",
       "title": "Audioguia de Baščaršija",
       "audioAssetId": "audio.bascarsija",
-      "durationSeconds": 720
+      "durationSeconds": 720,
+      "chapters": [
+        {
+          "title": "Protótipo · trecho 1",
+          "startSeconds": 0
+        },
+        {
+          "title": "Protótipo · trecho 2",
+          "startSeconds": 240
+        },
+        {
+          "title": "Protótipo · trecho 3",
+          "startSeconds": 480
+        }
+      ]
     },
     {
       "id": "ag.sarajevo.city",

@@ -36,10 +36,19 @@ class AssetResolver(
     fun uri(assetId: String?): String? =
         packagedPathIfPresent(assetId)?.let { "$ANDROID_ASSET_SCHEME$it" }
 
+    /**
+     * Media URI for a packaged file, in the `asset:///` form Media3 reads
+     * straight out of the APK. Null when the binary is not in this build, so
+     * playback can say so instead of failing on a decoder error.
+     */
+    fun mediaUri(assetId: String?): String? =
+        packagedPathIfPresent(assetId)?.let { "$MEDIA_ASSET_SCHEME$it" }
+
     fun isAvailableOffline(assetId: String?): Boolean = packagedPathIfPresent(assetId) != null
 
     companion object {
         const val TRIP_ASSET_ROOT = "trip"
         const val ANDROID_ASSET_SCHEME = "file:///android_asset/"
+        const val MEDIA_ASSET_SCHEME = "asset:///"
     }
 }
