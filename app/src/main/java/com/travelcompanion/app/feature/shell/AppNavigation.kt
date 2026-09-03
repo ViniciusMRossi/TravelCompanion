@@ -6,15 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -106,7 +104,13 @@ fun AppNavigation(
         modifier = Modifier
             .fillMaxSize()
             .background(FieldCompanionColors.Paper)
-            .windowInsetsPadding(WindowInsets.statusBars),
+            // Both system bar insets are reserved here, once, for every route.
+            // The compact player and fixed bars like "Iniciar passeio" appear
+            // on routes that have no bottom navigation, and nothing else in the
+            // shell would keep them clear of the navigation bar. Paper is
+            // painted before the padding, so it still reaches the screen edges
+            // behind the system bars.
+            .windowInsetsPadding(WindowInsets.systemBars),
     ) {
         Box(modifier = Modifier.weight(1f)) {
             NavHost(
@@ -341,7 +345,6 @@ private fun TcBottomNavigation(
                 }
             }
         }
-        Spacer(modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars))
     }
 }
 

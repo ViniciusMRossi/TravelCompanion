@@ -43,7 +43,8 @@ Implemented from the approved prototype, **not yet verified running**.
 
 ## Phase 2 — Local audio
 
-**Implemented, pending real-device verification.**
+**Verified on hardware.** Samsung SM-S921B (Galaxy S24), Android 16 (API 36),
+Media3 1.10.1, over ADB on 2026-09-03.
 
 - [x] Media3/ExoPlayer in a `MediaSessionService`
 - [x] `PlaybackController` separated from screens, application-scoped (D015)
@@ -59,7 +60,7 @@ Implemented from the approved prototype, **not yet verified running**.
 - [x] An unplayable guide never disturbs audio that is playing (D021)
 - [x] No network and no group-sync dependency
 - [x] Documented prototype audio placeholder so the flow can be exercised (D019)
-- [ ] **Not verified on hardware** — see below
+- [x] **Verified on hardware** — see below
 - [ ] **Seek is deferred to Phases 3/4** (approved). `seekTo` / `seekBy` exist
       on the controller and are unit-tested; the −15 / +15 transport belongs to
       screens 07 and 09. `TcAudioPlayerVariant.Full` implements it and waits.
@@ -67,24 +68,58 @@ Implemented from the approved prototype, **not yet verified running**.
       `skipToNextChapter` exist and are unit-tested; the approved chapter list
       lives on screen 04 (Cidade).
 
-### What could NOT be confirmed
+### Confirmed by observation on the device
 
-No device, AVD or system image is available in this environment
-(`adb devices` empty, `emulator -list-avds` empty, no `system-images`), so the
-following are implemented but **unverified by observation**:
+Each of these was watched on the Galaxy S24, with `dumpsys media_session`,
+`dumpsys audio` and logcat as evidence. No crash, ANR or ExoPlayer/Media3
+error appeared in any run.
 
-- playback continuing with the screen off;
-- playback surviving navigation on a real device;
-- notification and lock-screen transport controls, and the metadata they show;
-- headset / Bluetooth media buttons;
-- AudioFocus interruption and resume (incoming call, another app);
-- behaviour when the phone becomes "noisy" (headphones unplugged);
-- that the packaged placeholder WAV actually decodes on a device.
+- first playback after a cold start — audio ~1.3 s after the tap;
+- playback surviving navigation between screens and root tabs;
+- playback continuing with the screen off, held by
+  `PARTIAL_WAKE_LOCK 'ExoPlayer:WakeLockManager'`;
+- notification and lock-screen transport, showing the guide title and its
+  context and never a media id;
+- headset media buttons, from a Bluetooth headset's own button
+  (`MediaKeyEvt pkg=com.android.bluetooth`), pause and play both ways;
+- pausing instead of switching to the speaker when the headphones go away
+  (`AS.AudioDeviceBroker: broadcast ACTION_AUDIO_BECOMING_NOISY`);
+- AudioFocus in both cases the brief names: another app taking focus
+  (`onAudioFocusChange(-1)` → pause) and an incoming call, which paused on the
+  ring and **resumed on its own** when telecom abandoned focus;
+- position persisted across `force-stop` and restored on the next play;
+- a finished guide replaying from the start, not from its end;
+- the whole flow with Wi-Fi and mobile data off — cold start, navigation and
+  playback with `Active default network: none` and no IP route at all;
+- the packaged placeholder WAV decoding natively at its own rate
+  (`FormatInfo{channelMask=0x1, sampleRate=8000}`) for exactly 720 s
+  (`duration = 720000 ms`), which the UI reads as `12:00`;
+- the Activity being destroyed and recreated on rotation
+  (`Checking to restart … changed={CONFIG_ORIENTATION}` →
+  `finishDrawing of relaunch`) without interrupting the audio, because the
+  controller lives on the application;
+- tapping the notification returning to the task on the screen the traveller
+  had left, with a single Activity instance in the task.
 
-These are covered in code (`PlaybackService` sets `handleAudioFocus = true` and
-`setHandleAudioBecomingNoisy(true)`; the session provides the notification and
-media-button handling) and by unit tests at the controller boundary, but code
-and tests cannot substitute for the device matrix in the brief.
+### Fixed after the device run
+
+Three defects the device run found, all in how playback surfaces rather than in
+playback itself, and all re-verified on the device afterwards:
+
+- the compact player and fixed bars such as "Iniciar passeio" were drawn under
+  the system navigation bar on every route without bottom navigation, because
+  the only `navigationBars` inset lived inside `TcBottomNavigation`. The shell
+  now reserves `WindowInsets.systemBars` once, for every route;
+- the notification had no `contentIntent`, so tapping it did nothing.
+  `setSessionActivity` now carries an immutable `PendingIntent` to
+  `MainActivity` with `NEW_TASK or SINGLE_TOP` — `NEW_TASK` alone stacked a
+  second Activity showing Hoje instead of resuming the screen in view;
+- the notification and lock screen offered "Ir para o item anterior", which a
+  single-item audioguide cannot honour. The player is now wrapped so it does
+  not report the queue commands. Restricting the media notification
+  controller's commands was not enough: `DefaultMediaNotificationProvider`
+  builds its buttons from `player.getAvailableCommands()`, and media button
+  preferences can only replace that button, never remove it.
 
 ### Reaching seek and chapters — decided
 
