@@ -145,6 +145,35 @@ class PackagedTripTest {
         assertNotNull("and that attraction must exist", content.attraction(walk.startAttractionId))
     }
 
+    /**
+     * Schema 1.1: every day and every transport endpoint states the zone its
+     * wall-clock times are written in. The packaged trip stays inside
+     * Europe/Sarajevo, so no timeline item may carry an override — an override
+     * that agrees with its day is noise that will later disagree with it.
+     */
+    @Test
+    fun everyPackagedLocalTimeNamesTheZoneItIsWrittenIn() {
+        val content = packagedContent()
+        val zones = java.time.ZoneId.getAvailableZoneIds()
+
+        content.trip.cities.forEach { city ->
+            assertTrue("city '${city.id}': unknown zone ${city.timeZone}", city.timeZone in zones)
+        }
+        content.days.forEach { day ->
+            assertEquals("Europe/Sarajevo", day.timeZone)
+            day.timeline.forEach { item ->
+                assertNull(
+                    "timeline '${item.id}' must inherit the day, not repeat it",
+                    item.timeZone,
+                )
+            }
+        }
+        content.trip.transports.forEach { transport ->
+            assertEquals("Europe/Sarajevo", transport.origin.timeZone)
+            assertEquals("Europe/Sarajevo", transport.destination.timeZone)
+        }
+    }
+
     @Test
     fun missingAssetBinariesResolveToNullRatherThanThrowing() {
         val content = packagedContent()

@@ -4,7 +4,7 @@
   "purpose": "Git-ready Android starter repository for Claude Code",
   "designStatus": "v1.0 locked",
   "canonicalScreens": 19,
-  "tripSchemaVersion": "1.0",
+  "tripSchemaVersion": "1.1",
   "firebaseWired": false,
   "android": {
     "applicationId": "com.travelcompanion.app",

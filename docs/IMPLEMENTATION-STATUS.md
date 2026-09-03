@@ -170,13 +170,42 @@ Destinations that belong to later phases (Dia completo, Documento/QR, Plano B,
 Modo Passeio, Audioguia, Memória) exist in the navigation graph and open a
 screen that names the canonical screen and its phase.
 
+## Content pipeline (infrastructure only)
+
+Isolated from the Android phases: nothing below changes what the app does or
+which phase it is in.
+
+- [x] Schema **1.1** — every local time names its IANA zone (D026). `city`,
+      `day` and both transport endpoints require `timeZone`; a timeline item
+      may override its day. Projected into `TripModels.kt`; the three packaged
+      trips are migrated and stay on Sarajevo/Mostar content unchanged.
+- [x] `trip-package/source/` (`itinerary/`, `user-notes/`, `private/`),
+      `generated/` and `production/` exist as the pipeline skeleton.
+      `production/` and `source/private/` are ignored except for the one file
+      that keeps each folder in the repository (D027).
+- [x] The authoring documents are integrated — `content/` (generator, style
+      guide, fact-check rules, package spec, templates) and
+      `tools/content_preflight.py` are in the repository and required by
+      `tools/check_repo.py`. `content_preflight.py` shares its IANA time-zone
+      check with `validate_trip.py` (`known_timezones()`) instead of
+      duplicating it.
+- [ ] No content has been generated, nothing has been promoted, and the
+      runtime still reads only `app/src/main/assets/trip/` — integrating the
+      authoring workflow and its checks did not change where the app loads
+      content from.
+
 ## Content validation
 
 `tools/validate_trip.py` now also checks what JSON Schema cannot: unresolved
 references, duplicate IDs, `dayNumber` against the trip window, and documents
-that declare `availableOffline` without a packaged file. These are warnings
-while `metadata.contentStatus` is prototype/draft and errors once it is
-`production` (D014).
+that declare `availableOffline` without a packaged file (D014). These are
+warnings while `metadata.contentStatus` is prototype/draft and errors once it
+is `production`. Every declared time zone against the tz database (D026) is
+checked separately and always fails, prototype/draft included — a wrong zone
+is a real defect regardless of how finished the package is. A missing tz
+database is not a warning either: the validator stops (exit 2).
+`tools/content_preflight.py` resolves the same check through
+`validate_trip.known_timezones()` so the two scripts cannot disagree.
 
 Currently reported for the packaged trip: the two ticket/voucher PDFs are
 declared offline but their files are not packaged yet. The UI reflects this —
@@ -185,8 +214,11 @@ it does not badge them "Offline" (D013).
 ## Verification
 
 `python tools/check_repo.py` · `python tools/validate_trip.py` ·
+`python tools/content_preflight.py <package> --allow-incomplete-authoring-files`
+(no generated package exists yet, so this is exercised against the runtime
+and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug lintDebug`
 
-Unit tests: 74 passing. Lint: 0 errors, 25 warnings (dependency-hygiene
+Unit tests: 76 passing. Lint: 0 errors, 25 warnings (dependency-hygiene
 notices; no lint baseline is used). Instrumented/device tests: not run — no
 emulator or device is available in this environment.

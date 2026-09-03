@@ -16,7 +16,11 @@ app/google-services.json
 *.jks
 *.keystore
 secrets.properties
-trip-package/production/
+# Real production trip content stays out of the repository. The folder itself is
+# versioned through its .gitkeep only: a directory-level ignore would stop git
+# descending into it, and then no negation inside could re-include anything.
+trip-package/production/*
+!trip-package/production/.gitkeep
 app/src/main/assets/trip-production/
 .venv/
 __pycache__/

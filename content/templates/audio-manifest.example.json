@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "language": "pt-BR",
+  "items": [
+    {
+      "audioGuideId": "ag.example",
+      "scriptPath": "audio/scripts/attractions/example.md",
+      "targetAudioPath": "audio/attractions/example.m4a",
+      "status": "draft",
+      "ttsVoice": null,
+      "durationSeconds": null,
+      "factCheckStatus": "pending"
+    }
+  ]
+}

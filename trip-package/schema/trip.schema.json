@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://travel-companion.local/schema/trip.schema.json",
+  "$id": "https://travel-companion.local/schema/trip.schema.v1.1.json",
   "title": "Travel Companion Trip Package",
-  "description": "Static, build-time trip content. Runtime/device state is intentionally excluded.",
+  "description": "Static, build-time trip content. Runtime/device state is intentionally excluded. Version 1.1 adds explicit IANA timezone semantics: every place and every day names the zone its local times are written in, so a border crossing cannot silently shift a departure.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -26,7 +26,7 @@
   "properties": {
     "schemaVersion": {
       "type": "string",
-      "const": "1.0"
+      "const": "1.1"
     },
     "metadata": {
       "$ref": "#/$defs/packageMetadata"
@@ -136,6 +136,13 @@
     "localDateTime": {
       "type": "string",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}T([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$"
+    },
+    "timeZone": {
+      "type": "string",
+      "description": "IANA time zone name, e.g. 'Europe/Sarajevo'. Every time and localDateTime in this package is a wall-clock time in the zone of whatever declares it. The pattern only rejects obviously malformed names; tools/validate_trip.py checks the name against the tz database.",
+      "pattern": "^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+)*$",
+      "minLength": 3,
+      "maxLength": 64
     },
     "geoPoint": {
       "type": "object",
@@ -450,6 +457,7 @@
         "name",
         "countryCode",
         "countryName",
+        "timeZone",
         "intro"
       ],
       "properties": {
@@ -465,6 +473,9 @@
         },
         "countryName": {
           "$ref": "#/$defs/nonEmpty"
+        },
+        "timeZone": {
+          "$ref": "#/$defs/timeZone"
         },
         "heroAssetId": {
           "$ref": "#/$defs/id"
@@ -947,7 +958,8 @@
       "additionalProperties": false,
       "required": [
         "name",
-        "dateTime"
+        "dateTime",
+        "timeZone"
       ],
       "properties": {
         "name": {
@@ -955,6 +967,10 @@
         },
         "dateTime": {
           "$ref": "#/$defs/localDateTime"
+        },
+        "timeZone": {
+          "$ref": "#/$defs/timeZone",
+          "description": "Zone the local dateTime is written in. Declared on both endpoints because a single leg can cross zones."
         },
         "location": {
           "$ref": "#/$defs/location"
@@ -1379,6 +1395,10 @@
         "title": {
           "$ref": "#/$defs/nonEmpty"
         },
+        "timeZone": {
+          "$ref": "#/$defs/timeZone",
+          "description": "Optional override for an item that does not happen in the day's time zone. Omit it whenever the item inherits the day, which is the normal case."
+        },
         "detail": {
           "type": "string"
         },
@@ -1410,6 +1430,7 @@
         "id",
         "date",
         "dayNumber",
+        "timeZone",
         "cityIds",
         "timeline"
       ],
@@ -1423,6 +1444,10 @@
         "dayNumber": {
           "type": "integer",
           "minimum": 1
+        },
+        "timeZone": {
+          "$ref": "#/$defs/timeZone",
+          "description": "Zone every timeline time on this day is written in, unless the item overrides it."
         },
         "title": {
           "type": "string"

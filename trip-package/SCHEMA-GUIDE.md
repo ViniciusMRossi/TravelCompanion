@@ -259,6 +259,59 @@ A future **Trip Validator** should additionally verify:
 
 ---
 
+## Schema 1.1 — every local time names its zone
+
+`schemaVersion` is now `"1.1"`.
+
+Every `time` and `localDateTime` in the package is a **wall-clock time**, never
+an instant. Until 1.1 nothing said *whose* wall clock, which is only harmless
+while a trip stays inside one zone. The Balkans itinerary does not: a bus that
+leaves Sarajevo at 19:30 and arrives in a different zone would otherwise be
+rendered against the phone's zone and quietly move.
+
+1.1 adds one field, in four places:
+
+| Where | Required | Meaning |
+| --- | --- | --- |
+| `city.timeZone` | yes | The zone the city lives in. |
+| `day.timeZone` | yes | The zone every timeline time on that day is written in. |
+| `transportEndpoint.timeZone` | yes | The zone that endpoint's `dateTime` is written in — declared on **both** ends, because one leg can cross two zones. |
+| `timelineItem.timeZone` | no | Override for an item that does not happen in its day's zone. |
+
+The value is an IANA name such as `Europe/Sarajevo`.
+
+### Inheritance
+
+A timeline item **inherits its day**. Omit `timeZone` unless the item genuinely
+leaves the day's zone — a night bus crossing a border is the case it exists
+for. An override that merely repeats the day is redundant but valid; it is
+not flagged by `validate_trip.py`.
+
+### The name is checked, not just its shape
+
+The schema's `$defs/timeZone` pattern only rejects malformed names;
+`Europe/Sarayevo` matches it perfectly. `tools/validate_trip.py` resolves every
+declared zone against the tz database and **fails on the ones that do not
+exist, regardless of `contentStatus`** — unlike the other content checks,
+an unknown zone is never merely a prototype/draft warning.
+`tools/content_preflight.py` performs the same check, through the same
+function, so the two scripts cannot disagree.
+
+That database is not present on Windows by default, so `tools/requirements.txt`
+declares a minimum `tzdata` version. If it is missing, the validator **stops**
+rather than reporting a pass it did not earn.
+
+### Migrating a 1.0 package
+
+1. `schemaVersion` → `"1.1"`.
+2. Add `timeZone` to every city, every day and both endpoints of every
+   transport.
+3. Add nothing to timeline items that stay in their day's zone.
+
+No other field changes; 1.0 content is otherwise valid 1.1 content.
+
+---
+
 ## Prototype sample
 
 `sample-trip.json` intentionally contains prototype/mock data.

@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "tripId": "example-trip",
+  "generatedAt": "YYYY-MM-DDTHH:MM:SSZ",
+  "assets": [
+    {
+      "id": "img.city.example.hero",
+      "type": "image",
+      "targetPath": "images/cities/example-hero.jpg",
+      "status": "needs-source",
+      "provenance": "unknown",
+      "requiredForProduction": true,
+      "sourceReference": null,
+      "notes": "Use a licensed or user-provided image. Do not use a watermarked preview."
+    },
+    {
+      "id": "doc.transport.example",
+      "type": "document",
+      "targetPath": "documents/tickets/example.pdf",
+      "status": "needs-user-document",
+      "provenance": "user-document",
+      "requiredForProduction": true,
+      "sourceReference": null,
+      "notes": "Must be the real travel document."
+    },
+    {
+      "id": "audio.story.example",
+      "type": "audio",
+      "targetPath": "audio/stories/example.m4a",
+      "status": "script-ready",
+      "provenance": "tts",
+      "requiredForProduction": false,
+      "scriptPath": "audio/scripts/stories/example.md"
+    }
+  ]
+}

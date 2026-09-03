@@ -1,0 +1,7 @@
+# Nothing under source/private/ is ever committed.
+#
+# This folder holds the traveller's own booking confirmations, tickets and
+# identity documents while they are being turned into trip content. They are
+# inputs to authoring, never repository content.
+*
+!.gitignore

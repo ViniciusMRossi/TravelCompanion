@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "metadata": {
     "contentStatus": "prototype",
     "isMockContent": true,
@@ -97,6 +97,7 @@
       "name": "Sarajevo",
       "countryCode": "BA",
       "countryName": "Bósnia e Herzegovina",
+      "timeZone": "Europe/Sarajevo",
       "heroAssetId": "img.sarajevo.hero",
       "intro": "Quatro religiões dividem poucas quadras e diferentes períodos históricos aparecem lado a lado enquanto se atravessa o centro a pé.",
       "historySections": [
@@ -407,6 +408,7 @@
       "origin": {
         "name": "Sarajevo · Autobuska stanica",
         "dateTime": "2026-09-21T19:30",
+        "timeZone": "Europe/Sarajevo",
         "platform": "A confirmar",
         "location": {
           "name": "Sarajevo Bus Station",
@@ -416,6 +418,7 @@
       "destination": {
         "name": "Mostar · Bus Station",
         "dateTime": "2026-09-21T22:00",
+        "timeZone": "Europe/Sarajevo",
         "location": {
           "name": "Mostar Bus Station",
           "mapsQuery": "Mostar Bus Station"
@@ -590,6 +593,7 @@
       "id": "day09",
       "date": "2026-09-21",
       "dayNumber": 9,
+      "timeZone": "Europe/Sarajevo",
       "title": "Sarajevo",
       "cityIds": [
         "sarajevo"

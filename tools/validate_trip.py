@@ -3,12 +3,15 @@
 schema cannot express.
 
 JSON Schema cannot tell us that an ID points at something real, that a document
-promising offline access actually has its file packaged, or that a day numbered
-9 really is the ninth day of the trip. Those are exactly the mistakes that only
-show up on the road, so they are checked here.
+promising offline access actually has its file packaged, that a day numbered
+9 really is the ninth day of the trip, or that `Europe/Sarajevo` is a zone the
+tz database has heard of. Those are exactly the mistakes that only show up on
+the road, so they are checked here.
 
-Findings are warnings while `metadata.contentStatus` is prototype/draft, and
-errors once the package claims to be production content.
+An unknown time zone always fails, no matter how finished the package is.
+Every other finding is a warning while `metadata.contentStatus` is
+prototype/draft, and an error once the package claims to be production
+content.
 """
 from __future__ import annotations
 import argparse
@@ -16,12 +19,28 @@ import json
 from pathlib import Path
 import sys
 from datetime import date
+from zoneinfo import available_timezones
 
 try:
     import jsonschema
 except ImportError:
     print("Missing jsonschema. Install with: python -m pip install -r tools/requirements.txt", file=sys.stderr)
     raise SystemExit(2)
+
+
+def known_timezones() -> set[str]:
+    """Every zone name the tz database on this machine can resolve.
+
+    The schema's pattern only rejects malformed names; `Europe/Sarayevo` would
+    pass it and then silently shift a bus departure. Windows ships no tz
+    database at all, so this can legitimately come back empty — that is a
+    broken check, not a clean package, and the caller stops rather than
+    reporting a pass it did not earn.
+    """
+    try:
+        return available_timezones()
+    except Exception:
+        return set()
 
 
 def _iso(value):
@@ -31,8 +50,40 @@ def _iso(value):
         return None
 
 
+def timezone_problems(trip: dict, timezones: set[str]) -> list[str]:
+    """Every declared IANA zone that the tz database does not recognise.
+
+    `Europe/Sarayevo` would pass the schema's pattern and then silently shift
+    a bus departure, so this is checked separately from the completeness
+    findings below and is always a hard failure — a package that is still
+    prototype/draft is not exempt from carrying real time zones.
+    """
+    problems: list[str] = []
+
+    def tz(value, where):
+        if value is not None and value not in timezones:
+            problems.append(f"{where}: '{value}' is not an IANA time zone name")
+
+    for city in trip.get("cities", []):
+        tz(city.get("timeZone"), f"city '{city['id']}'")
+
+    # A leg can cross two zones, so the endpoints are checked independently.
+    for transport in trip.get("transports", []):
+        for end in ("origin", "destination"):
+            tz(transport.get(end, {}).get("timeZone"), f"transport '{transport['id']}' {end}")
+
+    for day in trip.get("days", []):
+        where = f"day '{day['id']}'"
+        tz(day.get("timeZone"), where)
+        for item in day.get("timeline", []):
+            tz(item.get("timeZone"), f"{where} timeline '{item['id']}'")
+
+    return problems
+
+
 def content_checks(trip: dict, assets_root: Path) -> list[str]:
-    """Integrity rules that JSON Schema cannot enforce."""
+    """Integrity rules that JSON Schema cannot enforce (time zones excepted;
+    see `timezone_problems`)."""
     problems: list[str] = []
 
     assets = {a["id"]: a for a in trip.get("assets", [])}
@@ -113,9 +164,10 @@ def content_checks(trip: dict, assets_root: Path) -> list[str]:
         for doc_id in day.get("documentIds", []):
             ref("document", documents, doc_id, where)
         for item in day.get("timeline", []):
+            item_where = f"{where} timeline '{item['id']}'"
             registry = kind_registry.get(item.get("kind"))
             if registry is not None and item.get("refId") is not None:
-                ref(item["kind"], registry, item["refId"], f"{where} timeline '{item['id']}'")
+                ref(item["kind"], registry, item["refId"], item_where)
 
         # "Dia 9 de 21" is derived from the trip window, so a dayNumber that
         # disagrees with the calendar would silently mislabel the whole screen.
@@ -158,6 +210,24 @@ def main() -> int:
         for error in errors[:50]:
             path = ".".join(str(p) for p in error.absolute_path) or "<root>"
             print(f"- {path}: {error.message}")
+        return 1
+
+    timezones = known_timezones()
+    if not timezones:
+        print(
+            "FAIL: no IANA tz database available, so schema 1.1 time zones cannot be "
+            "verified. Install it with: python -m pip install -r tools/requirements.txt",
+            file=sys.stderr,
+        )
+        return 2
+
+    # A wrong time zone silently shifts a wall-clock time the first time a
+    # leg crosses one; that is real regardless of how finished the package is.
+    tz_problems = timezone_problems(trip, timezones)
+    if tz_problems:
+        print(f"FAIL: {len(tz_problems)} time zone error(s) in {args.trip}")
+        for problem in tz_problems:
+            print(f"- {problem}")
         return 1
 
     assets_root = Path(args.assets_root) if args.assets_root else trip_path.parent

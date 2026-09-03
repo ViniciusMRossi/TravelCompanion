@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "metadata": {
     "contentStatus": "prototype",
     "isMockContent": true,
@@ -36,6 +36,7 @@
       "name": "Sarajevo",
       "countryCode": "BA",
       "countryName": "Bósnia e Herzegovina",
+      "timeZone": "Europe/Sarajevo",
       "intro": "Conteúdo inicial para validar carregamento e navegação."
     }
   ],
@@ -54,6 +55,7 @@
       "id": "day09",
       "date": "2026-09-21",
       "dayNumber": 9,
+      "timeZone": "Europe/Sarajevo",
       "title": "Sarajevo",
       "cityIds": [
         "sarajevo"

@@ -127,6 +127,8 @@ data class City(
     val name: String,
     val countryCode: String,
     val countryName: String,
+    /** IANA zone the city's local times are written in (schema 1.1). */
+    val timeZone: String,
     val heroAssetId: String? = null,
     val intro: String,
     val historySections: List<EditorialSection> = emptyList(),
@@ -301,6 +303,8 @@ data class Accommodation(
 data class TransportEndpoint(
     val name: String,
     val dateTime: String,
+    /** IANA zone [dateTime] is written in; a leg can cross zones, so both ends declare one. */
+    val timeZone: String,
     val location: TripLocation? = null,
     val platform: String? = null,
 )
@@ -424,6 +428,8 @@ data class TimelineItem(
     val endTime: String? = null,
     val kind: String,
     val title: String,
+    /** Override only when the item does not happen in its day's zone; null means inherit. */
+    val timeZone: String? = null,
     val detail: String? = null,
     val refId: String? = null,
     val bookingStatus: String? = null,
@@ -435,6 +441,8 @@ data class TripDay(
     val id: String,
     val date: String,
     val dayNumber: Int,
+    /** IANA zone every timeline time on this day is written in, unless an item overrides it. */
+    val timeZone: String,
     val title: String? = null,
     val cityIds: List<String> = emptyList(),
     val baseCityId: String? = null,
