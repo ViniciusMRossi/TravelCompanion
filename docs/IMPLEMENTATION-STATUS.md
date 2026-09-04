@@ -238,9 +238,16 @@ Four defects that the unit tests did not catch, all fixed and re-verified:
 
 ## Phase 4 — Group synchronization, screens 08 and 09
 
-**Verified on hardware.** Samsung SM-S921B (Galaxy S24), Android 16 (API 36),
-over ADB on 2026-09-03, against a debug build with a real Firebase project
-configured.
+**Verified on hardware at 933e4a6 / 68ceda6, and *not re-confirmed since*.**
+Samsung SM-S921B (Galaxy S24), Android 16 (API 36), over ADB on 2026-09-03,
+against a debug build with a real Firebase project configured.
+
+The observations in this section were made against that binary. 832e88e
+changed `applyCorrection`, `syncCorrection`, `PlaybackController.playAudioGuide`
+and `TogetherRoute` — the exact paths those observations exercise — so they are
+**unverified against the current commit, not re-confirmed**. Nothing here is
+withdrawn; it is dated. The list below says which claims that leaves standing
+and which need re-watching.
 
 - [x] Screen 08 Sincronizando: the shared start as a 3 → 2 → 1 transition into
       screen 09, not a place anyone navigates to
@@ -398,20 +405,29 @@ was shaped for.
       different story". The words keep the register of the ones that are drawn
       and contain no network vocabulary, but they are engineering's and want a
       design confirmation.
-- [ ] **A phone joining late hears the guide while 3–2–1 is still on
-      screen.** Screen 08 is a three-second transition into shared playback,
-      and the joiner is given it so the screen is never blank and never says
-      "Comece um audioguia" about a listen it is joining — but the group is
-      already running, so the audio comes into step at once rather than at
-      zero. The approved design has no state for arriving late; the
-      alternative, three silent seconds, tells the traveller less.
-- [ ] **A phone arriving while the group is paused waits rather than
-      preloading.** The invitation is kept, not spent, so joining happens when
-      the group starts again. Loading into a paused player is the tidier
-      behaviour and was not built.
-- [ ] **Still no second physical device.** The device pass below/above stands
-      as written. F1 and F2 above are covered by tests, not by field
-      observation, and nothing in this round was watched on hardware.
+- [ ] **A phone joining a listen in progress hears the guide while 3–2–1 is
+      still on screen.** Screen 08 is a three-second transition into shared
+      playback, and the joiner is given it so the screen is never blank while
+      the guide loads — but the group is already running, so the audio comes
+      into step at once rather than at zero. The approved design has no state
+      for arriving late; the alternative, three silent seconds, tells the
+      traveller less.
+- [ ] **A phone arriving while the group is paused waits, and says nothing
+      while it waits.** The invitation is kept, not spent, and the countdown
+      does not start — a transition into playback must not run at a group that
+      has not begun (D044). What the traveller sees meanwhile is screen 09's
+      "Comece um audioguia para ouvir junto", which is true of this phone but
+      says nothing about the waiting. A state of its own would need copy the
+      approved design does not carry, and one such item is already open
+      ("Ouvindo outra história"), so it was not invented. Loading into a paused
+      player is the other way out and was not built either.
+- [ ] **Still only one device, and the Phase 4 device pass is now dated.**
+      F1 and F2 above are covered by tests, not by field observation, and
+      nothing in this round was watched on hardware. The observations under
+      "Confirmed by observation on the device" were made against 933e4a6 /
+      68ceda6; every one of them runs through code 832e88e changed, so they
+      are unverified against the current binary and want re-watching — with a
+      second device this time, which is what they always wanted.
 
 ## Phase 5
 - [ ] Voice memories

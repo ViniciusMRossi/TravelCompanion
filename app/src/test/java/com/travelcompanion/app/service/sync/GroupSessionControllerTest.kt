@@ -436,6 +436,81 @@ class GroupSessionControllerTest {
         assertTrue(playback.state.value.isPlaying)
     }
 
+    /**
+     * A group that is paused has nothing to transition into.
+     *
+     * The countdown used to start on arrival regardless, so it ran 3–2–1 at a
+     * stopped group, cleared, and left screen 09 saying "Comece um audioguia
+     * para ouvir junto" about the very listen the traveller was joining
+     * (D044).
+     */
+    @Test
+    fun `arriving while the group is paused counts down at nothing`() {
+        controller.join()
+        controller.listenTogether(guides())
+
+        sync.emit(
+            erikaIsListeningTo(
+                "ag.latin-bridge",
+                positionMs = 60_000L,
+                serverNowMs = 30_000L,
+                isPlaying = false,
+            ),
+        )
+
+        assertNull("nothing has started, so nothing counts down", controller.state.value.countdown)
+        assertEquals(0, engine.prepareCount)
+    }
+
+    /** And the ask survives the wait: it is spent when they start again. */
+    @Test
+    fun `the invitation is kept until the paused group starts again`() {
+        controller.join()
+        controller.listenTogether(guides())
+        sync.emit(
+            erikaIsListeningTo(
+                "ag.latin-bridge",
+                positionMs = 60_000L,
+                serverNowMs = 30_000L,
+                isPlaying = false,
+            ),
+        )
+
+        sync.emit(erikaIsListeningTo("ag.latin-bridge", positionMs = 60_000L, serverNowMs = 40_000L))
+
+        assertEquals("ag.latin-bridge", playback.state.value.mediaId)
+        assertEquals(100_000L, engine.preparedStartPositionMs)
+        assertEquals("the count belongs to the load", 3, controller.state.value.countdown)
+    }
+
+    /**
+     * The ask is not spent on an answer that cannot be played.
+     *
+     * Consuming the invitation before asking content whether the guide is
+     * packaged voided it on a guide this build does not carry, and no later
+     * snapshot could use it. Not reachable with the current package; it is the
+     * order of two lines (D044).
+     */
+    @Test
+    fun `an unplayable guide does not consume the invitation`() {
+        val absent = "ag.latin-bridge"
+        controller.join()
+        controller.listenTogether { id ->
+            if (id == absent) AudioGuideRequest.NotPackaged(id, "A Ponte Latina")
+            else audioGuideRequest(content, id)
+        }
+
+        sync.emit(erikaIsListeningTo(absent, positionMs = 0L, serverNowMs = 0L))
+        assertEquals("an unpackaged guide is not played", 0, engine.prepareCount)
+        assertNull(playback.state.value.mediaId)
+
+        // The group moves to a guide this build does carry.
+        sync.emit(erikaIsListeningTo(guide, positionMs = 30_000L, serverNowMs = 10_000L))
+
+        assertEquals(guide, playback.state.value.mediaId)
+        assertEquals(40_000L, engine.preparedStartPositionMs)
+    }
+
     /** The group still cannot load a guide nobody asked it to. */
     @Test
     fun `a guide the group loads is not taken up without the traveller asking`() {

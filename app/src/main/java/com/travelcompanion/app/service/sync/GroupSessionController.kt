@@ -218,11 +218,15 @@ class GroupSessionController(
             // traveller asked to join them, so this phone takes their guide —
             // "both devices preload the local audio" (brief §5), which until
             // now nothing did.
+            //
+            // No countdown here. Screen 08 is a transition into playback, and
+            // a group that is paused has nothing to transition into: counting
+            // 3–2–1 at it ran the count out and dropped the traveller on
+            // "Comece um audioguia" about the very listen they were joining.
+            // The count now belongs to the load, in [loadIfInvited] (D044).
             localMediaId == null -> {
                 invitation = guides
-                _state.update {
-                    it.copy(sharedMediaId = shared.mediaId, countdown = COUNTDOWN_SECONDS)
-                }
+                _state.update { it.copy(sharedMediaId = shared.mediaId) }
             }
 
             // Playing something else. D037 stands: the group never replaces
@@ -392,11 +396,18 @@ class GroupSessionController(
         // kept rather than spent, so joining happens when they start again.
         if (remote?.isPlaying != true) return
         val guides = invitation ?: return
-        invitation = null
         // A guide this build does not carry is not playable, and saying so is
-        // content's job, not the player's (D021).
+        // content's job, not the player's (D021). Asked before the invitation
+        // is spent, so an unplayable answer costs nothing: the ask is still
+        // good for whatever the group plays next (D044).
         val request = guides(load.mediaId) as? AudioGuideRequest.Playable ?: return
+        invitation = null
         playback.playAudioGuide(request, startPositionMs = load.positionMs)
+        // Screen 08, now that there is something to count down into. The
+        // audio is already coming into step behind it — the group is mid-guide
+        // and catching up is the point — so the three seconds are the
+        // transition the approved design draws, not a delay before starting.
+        _state.update { it.copy(countdown = COUNTDOWN_SECONDS) }
     }
 
     /**
