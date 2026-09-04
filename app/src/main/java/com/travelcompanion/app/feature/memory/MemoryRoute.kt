@@ -19,7 +19,6 @@ import com.travelcompanion.app.domain.memory.MemoryPhase
 import com.travelcompanion.app.service.memory.MemoryController
 import com.travelcompanion.app.service.walk.WalkModeController
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import java.time.ZoneId
 
 /**
@@ -56,6 +55,24 @@ fun MemoryRoute(
         }
     }
 
+    // The hour on the context line, from something that actually advances.
+    //
+    // Read straight out of composition it only moved when something else
+    // recomposed, and screen 12 is a screen the traveller stands still on
+    // before touching anything — which is precisely when nothing else does.
+    // The saved timestamp never came from here (it is the controller's
+    // `epochNow`), so this was only ever the line going stale, but the screen
+    // promises that the hour arrives by itself (D059).
+    var nowEpochMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            nowEpochMs = System.currentTimeMillis()
+            // Enough to keep a minute-resolution clock honest without waking
+            // the screen for nothing.
+            delay(CLOCK_TICK_MS)
+        }
+    }
+
     val attribution = buildAttribution(content, walkState, participantId)
 
     // Asked immediately before it is needed, never at launch — the timing
@@ -78,7 +95,7 @@ fun MemoryRoute(
         saved = saved,
         localParticipantId = participantId,
         elapsedMs = elapsedMs,
-        nowEpochMs = System.currentTimeMillis(),
+        nowEpochMs = nowEpochMs,
         zone = ZoneId.systemDefault(),
     )
 
@@ -108,5 +125,5 @@ fun MemoryRoute(
     )
 }
 
-/** Kept so a preview or a test can stand in for the controller's level flow. */
-internal fun flatLevel(value: Float) = MutableStateFlow(value)
+/** A minute-resolution clock does not need to be right more often than this. */
+private const val CLOCK_TICK_MS = 10_000L
