@@ -60,7 +60,15 @@ fun buildMemoryState(
     zone: ZoneId,
 ): MemoryUiState {
     val place = placeName(walkState)
-    val city = content.trip.cities.firstOrNull()?.name
+    // The city of the day being lived, from the clock this screen already
+    // holds. Taking the first city in the package meant the line at the top
+    // named one place and the attribution beneath it named another the moment
+    // recording started — the same screen saying two things (D080).
+    val city = content
+        // `LocalDate.ofInstant` is API 34; this is the same answer at 26.
+        .dayFor(Instant.ofEpochMilli(nowEpochMs).atZone(zone).toLocalDate())
+        ?.let { day -> content.city(day.baseCityId ?: day.cityIds.firstOrNull()) }
+        ?.name
     val participant = content.participant(localParticipantId)
 
     return MemoryUiState(

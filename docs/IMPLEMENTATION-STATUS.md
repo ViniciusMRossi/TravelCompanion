@@ -1188,6 +1188,31 @@ said.
 - [ ] **The first end-to-end run of the canonical flow**, which has never been
       walked whole because it has never been whole.
 
+## The fourth first-element, and a rule (2026-09-04)
+
+- [x] **Screen 12's context line** read the first city in the package while the
+      attribution beneath it read the city of the day, so the same screen named
+      two places seconds apart. Both come from the same answer now
+- [x] **`check_repo` grew a rule for the class.** In `domain/**`,
+      `feature/**State.kt` and `feature/**UseCase.kt`, a packaged collection's
+      first element read with no predicate has to carry `// fallback:` and a
+      reason. Three deliberate reads exist and now say why
+
+### Confirmed by observation
+
+- **the rule was made to fail before it was kept**, against the line that
+  prompted it:
+
+      FAIL: a packaged collection's first element is read with no predicate
+            and no reason...
+      - app/.../feature/memory/MemoryState.kt:63: val city = content.trip.cities.firstOrNull()?.name
+
+### Not implemented, with reasons
+
+- [ ] **The rule does not look at `data/`**, where resolving a collection by
+      identity is the job, and it does not try to judge a first element - only
+      to insist that somebody said which (D080).
+
 ## Later
 
 - [x] **All nineteen canonical screens exist.**
@@ -1266,7 +1291,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 295 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 298 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

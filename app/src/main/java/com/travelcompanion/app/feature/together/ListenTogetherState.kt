@@ -53,6 +53,8 @@ fun buildListenTogetherState(
     val mediaId = playback.mediaId ?: return null
     val guide = content.audioGuide(mediaId)
     val story = content.trip.stories.firstOrNull { it.audioGuideId == mediaId }
+    // fallback: the shared listen may be a story that belongs to no walk, and
+    // the screen still names one so the group has something to be listening to.
     val walk = content.walk(story?.walkId) ?: content.trip.walks.firstOrNull()
 
     return ListenTogetherUiState(

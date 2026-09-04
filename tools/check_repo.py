@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import json
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = [
@@ -160,6 +161,72 @@ for source in sorted((ROOT / "app/src/main/java").rglob("*.kt")):
 if offenders:
     print("FAIL: a hero sizes a layer with fillMaxSize, which is zero when the")
     print("      parent is unbounded. Use matchParentSize (D051, D056):")
+    for o in offenders:
+        print(f"- {o}")
+    raise SystemExit(1)
+
+# The first element of a packaged collection is not "the one for today".
+#
+# Four defects of one shape, all in code that had been reviewed: screen 17 took
+# the first emergency profile and then the first accommodation, screen 12 wrote
+# the first city into a saved memory and showed it in the line above, and every
+# one of them sat within a few lines of a lookup that resolves the same thing
+# for the day being lived. None was reachable with the packaged trip, which
+# ships one city, one stay and one day — the shape in which "the first element"
+# and "the element for today" are the same answer, so no test could tell the
+# two apart (D070, D077, D080).
+#
+# So: inside a screen's state builder, a use case, or the domain, reading a
+# packaged collection's first element with no predicate has to say why. The
+# marker is `// fallback:` on the line or immediately above it, which is the
+# same discipline the decisions already ask for, moved to where the reader is.
+FIRST_ELEMENT = re.compile(r"\.(?:first|firstOrNull)\(\s*\)")
+FALLBACK_MARKER = "// fallback:"
+
+
+def marked_as_fallback(lines, number):
+    """Whether the line, or the `//` block attached above it, carries the marker.
+
+    The whole block and not just the line above: a reason worth writing usually
+    needs two lines, and a rule that read only one of them would either push the
+    explanation onto a single long line or be satisfied by a marker sitting a
+    comment away from what it explains.
+    """
+    if FALLBACK_MARKER in lines[number - 1]:
+        return True
+    index = number - 2
+    while index >= 0 and lines[index].strip().startswith("//"):
+        if FALLBACK_MARKER in lines[index]:
+            return True
+        index -= 1
+    return False
+
+
+def scans_first_element(path):
+    """Paths where 'the element for the day' is the answer that was meant."""
+    posix = path.as_posix()
+    if "/domain/" in posix:
+        return True
+    return "/feature/" in posix and (posix.endswith("State.kt") or posix.endswith("UseCase.kt"))
+
+
+offenders = []
+for source in sorted((ROOT / "app/src/main/java").rglob("*.kt")):
+    if not scans_first_element(source):
+        continue
+    lines = source.read_text(encoding="utf-8").splitlines()
+    for number, line in enumerate(lines, start=1):
+        code = line.split("//", 1)[0]
+        if ".trip." not in code or not FIRST_ELEMENT.search(code):
+            continue
+        if marked_as_fallback(lines, number):
+            continue
+        offenders.append(f"{source.relative_to(ROOT).as_posix()}:{number}: {line.strip()}")
+
+if offenders:
+    print("FAIL: a packaged collection's first element is read with no predicate")
+    print("      and no reason. Resolve it for the day, or mark the line")
+    print("      `// fallback: <why>` (D070, D077, D080):")
     for o in offenders:
         print(f"- {o}")
     raise SystemExit(1)

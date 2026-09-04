@@ -38,6 +38,8 @@ fun buildEmergencyState(content: TripContent, date: LocalDate): EmergencyUiState
     // the same one screens 02 and 13 use, not a second rule.
     val city = content.dayFor(date)
         ?.let { day -> content.city(day.cityIds.firstOrNull()) }
+        // fallback: a package with no days at all still has to name a country
+        // for the emergency numbers below.
         ?: content.trip.cities.firstOrNull()
 
     // The country is the city's, and the profile is the one for that country.
@@ -45,6 +47,8 @@ fun buildEmergencyState(content: TripContent, date: LocalDate): EmergencyUiState
     // schema requires the code on both sides; the first profile is a fallback
     // for a package that is missing one, never the normal path.
     val profile = city?.countryCode?.let(content::emergencyProfile)
+        // fallback: a package that enters a country it carries no profile for
+        // is incomplete; a screen with no emergency number is worse (D070).
         ?: content.trip.emergencyProfiles.firstOrNull()
         ?: return null
 
