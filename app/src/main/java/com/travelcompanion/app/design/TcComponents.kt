@@ -471,15 +471,23 @@ fun TcHero(
 ) {
     Box(modifier = modifier) {
         val bitmap = rememberPackagedImage(imageAssetPath)
+        // `matchParentSize`, not `fillMaxSize`: the photograph and the
+        // placeholder behind it must cover whatever the hero turns out to be,
+        // without being the thing that decides it. A hero whose height comes
+        // from its own content — screen 05's `heightIn(min = 200.dp)` — sits
+        // inside a scrolling column, where the incoming maximum height is
+        // infinite and `fillMaxSize` quietly resolves to nothing. Screen 05's
+        // stripes were therefore never drawn at all: the card's surface showed
+        // through and the white title on top of it was invisible (D051).
         if (bitmap != null) {
             Image(
                 bitmap = bitmap,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.matchParentSize(),
             )
         } else {
-            Box(modifier = Modifier.fillMaxSize().background(stripes(cool)))
+            Box(modifier = Modifier.matchParentSize().background(stripes(cool)))
             if (placeholderCaption != null) {
                 Text(
                     text = placeholderCaption,

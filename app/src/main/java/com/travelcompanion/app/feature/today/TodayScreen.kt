@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.travelcompanion.app.data.trip.Outfit
@@ -168,12 +169,24 @@ private fun TodayHeader(state: TodayUiState) {
                     text = listOfNotNull(state.cityName, state.countryName).joinToString(" · "),
                     style = TcType.metaStrong,
                     color = FieldCompanionColors.Ink,
+                    // One line, as the approved header draws it. The chip
+                    // beside it keeps its own width, so on a narrow screen —
+                    // and far worse at a large system font — what is left for
+                    // this line can be a few dp, and a `Text` given a few dp
+                    // does not shrink: it wraps, one character per line, for
+                    // as many lines as the name has letters. Screen 02 was a
+                    // vertical alphabet at 360dp with the font at 1.5 (D051).
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             Text(
                 text = state.dayLabel,
                 style = TcType.label.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Normal),
                 color = FieldCompanionColors.Neutral600,
+                // One line, for the same reason as the line above it.
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
         TcOfflineChip(state.offlineNote)

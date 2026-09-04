@@ -15,7 +15,7 @@ Keep this short. This is not an SDD.
 - [x] Confirm Gradle sync on developer machine
 - [x] Confirm unit tests
 - [x] Confirm debug APK
-- [ ] Confirm starter on emulator/device
+- [x] Confirm starter on emulator/device (2026-09-04, two emulators)
 - [ ] Add Room when structured runtime persistence is first needed
 
 Phase 0 required two baseline corrections before it would build; see D006 and
@@ -35,9 +35,16 @@ Implemented from the approved prototype, **not yet verified running**.
 - [x] Field Companion icon set converted from the approved sprite
 - [ ] Fraunces binary (still the serif fallback — D005)
 - [ ] Real photography (heroes render the approved striped placeholder)
-- [ ] **Visual fidelity is unverified.** The app has never been run on a device
-      or emulator in this environment (none available), so no claim of visual
-      fidelity to the approved prototype has been confirmed by observation.
+- [x] **Visual fidelity compared with the approved prototype** on 2026-09-04,
+      across two emulator sizes, for every screen that exists (01, 02, 05, 06,
+      07, 08, 09 and the persistent compact player). Two divergences were found
+      and corrected (D051); one system-bar defect was found and corrected
+      (D052); four differences went to the design-confirmation stack rather
+      than being invented around. What was compared, what matched and what did
+      not is under "The first visual pass" below. Fraunces is still absent
+      (D005), photography is still the approved striped placeholder, and
+      screen 09's hero still has no asset to resolve (D036) — none of those
+      were treated as divergences.
       Structure, geometry, colour and copy were implemented from the prototype
       source; only a device run can confirm the result.
 
@@ -528,6 +535,105 @@ was shaped for.
       player is the other way out and was not built either.
 - [x] **Re-watched on two devices against the current binary**, including
       everything the one-phone pass had claimed. See "The second device".
+
+## The first visual pass — screens against the prototype (2026-09-04)
+
+The oldest open line in this repository. Four field passes had happened and
+none had compared a screen with the approved prototype; all of them were about
+behaviour.
+
+**Setup.** Two emulator instances of the same AVD image
+(`system-images/android-37.1/google_apis_playstore_ps16k/x86_64`, Play Store,
+Android 17 / API 37.1), overridden to two sizes so a layout break would have
+somewhere to show:
+
+- **compact** — `wm size 720x1520`, `wm density 320` → **360 × 760 dp**;
+- **large** — `wm size 1440x3120`, `wm density 480` → **480 × 1040 dp**.
+
+Colours were compared by sampling screenshot pixels against
+`Field-Companion-Design-Tokens-v0.1.json`, not by eye. Where
+`TELAS-E-FUNCIONALIDADES-APPROVED.md` declares a measurement, the measurement
+was taken.
+
+**Measured against the declared numbers, and matching exactly:**
+
+| Declared | Measured |
+| --- | --- |
+| screen 09 transport 52 / 68 / 52 dp | 52 / 68 / 52 dp (`TcAudioPlayer`) |
+| screen 07 transport 56 / 76 / 56 dp | 56 / 76 / 56 dp (`TcWalkTransport`) |
+| screen 08 avatars 72 dp | 144 px at 2 px/dp = 72.0 dp, 2 dp moss ring |
+| screen 08 countdown circle 120 dp | 240 px at 2 px/dp = 120.0 dp, 2 dp border |
+
+**Sampled colours, all exact:** paper `#F5F1E8`, surface `#FFFDF8`, ink
+`#16232E`, the cool placeholder `#8FA3A0`/`#7F948F` and the paper placeholder
+`#D7CFBC`/`#CDC4AE` (±1 from PNG rounding). `FieldCompanionColors` was read
+against the token file line by line: brand, neutral scale and all four semantic
+families match.
+
+**Per screen:**
+
+- **01 Quem é você?** — matches. Hero 262 dp, card min-height 76 dp, avatar
+  44 dp, radius 14 dp, border `#C8CCC5`, gutters 20 dp and the 26/22/12/10
+  rhythm are the prototype's numbers exactly. On compact the offline note falls
+  below the fold; the screen scrolls, which is the prototype's own
+  `overflow-y:auto`.
+- **02 Hoje** — **diverged, corrected.** The location line and the day counter
+  could be crushed to one character per line (D051). Everything else matches:
+  the ink Now card with its teal quarter-circle, both critical cards with the
+  oxblood rule and `#FDECEC` fill, weather and outfit cards, the five-item
+  bottom navigation. Critical state covered by the package's own two
+  "NÃO PODE DAR ERRADO" items.
+- **05 Atração** — **diverged, corrected.** The hero was drawing nothing at
+  all, so the white title sat on the card's surface and was invisible (D051).
+  After the fix: cool stripes, legible eyebrow / title / subtitle, teal-subtle
+  and neutral chips, 20 dp card radius, the teal bottom action bar.
+- **06 Iniciar passeio** — matches. Ink walk card, readiness lines,
+  participant pills, the bottom bar and its reassurance line. On compact the
+  readiness card sits mostly below the fold; it scrolls.
+- **07 Passeio ativo** — matches, in two location states: **denied** on
+  compact, where the "Localização ativa" row is correctly absent, and
+  **active** on large. Ink field, segmented progress, the walking instruction
+  as the most legible thing on screen, 56/76/56 transport, "Ouvir juntos".
+- **08 Sincronizando** — matches, measured above, on both sizes.
+- **09 Ouvindo juntos** — matches, in both states: two green rows, and amber
+  with the approved note after a real airplane-mode drop. Teal player card,
+  52/68/52 transport, listeners card, "Próxima história".
+- **the persistent compact player** — matches the S4 audio board in playing and
+  paused states, on screens 05, 06 and 07: teal-subtle card, 46 dp teal circle,
+  title, chapter line, progress track and times.
+
+**Environment:**
+
+- **system font at 1.5** — every screen holds after the D051 fix; the chapter
+  line on screen 09 ellipsizes, which is what a single-line title should do;
+- **night mode** — the app has no dark palette and stays light, correctly. It
+  did turn the system-bar icons white on the paper strip above every screen,
+  which is corrected (D052);
+- **rotation** — landscape at 480 dp reflows, scrolls and keeps state; nothing
+  overlaps and the bottom navigation is intact.
+
+**Went to the design-confirmation stack, not invented around:**
+
+- at 360 dp the screen 02 location line ellipsizes rather than showing the
+  country, and at 1.5 font it elides to "…". The prototype draws one line and
+  does not say what happens when one line does not fit;
+- at 360 dp a listener row on screen 09 wraps "Vinícius · você" onto two
+  lines, because the Portuguese state label is long. The prototype draws name
+  and state on one row and does not say which gives way;
+- the token file carries a full dark palette that nothing implements. Not a
+  divergence from the prototype, which is light; recorded because the tokens
+  promise something the app does not have;
+- screen 05's "no packaged audio" state was **not observed**: the runtime
+  package's one audioguide is packaged, so the unplayable case cannot be
+  reached from the UI. Screen 09's divergent state was not observed either,
+  for the same reason already recorded (D043).
+
+**Not observed, and would want a real device:** anything about the *display*
+rather than the layout — colour rendering on OLED, the actual legibility of
+the placeholder stripes and of ink-on-paper contrast in daylight, and how the
+Fraunces fallback reads at arm's length. Emulator screenshots settle geometry
+and hex values; they do not settle how a screen looks in the hand. Nothing in
+this pass claims otherwise.
 
 ## Phase 5
 - [ ] Voice memories
