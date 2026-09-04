@@ -48,6 +48,10 @@ import com.travelcompanion.app.feature.placeholder.PlaceholderScreen
 import com.travelcompanion.app.feature.today.TodayScreen
 import com.travelcompanion.app.feature.today.TodayViewModel
 import com.travelcompanion.app.feature.document.DocumentRoute
+import com.travelcompanion.app.feature.stay.StayScreen
+import com.travelcompanion.app.feature.stay.buildStayState
+import com.travelcompanion.app.feature.transport.TransportScreen
+import com.travelcompanion.app.feature.transport.buildTransportState
 import com.travelcompanion.app.feature.memory.MemoryRoute
 import com.travelcompanion.app.feature.wallet.WalletScreen
 import com.travelcompanion.app.domain.wallet.buildWalletState
@@ -59,6 +63,7 @@ import com.travelcompanion.app.service.memory.MemoryController
 import com.travelcompanion.app.service.sync.GroupSessionController
 import com.travelcompanion.app.service.walk.WalkModeController
 import java.time.LocalDate
+import java.time.LocalTime
 import com.travelcompanion.app.service.playback.PlaybackState
 
 private object Routes {
@@ -72,6 +77,8 @@ private object Routes {
     const val ATTRACTION = "attraction/{attractionId}"
     const val DOCUMENT = "document/{documentId}"
     const val PLAN_B = "plan-b/{planBId}"
+    const val TRANSPORT = "transport/{transportId}"
+    const val STAY = "stay/{stayId}"
     const val WALK = "walk/{walkId}"
     const val LISTEN_TOGETHER = "listen-together"
     const val MEMORY = "memory"
@@ -79,6 +86,8 @@ private object Routes {
     fun attraction(id: String) = "attraction/$id"
     fun document(id: String) = "document/$id"
     fun planB(id: String) = "plan-b/$id"
+    fun transport(id: String) = "transport/$id"
+    fun stay(id: String) = "stay/$id"
     fun walk(id: String) = "walk/$id"
 }
 
@@ -186,6 +195,55 @@ fun AppNavigation(
                         documentId = entry.arguments?.getString("documentId"),
                         onBack = navController::popBackStack,
                     )
+                }
+                composable(Routes.TRANSPORT) { entry ->
+                    val state = buildTransportState(
+                        content = content,
+                        transportId = entry.arguments?.getString("transportId"),
+                        now = LocalTime.now(),
+                    )
+                    if (state == null) {
+                        PlaceholderScreen(
+                            title = "Transporte",
+                            message = "Este transporte não existe no conteúdo desta viagem.",
+                            actionLabel = "Voltar",
+                            onAction = navController::popBackStack,
+                        )
+                    } else {
+                        TransportScreen(
+                            state = state,
+                            onBack = navController::popBackStack,
+                            onAction = { action -> launcher.open(action.uri) },
+                            // ACTION_DIAL, never ACTION_CALL: the traveller
+                            // confirms, and no permission is asked for.
+                            onDial = { number -> launcher.dial(number) },
+                            onOpenDocument = { id -> navController.navigate(Routes.document(id)) },
+                            onOpenPlanB = { id -> navController.navigate(Routes.planB(id)) },
+                        )
+                    }
+                }
+                composable(Routes.STAY) { entry ->
+                    val state = buildStayState(
+                        content = content,
+                        stayId = entry.arguments?.getString("stayId"),
+                        now = LocalTime.now(),
+                    )
+                    if (state == null) {
+                        PlaceholderScreen(
+                            title = "Hospedagem",
+                            message = "Esta hospedagem não existe no conteúdo desta viagem.",
+                            actionLabel = "Voltar",
+                            onAction = navController::popBackStack,
+                        )
+                    } else {
+                        StayScreen(
+                            state = state,
+                            onBack = navController::popBackStack,
+                            onAction = { action -> launcher.open(action.uri) },
+                            onDial = { number -> launcher.dial(number) },
+                            onOpenVoucher = { id -> navController.navigate(Routes.document(id)) },
+                        )
+                    }
                 }
                 composable(Routes.PLAN_B) {
                     PlaceholderScreen(
@@ -322,6 +380,15 @@ private fun TodayRoute(
         onOpenAttraction = { id -> navController.navigate(Routes.attraction(id)) },
         onOpenMaps = { uri -> launcher.open(uri) },
         onOpenFullDay = { navController.navigate(Routes.FULL_DAY) },
+        onOpenTimelineItem = { row ->
+            val id = row.item.refId
+            when {
+                id == null -> Unit
+                row.item.kind == "transport" -> navController.navigate(Routes.transport(id))
+                row.item.kind == "accommodation" -> navController.navigate(Routes.stay(id))
+                else -> Unit
+            }
+        },
         onOpenShortcut = { shortcut ->
             when (shortcut.kind) {
                 ShortcutUi.Kind.Document -> navController.navigate(Routes.document(shortcut.id))

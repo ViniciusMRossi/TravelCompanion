@@ -1,6 +1,7 @@
 package com.travelcompanion.app.feature.today
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,6 +66,14 @@ fun TodayScreen(
     state: TodayUiState,
     onOpenAttraction: (String) -> Unit,
     onOpenMaps: (String) -> Unit,
+    /**
+     * A timeline entry that refers to something the app can open.
+     *
+     * The row carries `kind` and `refId` already; this is what turns them into
+     * the detail screens the trip declares — a transport into 15, a stay into
+     * 16 (D065).
+     */
+    onOpenTimelineItem: (TimelineRowUi) -> Unit,
     onOpenFullDay: () -> Unit,
     onOpenShortcut: (ShortcutUi) -> Unit,
     modifier: Modifier = Modifier,
@@ -128,7 +137,7 @@ fun TodayScreen(
             )
 
             if (state.timeline.isNotEmpty()) {
-                TimelineCard(state.timeline)
+                TimelineCard(state.timeline, onOpenTimelineItem)
             }
 
             if (state.shortcuts.isNotEmpty()) {
@@ -480,7 +489,7 @@ private fun OutfitGroup(
 }
 
 @Composable
-private fun TimelineCard(rows: List<TimelineRowUi>) {
+private fun TimelineCard(rows: List<TimelineRowUi>, onOpen: (TimelineRowUi) -> Unit) {
     TcCard(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
@@ -490,7 +499,7 @@ private fun TimelineCard(rows: List<TimelineRowUi>) {
             bottom = 4.dp,
         ),
     ) {
-        rows.forEach { row -> TimelineRow(row) }
+        rows.forEach { row -> TimelineRow(row, onOpen) }
     }
 }
 
@@ -500,7 +509,11 @@ private fun TimelineCard(rows: List<TimelineRowUi>) {
  * hue alone.
  */
 @Composable
-private fun TimelineRow(row: TimelineRowUi) {
+private fun TimelineRow(row: TimelineRowUi, onOpen: (TimelineRowUi) -> Unit) {
+    // Only rows that point at a screen become tappable; the rest read as they
+    // always did. Nothing on the timeline gains an affordance that leads
+    // nowhere (D065).
+    val opens = row.item.kind in OPENABLE_TIMELINE_KINDS && row.item.refId != null
     val markerColor = when {
         row.isCritical -> FieldCompanionColors.Oxblood
         row.state == TimelineState.Active -> FieldCompanionColors.Teal
@@ -516,7 +529,8 @@ private fun TimelineRow(row: TimelineRowUi) {
         modifier = Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .alpha(if (row.state == TimelineState.Past) 0.6f else 1f),
+            .alpha(if (row.state == TimelineState.Past) 0.6f else 1f)
+            .then(if (opens) Modifier.clickable { onOpen(row) } else Modifier),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
@@ -634,3 +648,6 @@ private fun documentShortcutFor(critical: CriticalItemUi): ShortcutUi = Shortcut
     label = critical.documentAction?.label ?: "Documento",
     kind = ShortcutUi.Kind.Document,
 )
+
+/** Timeline kinds that have a screen of their own to open. */
+private val OPENABLE_TIMELINE_KINDS = setOf("transport", "accommodation")
