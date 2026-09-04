@@ -8,6 +8,7 @@ import com.travelcompanion.app.domain.memory.MemoryPhase
 import com.travelcompanion.app.domain.memory.MemoryRecordingState
 import com.travelcompanion.app.domain.walk.WalkModeState
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -88,17 +89,27 @@ fun buildMemoryState(
     )
 }
 
-/** What this phone can offer about who and where, at the moment of recording. */
+/**
+ * What this phone can offer about who and where, at the moment of recording.
+ *
+ * The city comes from the day being lived, the same way the place comes from
+ * the walk actually running. A memory is the one thing in this app that cannot
+ * be redone — it goes into the memory and stays there — so a recording made in
+ * Mostar on day 15 must not be kept as Sarajevo forever (D077).
+ */
 fun buildAttribution(
     content: TripContent,
     walkState: WalkModeState,
     localParticipantId: String?,
+    date: LocalDate,
 ): MemoryAttribution? {
     val participant = content.participant(localParticipantId) ?: return null
     return MemoryAttribution(
         participantId = participant.id,
         participantName = participant.name,
-        cityName = content.trip.cities.firstOrNull()?.name,
+        cityName = content.dayFor(date)
+            ?.let { day -> content.city(day.baseCityId ?: day.cityIds.firstOrNull()) }
+            ?.name,
         placeName = placeName(walkState),
     )
 }

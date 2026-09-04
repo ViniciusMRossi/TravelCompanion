@@ -19,6 +19,7 @@ import com.travelcompanion.app.domain.memory.MemoryPhase
 import com.travelcompanion.app.service.memory.MemoryController
 import com.travelcompanion.app.service.walk.WalkModeController
 import kotlinx.coroutines.delay
+import java.time.LocalDate
 import java.time.ZoneId
 
 /**
@@ -73,7 +74,7 @@ fun MemoryRoute(
         }
     }
 
-    val attribution = buildAttribution(content, walkState, participantId)
+    val attribution = buildAttribution(content, walkState, participantId, LocalDate.now())
 
     // Asked immediately before it is needed, never at launch — the timing
     // brief §23 asks for, and the same shape Phase 3 uses for location. A

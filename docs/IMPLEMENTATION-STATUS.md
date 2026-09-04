@@ -1075,6 +1075,41 @@ screens** — seventeen exist.
       deleted: it passed with the wrap and passed without it, so it proved
       nothing (D076). The wrap is verified on the emulator instead.
 
+## The first-element class — screens 17 and 12 (2026-09-04)
+
+D070 fixed one occurrence of `content.trip.<collection>.first()` where a
+per-day lookup existed. A sweep for the same shape found two more, both in
+code that had already been reviewed and approved.
+
+- [x] **Screen 17's hotel contact** took the first accommodation in the
+      package instead of the one the day declares — the wrong number from the
+      second night onwards, on the emergency screen. It now reads
+      `day.accommodationIds`, the mechanism screen 03 already used
+- [x] **Screen 12's voice memory** attributed recordings to the first city in
+      the package. This one is not a screen state: it goes into the `Memory`
+      and into Room, so it would have been wrong permanently. `buildAttribution`
+      takes a `date` now and resolves the city through `content.dayFor`
+
+### Found by reasoning, not in the field
+
+- **Both, by sweeping for the shape D070 exposed.** Neither is reachable with
+  the packaged trip, which is exactly why they survived review: it ships one
+  city, one stay and one day, so "the first element" and "the element for
+  today" are the same answer and no test could tell the two implementations
+  apart.
+
+### Confirmed by observation
+
+- **the two new assertions fail against the old code**, each with the
+  neighbouring city's name — `expected:<Hospedagem em [Mostar] — exemplo> but
+  was:<Hospedagem em [Sarajevo] — exemplo>` and `expected:<[Mostar]> but
+  was:<[Sarajevo]>`. Run before the fix, as with D070.
+
+### Not implemented, with reasons
+
+- [ ] **A `check_repo` rule for this class.** Proposed to the reviewer rather
+      than written: the guard was asked for as a proposal (D077).
+
 ## Later
 
 - [ ] **Screens 10 and 11 — História disparada pela localização, and Fim do
@@ -1155,7 +1190,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 271 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 275 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

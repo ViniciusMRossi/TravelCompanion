@@ -48,7 +48,12 @@ fun buildEmergencyState(content: TripContent, date: LocalDate): EmergencyUiState
         ?: content.trip.emergencyProfiles.firstOrNull()
         ?: return null
 
-    val stay = content.trip.accommodations.firstOrNull()
+    // The hotel where the bags are is tonight's hotel, which the day declares
+    // — the mechanism screen 03 already uses. The first accommodation in the
+    // package is the right answer only on the first night (D077).
+    val stay = content.dayFor(date)
+        ?.accommodationIds
+        ?.firstNotNullOfOrNull(content::accommodation)
 
     return EmergencyUiState(
         // The country name comes from the city as well, so the line cannot

@@ -4,6 +4,7 @@ import com.travelcompanion.app.data.trip.EmergencyContact
 import com.travelcompanion.app.data.trip.EmergencyProfile
 import com.travelcompanion.app.data.trip.PackagedTripTest.Companion.packagedContent
 import com.travelcompanion.app.data.trip.TripContent
+import com.travelcompanion.app.data.trip.TwoCityTrip
 import com.travelcompanion.app.domain.operations.WITHHELD_NOTE
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -164,6 +165,26 @@ class EmergencyStateTest {
         assertEquals(
             "Preciso de ajuda. Por favor, chame o serviço de emergência.",
             card.translation,
+        )
+    }
+
+    /**
+     * "O hotel onde estão as malas" is tonight's hotel. On a trip with several
+     * stays the first one in the package stops being that from the second
+     * night on — on the emergency screen (D077).
+     */
+    @Test
+    fun `the hotel is the one the traveller sleeps in tonight`() {
+        val trip = TwoCityTrip.content()
+
+        val first = buildEmergencyState(trip, TwoCityTrip.DAY_ONE)!!
+        assertEquals("Hospedagem em Sarajevo — exemplo", first.contacts[1].label)
+
+        val second = buildEmergencyState(trip, TwoCityTrip.DAY_TWO)!!
+        assertEquals("Hospedagem em Mostar — exemplo", second.contacts[1].label)
+        assertEquals(
+            "Ligar para a hospedagem, Hospedagem em Mostar — exemplo",
+            second.contacts[1].accessibilityLabel,
         )
     }
 }
