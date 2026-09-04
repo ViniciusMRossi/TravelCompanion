@@ -113,4 +113,38 @@ class WalkModeStateTest {
         assertEquals(WalkPhase.Active, state.phase)
         assertEquals(LocationQuality.Denied, state.locationQuality)
     }
+
+    /**
+     * The sheet is a state of an active walk and nothing else: a stale
+     * trigger arriving after the walk ended must not raise a page over the
+     * screen that closed it.
+     */
+    @Test
+    fun `a story is only ever offered while the walk is active`() {
+        val prepared = prepared()
+        assertNull(prepared.offerStory("s2", 40).pending)
+
+        val active = prepared.startWalking()
+        assertEquals("s2", active.offerStory("s2", 40).pending?.storyId)
+    }
+
+    @Test
+    fun `ending the walk takes the sheet with it`() {
+        val offered = prepared().startWalking().offerStory("s2", 40)
+
+        val completed = offered.finishWalking().completeWalking()
+
+        assertNull(completed.pending)
+        assertEquals(WalkPhase.Completed, completed.phase)
+    }
+
+    @Test
+    fun `dismissing leaves everything else alone`() {
+        val offered = prepared().startWalking().offerStory("s2", 40)
+
+        val cleared = offered.clearPendingStory()
+
+        assertNull(cleared.pending)
+        assertEquals(offered.copy(pending = null), cleared)
+    }
 }

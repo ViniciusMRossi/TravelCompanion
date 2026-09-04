@@ -50,7 +50,7 @@ fun ActiveWalkScreen(
     onSkipForward: () -> Unit,
     onListenTogether: () -> Unit,
     modifier: Modifier = Modifier,
-    scaffold: WalkPrototypeScaffold? = null,
+    scaffolds: List<WalkPrototypeScaffold> = emptyList(),
 ) {
     Column(
         modifier = modifier
@@ -202,7 +202,7 @@ fun ActiveWalkScreen(
             // Prototype scaffolding. The label and the action both come from
             // the debug variant, so a release build contributes neither
             // (D031).
-            scaffold?.let { prototype ->
+            scaffolds.forEach { prototype ->
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

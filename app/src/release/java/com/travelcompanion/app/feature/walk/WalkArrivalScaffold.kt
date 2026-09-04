@@ -12,7 +12,7 @@ import com.travelcompanion.app.service.walk.WalkModeController
  * release DEX, unreachable but present.
  */
 @Suppress("UNUSED_PARAMETER")
-fun walkArrivalScaffold(
+fun walkArrivalScaffolds(
     content: TripContent,
     controller: WalkModeController,
-): WalkPrototypeScaffold? = null
+): List<WalkPrototypeScaffold> = emptyList()

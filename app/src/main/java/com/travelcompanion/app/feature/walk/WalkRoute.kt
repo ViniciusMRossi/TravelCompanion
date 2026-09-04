@@ -10,6 +10,8 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -17,15 +19,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.travelcompanion.app.data.trip.TripContent
 import com.travelcompanion.app.domain.walk.WalkPhase
 import com.travelcompanion.app.feature.placeholder.PlaceholderScreen
+import com.travelcompanion.app.feature.story.StoryTriggerSheet
+import com.travelcompanion.app.feature.story.buildStoryTriggerState
+import com.travelcompanion.app.service.sync.GroupSessionController
 import com.travelcompanion.app.service.playback.PlaybackController
 import com.travelcompanion.app.service.walk.WalkModeController
 import java.time.LocalDate
+import java.time.LocalTime
 
 /**
  * Screens 06 and 07 as one route.
@@ -41,8 +48,10 @@ fun WalkRoute(
     participantId: String,
     walkModeController: WalkModeController,
     playbackController: PlaybackController,
+    groupSessionController: GroupSessionController,
     onExit: () -> Unit,
     onListenTogether: () -> Unit,
+    onRecordMemory: () -> Unit,
 ) {
     val context = LocalContext.current
     val walkState by walkModeController.state.collectAsStateWithLifecycle()
@@ -84,10 +93,6 @@ fun WalkRoute(
         }
     }
 
-    LaunchedEffect(walkState.phase) {
-        if (walkState.phase == WalkPhase.Completed) onExit()
-    }
-
     if (walk == null) {
         PlaceholderScreen(
             title = "Passeio",
@@ -100,17 +105,57 @@ fun WalkRoute(
 
     when (walkState.phase) {
         WalkPhase.Active, WalkPhase.Paused -> {
-            ActiveWalkScreen(
-                state = buildActiveWalkState(walkState, playback, walk),
-                onClose = walkModeController::finish,
-                onTogglePlayPause = playbackController::togglePlayPause,
-                onSkipBack = { playbackController.seekBy(-SKIP_MILLIS) },
-                onSkipForward = { playbackController.seekBy(SKIP_MILLIS) },
-                onListenTogether = onListenTogether,
-                // Supplied by the debug variant and absent from the release
-                // one; `main` never names it (D031).
-                scaffold = walkArrivalScaffold(content, walkModeController),
+            val activeState = buildActiveWalkState(walkState, playback, walk)
+            Box(modifier = Modifier.fillMaxSize()) {
+                ActiveWalkScreen(
+                    state = activeState,
+                    onClose = walkModeController::finish,
+                    onTogglePlayPause = playbackController::togglePlayPause,
+                    onSkipBack = { playbackController.seekBy(-SKIP_MILLIS) },
+                    onSkipForward = { playbackController.seekBy(SKIP_MILLIS) },
+                    onListenTogether = onListenTogether,
+                    // Supplied by the debug variant and absent from the release
+                    // one; `main` never names it (D031).
+                    scaffolds = walkArrivalScaffolds(content, walkModeController),
+                )
+
+                // Screen 10 rises over the walk rather than replacing it: the
+                // sheet's whole composition is the walk still visible above,
+                // dimmed, with the story below (D078).
+                buildStoryTriggerState(content, walkState)?.let { story ->
+                    StoryTriggerSheet(
+                        state = story,
+                        onListen = walkModeController::playPendingStory,
+                        onLater = walkModeController::dismissPendingStory,
+                    )
+                }
+            }
+        }
+
+        WalkPhase.Completed -> {
+            val group by groupSessionController.state.collectAsStateWithLifecycle()
+            val finished = buildWalkFinishedState(
+                content = content,
+                walkState = walkState,
+                localParticipantId = participantId,
+                // The state the app already holds; opening this screen never
+                // joins the group (D071).
+                knownGroup = group.participants,
+                date = LocalDate.now(),
+                time = LocalTime.now(),
             )
+            if (finished == null) {
+                onExit()
+            } else {
+                WalkFinishedScreen(
+                    state = finished,
+                    onRecordMemory = onRecordMemory,
+                    onBackToToday = {
+                        walkModeController.clear()
+                        onExit()
+                    },
+                )
+            }
         }
 
         else -> {

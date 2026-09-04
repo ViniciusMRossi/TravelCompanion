@@ -1110,11 +1110,87 @@ code that had already been reviewed and approved.
 - [ ] **A `check_repo` rule for this class.** Proposed to the reviewer rather
       than written: the guard was asked for as a proposal (D077).
 
+## The last two screens - 10 and 11 (2026-09-04)
+
+**The nineteen canonical screens exist.** This is the first time that can be
+said.
+
+**Verified on both emulators** (360 x 760 dp with the system font at 1.5, and
+480 x 1040 dp). The Galaxy S24 was not asked for - see below.
+
+- [x] Screen 10 Historia disparada pela localizacao: the walk still visible
+      above and dimmed, the editorial sheet rising from the bottom on a light
+      ground, the "Historia pelo caminho" pill, the title at 32px, the
+      paragraph, a separate operational line with distance, exact place and
+      audio length, *Ouvir agora* / *Ler* / *Depois*, and the footnote about
+      the chime in the headphones
+- [x] Screen 11 Fim do passeio: "Passeio concluido", the title at 36px, where
+      and when it ended, four summary cards, **Ainda hoje** with the critical
+      item in oxblood and its instruction, and *Gravar memoria* / *Voltar
+      para Hoje*
+- [x] The canonical **11 -> 12 -> 02** path exists. Screen 02's shortcut into
+      12 stays: it is a legitimate entry and already tested (D079)
+- [x] Reused rather than rebuilt: the S19 machine, `decideStoryTrigger`,
+      `WalkModeController`, `StoryTriggerStore`'s `playedAt`, Today's timeline
+      and `PlaybackController`
+
+### Confirmed by observation
+
+- **the offered story, on both emulators**, reached through a second debug
+  scaffold that turns automatic stories off and then arrives through the same
+  `onLocation` seam (D031, D078). *Ler* opened the full story in place,
+  *Depois* closed the sheet and the walk carried on at the next stop;
+- **a defect found by looking**: the sheet drew its own copy of the walk's
+  progress line on top of the identical line screen 07 was already showing -
+  "1 de 2 22 min restantes" overprinted, both illegible. The sheet carries no
+  copy now; the walk above it is screen 07, dimmed by the scrim;
+- **screen 11 after a real walk**: "Terminou em Sarajevo, as 14:45", the four
+  cards, the 19:30 bus in oxblood with "Esteja na estacao ate 19:00", and
+  *Gravar memoria* opening screen 12 with "Sarajevo - 14:46" - then back to
+  Today, which is the canonical flow end to end;
+- **"Historias ouvidas" reads 0 de 2** with this package, correctly: one story
+  of that walk has no guide at all and the other's audio file is not in this
+  build, so no audio ever started (D021, S20).
+
+### Found by reasoning, not in the field
+
+- **The critical item could have been listed twice on screen 11** - once as
+  the oxblood card and once as a row of "Ainda hoje" - on any day whose next
+  commitment is the critical one. It is excluded from the rows beneath it now.
+
+### Not observed, and not claimed
+
+- **No story has fired from a real GPS fix.** Every arrival in this pass came
+  from the debug scaffold feeding the story's own packaged coordinates through
+  `onLocation` - the real decision, not a real walk. Standing in Bascarsija is
+  the only thing that would prove the rest, and it is not a device question;
+- **screen 10's offered case is not reachable in the running app** with this
+  package: every packaged story declares `autoPlayInWalk` and the walk
+  declares `automaticStoriesDefault`, so a real arrival always plays. A
+  content gap the schema already lets a package close, not a design one
+  (D078);
+- **no audio was heard on either screen**, for the reason above.
+
+### Not implemented, with reasons
+
+- [ ] **A measured walking distance on screen 11.** Nothing tracks it; the
+      card shows the route's declared length. An odometer would be a
+      subsystem, not a field (D079);
+- [ ] **`WalkModeController.pause()` still has no caller.** Neither screen 10
+      nor 11 pauses a walk - 10 lets it carry on by design, and 11 only ever
+      sees a walk that has already ended. The item stays open exactly as it
+      was, since Phase 3.
+
+### What the nineteen screens unlock, and is not done
+
+- [ ] **The second full visual pass**, this time over nineteen screens rather
+      than the eight the first one covered;
+- [ ] **The first end-to-end run of the canonical flow**, which has never been
+      walked whole because it has never been whole.
+
 ## Later
 
-- [ ] **Screens 10 and 11 — História disparada pela localização, and Fim do
-      passeio. They are the last two: seventeen of the nineteen canonical
-      screens exist, and with these the set is complete.**
+- [x] **All nineteen canonical screens exist.**
 - [ ] Weather (live/cached states; only the trip fallback exists today)
 - [ ] Notifications
 - [ ] Real Balkans package
@@ -1190,7 +1266,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 275 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 295 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

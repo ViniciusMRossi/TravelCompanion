@@ -33,6 +33,19 @@ data class WalkStopState(
 )
 
 /**
+ * A story that has been triggered and is waiting to be answered.
+ *
+ * Only the *offered* case reaches this: a story the decision auto-played is
+ * already in the traveller's ears and needs no page (D078). [distanceMeters]
+ * is the distance to the story's own place at the fix that triggered it, which
+ * is a measurement rather than an estimate.
+ */
+data class PendingStory(
+    val storyId: String,
+    val distanceMeters: Int?,
+)
+
+/**
  * Walk Mode as a value.
  *
  * Every transition below is a pure function so the machine can be tested with
@@ -47,6 +60,13 @@ data class WalkModeState(
     val currentStopIndex: Int? = null,
     val locationQuality: LocationQuality = LocationQuality.Unknown,
     val automaticStories: Boolean = true,
+    /** Screen 10: a story offered and not yet answered. */
+    val pending: PendingStory? = null,
+    /** Stories whose audio actually reached the traveller on this walk. */
+    val playedStoryIds: Set<String> = emptySet(),
+    /** Wall-clock bounds of the walk, for screen 11's summary. */
+    val startedAtEpochMs: Long? = null,
+    val completedAtEpochMs: Long? = null,
 ) {
     val isRunning: Boolean get() = phase == WalkPhase.Active || phase == WalkPhase.Paused
 
@@ -117,7 +137,29 @@ fun WalkModeState.finishWalking(): WalkModeState =
     if (isRunning) copy(phase = WalkPhase.Finishing) else this
 
 fun WalkModeState.completeWalking(): WalkModeState =
-    if (phase == WalkPhase.Finishing) copy(phase = WalkPhase.Completed, currentStopIndex = null) else this
+    if (phase == WalkPhase.Finishing) {
+        copy(phase = WalkPhase.Completed, currentStopIndex = null, pending = null)
+    } else {
+        this
+    }
+
+/** Screen 10 rises. Only ever for a story that was offered, never auto-played. */
+fun WalkModeState.offerStory(storyId: String, distanceMeters: Int?): WalkModeState =
+    if (phase == WalkPhase.Active) copy(pending = PendingStory(storyId, distanceMeters)) else this
+
+/**
+ * Screen 10 goes away — *Ouvir agora*, *Depois*, or the walk ending.
+ *
+ * "Depois" costs nothing on purpose: the story was already recorded as
+ * triggered when it fired, so dismissing it neither replays it later nor
+ * stops anything, and location stories stay enrichment.
+ */
+fun WalkModeState.clearPendingStory(): WalkModeState =
+    if (pending == null) this else copy(pending = null)
+
+/** The story's audio actually started. */
+fun WalkModeState.markStoryPlayed(storyId: String): WalkModeState =
+    copy(playedStoryIds = playedStoryIds + storyId)
 
 fun WalkModeState.withLocationQuality(quality: LocationQuality): WalkModeState =
     copy(locationQuality = quality)

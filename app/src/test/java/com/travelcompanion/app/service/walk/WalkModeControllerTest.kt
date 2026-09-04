@@ -239,4 +239,92 @@ class WalkModeControllerTest {
             stories += storyId
         }
     }
+
+    /**
+     * Screen 10 exists for the *offered* case only.
+     *
+     * Both packaged stories declare `autoPlayInWalk`, so with automatic
+     * stories on the decision is `PlayInWalk`: the story is already in the
+     * traveller's ears and no page rises for it (D078). Turning the toggle off
+     * on screen 06 is what makes the same arrival an offer.
+     */
+    @Test
+    fun `a story that plays by itself raises no sheet`() {
+        val controller = controller()
+        controller.prepare(content, walkId)
+        controller.start()
+
+        controller.onLocation(at(bridgePoint))
+
+        assertNull(controller.state.value.pending)
+        // It played instead: nothing was offered, so nothing is waiting.
+        assertEquals(setOf("story.latin-bridge"), controller.state.value.playedStoryIds)
+    }
+
+    @Test
+    fun `a story that is offered raises the sheet, with the distance it fired at`() {
+        val controller = controller()
+        controller.prepare(content, walkId)
+        controller.setAutomaticStories(false)
+        controller.start()
+
+        controller.onLocation(at(bridgePoint))
+
+        val pending = controller.state.value.pending
+        assertEquals("story.latin-bridge", pending?.storyId)
+        // Standing on the trigger's own point, so a few metres at most.
+        assertTrue("distance was ${pending?.distanceMeters}", pending!!.distanceMeters!! < 20)
+    }
+
+    @Test
+    fun `Ouvir agora plays the story that was offered and closes the sheet`() {
+        val controller = controller()
+        controller.prepare(content, walkId)
+        controller.setAutomaticStories(false)
+        controller.start()
+        controller.onLocation(at(bridgePoint))
+
+        controller.playPendingStory()
+
+        assertNull(controller.state.value.pending)
+        assertEquals(setOf("story.latin-bridge"), controller.state.value.playedStoryIds)
+        assertTrue(store.played.contains("story.latin-bridge"))
+    }
+
+    /** "Depois" costs nothing: nothing plays, and nothing fires again. */
+    @Test
+    fun `Depois closes the sheet and plays nothing`() {
+        val controller = controller()
+        controller.prepare(content, walkId)
+        controller.setAutomaticStories(false)
+        controller.start()
+        controller.onLocation(at(bridgePoint))
+        val playedBefore = store.played.size
+
+        controller.dismissPendingStory()
+
+        assertNull(controller.state.value.pending)
+        assertTrue(controller.state.value.playedStoryIds.isEmpty())
+        assertEquals(playedBefore, store.played.size)
+
+        // And the same circle does not fire again: it was recorded as
+        // triggered when it arrived.
+        controller.onLocation(at(bridgePoint))
+        assertNull(controller.state.value.pending)
+    }
+
+    /** Screen 11 needs both ends of the walk's own clock. */
+    @Test
+    fun `the walk stamps when it started and when it ended`() {
+        val controller = controller()
+        controller.prepare(content, walkId)
+        controller.start()
+        val started = controller.state.value.startedAtEpochMs
+
+        controller.finish()
+
+        assertEquals(1_000L, started)
+        assertEquals(1_000L, controller.state.value.completedAtEpochMs)
+        assertEquals(WalkPhase.Completed, controller.state.value.phase)
+    }
 }

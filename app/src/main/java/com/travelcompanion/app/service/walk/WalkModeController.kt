@@ -10,6 +10,10 @@ import com.travelcompanion.app.domain.walk.StoryTriggerRecord
 import com.travelcompanion.app.domain.walk.WalkModeState
 import com.travelcompanion.app.domain.walk.WalkPhase
 import com.travelcompanion.app.domain.walk.arriveAt
+import com.travelcompanion.app.domain.walk.clearPendingStory
+import com.travelcompanion.app.domain.walk.markStoryPlayed
+import com.travelcompanion.app.domain.walk.offerStory
+import com.travelcompanion.app.domain.walk.distanceMeters
 import com.travelcompanion.app.domain.walk.completeWalking
 import com.travelcompanion.app.domain.walk.decideStoryTrigger
 import com.travelcompanion.app.domain.walk.finishWalking
@@ -77,7 +81,11 @@ class WalkModeController(
     fun start() {
         val started = _state.value.startWalking()
         if (started.phase != WalkPhase.Active) return
-        _state.value = started.withLocationQuality(currentQuality())
+        _state.value = started
+            .withLocationQuality(currentQuality())
+            // Only the first start stamps: resuming from Paused continues the
+            // same walk, and screen 11's duration is the whole of it.
+            .copy(startedAtEpochMs = started.startedAtEpochMs ?: now())
         // The persistent notification exists to satisfy Android's rules for
         // holding location in the background, and a foreground service of type
         // `location` is refused outright without a location permission. With no
@@ -107,7 +115,7 @@ class WalkModeController(
         if (finishing.phase != WalkPhase.Finishing) return
         stopObservingLocation()
         presence.stopWalk()
-        _state.value = finishing.completeWalking()
+        _state.value = finishing.completeWalking().copy(completedAtEpochMs = now())
     }
 
     /** Leaving screen 06 without starting: back to nothing running. */
@@ -139,12 +147,34 @@ class WalkModeController(
         )
         when (decision) {
             StoryTriggerDecision.Nothing -> Unit
-            is StoryTriggerDecision.PlayInWalk -> arrive(decision.story, autoPlay = true)
-            is StoryTriggerDecision.Notify -> arrive(decision.story, autoPlay = false)
+            is StoryTriggerDecision.PlayInWalk -> arrive(decision.story, autoPlay = true, from = location)
+            is StoryTriggerDecision.Notify -> arrive(decision.story, autoPlay = false, from = location)
         }
     }
 
-    private fun arrive(story: Story, autoPlay: Boolean) {
+    /**
+     * Screen 10's *Ouvir agora*: play the story that was offered.
+     *
+     * The guide may not be packaged, in which case nothing plays and nothing
+     * is recorded as played — the sheet still closes, because the traveller
+     * answered it (D021).
+     */
+    fun playPendingStory() {
+        val storyId = _state.value.pending?.storyId ?: return
+        val story = content?.story(storyId)
+        _state.update { it.clearPendingStory() }
+        if (story != null) playStory(story, now())
+    }
+
+    /**
+     * Screen 10's *Depois*. It costs nothing: the story was recorded as
+     * triggered when it fired, so this neither replays it nor stops anything.
+     */
+    fun dismissPendingStory() {
+        _state.update { it.clearPendingStory() }
+    }
+
+    private fun arrive(story: Story, autoPlay: Boolean, from: DeviceLocation? = null) {
         // Recorded before anything else can fail. An audio asset that is not
         // packaged must still count as arrived, or the same circle re-fires on
         // the very next fix.
@@ -154,7 +184,16 @@ class WalkModeController(
 
         _state.update { it.arriveAt(story.id) }
 
-        if (autoPlay) playStory(story, at) else presence.notifyStory(story.id, story.title, story.hook)
+        if (autoPlay) {
+            playStory(story, at)
+        } else {
+            presence.notifyStory(story.id, story.title, story.hook)
+            // Screen 10 rises only for the offered case: a story that started
+            // by itself is already in the traveller's ears (D078).
+            _state.update { state ->
+                state.offerStory(story.id, distanceTo(story, from))
+            }
+        }
 
         val updated = _state.value
         if (updated.phase == WalkPhase.Active) {
@@ -170,6 +209,19 @@ class WalkModeController(
      * what is already playing (D021). A story with no audio at all is not an
      * error either: the walk continues either way.
      */
+    /**
+     * How far the story's own place was at the fix that triggered it.
+     *
+     * A measurement, not an estimate: the position and the trigger's point are
+     * both known at that instant. Null when either is missing, and the
+     * operational line simply omits it rather than guessing.
+     */
+    private fun distanceTo(story: Story, from: DeviceLocation?): Int? {
+        val point = story.trigger?.geo ?: return null
+        val location = from ?: return null
+        return distanceMeters(location.point, point).toInt()
+    }
+
     private fun playStory(story: Story, at: Long) {
         val trip = content ?: return
         // Playable only: a guide that exists in the trip but is not packaged
@@ -179,6 +231,7 @@ class WalkModeController(
         val request = audioGuideRequest(trip, story.audioGuideId, subtitle = story.title)
         if (request !is AudioGuideRequest.Playable) return
         playbackController.playAudioGuide(request)
+        _state.update { it.markStoryPlayed(story.id) }
         scope.launch { triggerStore.recordPlayed(story.id, at) }
     }
 

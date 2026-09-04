@@ -312,8 +312,21 @@ fun AppNavigation(
                         participantId = participantId,
                         walkModeController = walkModeController,
                         playbackController = playbackController,
+                        groupSessionController = groupSessionController,
                         onExit = navController::popBackStack,
                         onListenTogether = { navController.navigate(Routes.LISTEN_TOGETHER) },
+                        // The canonical 11 -> 12 -> 02 path, which existed in
+                        // the design and had nowhere to start from until 11
+                        // did. Screen 02's shortcut stays: it is a legitimate
+                        // entry and already tested (D079).
+                        onRecordMemory = {
+                            navController.navigate(Routes.MEMORY) {
+                                // 11 -> 12 -> 02: the walk is over, so back
+                                // from the memory screen is Today and not a
+                                // walk that no longer exists.
+                                popUpTo(Routes.TODAY)
+                            }
+                        },
                     )
                 }
                 composable(Routes.LISTEN_TOGETHER) {
