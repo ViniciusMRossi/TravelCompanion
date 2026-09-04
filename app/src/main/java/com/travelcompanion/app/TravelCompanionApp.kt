@@ -20,6 +20,7 @@ import com.travelcompanion.app.service.playback.Media3AudioEngine
 import com.travelcompanion.app.service.playback.PlaybackController
 import android.os.SystemClock
 import com.travelcompanion.app.service.memory.MediaAudioRecorder
+import com.travelcompanion.app.service.memory.MediaMemoryPlayer
 import com.travelcompanion.app.service.memory.MemoryController
 import com.travelcompanion.app.service.walk.AndroidWalkPresence
 import com.travelcompanion.app.service.sync.GroupSessionController
@@ -128,6 +129,7 @@ class AppContainer(context: Context) {
         recorder = MediaAudioRecorder(appContext),
         memories = RoomMemoryRepository(memoryDatabase.memories()),
         playback = playbackController,
+        player = MediaMemoryPlayer(),
         filesDir = appContext::getFilesDir,
         scope = playbackScope,
         now = SystemClock::elapsedRealtime,

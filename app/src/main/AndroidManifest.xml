@@ -59,5 +59,24 @@
             </intent-filter>
         </service>
 
+        <!--
+            Hands one memory's audio file to whatever the traveller picks in the
+            system share sheet, and nothing else.
+
+            `memory_file_paths.xml` exposes `files/memories/` alone, never the
+            whole `filesDir`, and the read permission is granted per-Intent and
+            expires with it. Declared because it is used, on the same terms as
+            the permissions this app has removed when they were not (D082).
+        -->
+        <provider
+            android:name=".service.external.MemoryFileProvider"
+            android:authorities="${applicationId}.memories"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/memory_file_paths" />
+        </provider>
+
     </application>
 </manifest>

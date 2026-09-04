@@ -39,6 +39,9 @@ interface MemoryDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(memory: MemoryEntity)
+
+    @Query("DELETE FROM memories WHERE id = :id")
+    suspend fun delete(id: String)
 }
 
 @Database(entities = [MemoryEntity::class], version = 1, exportSchema = false)
@@ -53,6 +56,8 @@ class RoomMemoryRepository(private val dao: MemoryDao) : MemoryRepository {
         dao.memories().map { rows -> rows.map(MemoryEntity::toMemory) }
 
     override suspend fun save(memory: Memory) = dao.insert(memory.toEntity())
+
+    override suspend fun delete(id: String) = dao.delete(id)
 }
 
 private fun MemoryEntity.toMemory() = Memory(

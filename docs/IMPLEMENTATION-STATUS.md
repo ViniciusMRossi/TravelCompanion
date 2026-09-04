@@ -765,9 +765,9 @@ On both emulators (360 × 760 dp with the system font at 1.5, and
       running when the process is killed leaves an unfinalized file and no row.
       Recovering it would mean writing the row before the audio exists and
       reconciling on the next launch, which is a design of its own;
-- [ ] **Memories cannot be played back in the app.** The approved sheet's list
-      carries title, date, author and duration and does not draw a play
-      control, and screen 12's job is to record. Nothing was invented;
+- [x] **Memories cannot be played back in the app.** *(Closed: a design
+      handoff for the list arrived and playing, sharing and deleting are built
+      - see below. Nothing was invented before it did.)*
 - [ ] **Screens 10 and 11 remain out of scope**, so the canonical 11 → 12 flow
       is still not walkable end to end. Screen 12 is reached from the "Gravar
       memória" shortcut on screen 02 (D058).
@@ -1213,6 +1213,65 @@ said.
       identity is the job, and it does not try to judge a first element - only
       to insist that somebody said which (D080).
 
+## Screen 12's list learns to play, share and delete (2026-09-04)
+
+A design handoff arrived for the list under the recorder, and is versioned at
+`docs/design/prototype/handoff-12-memorias/`. Nothing above the list changed.
+
+**Verified on both emulators** for layout (360 x 760 dp with the system font at
+1.5, and 480 x 1040 dp) **and on the Galaxy S24** for the three things an
+emulator cannot close.
+
+- [x] Playing a memory from its row, with the 5dp progress bar inside the same
+      card, indented 34dp to line up with the title
+- [x] Sharing through the system sheet: `ACTION_SEND`, audio MIME, a
+      `FileProvider` that exposes `files/memories/` and nothing else
+- [x] Deleting with a named confirmation - "Apagar" and "Manter", never "OK"
+      and "Cancelar" - which removes the row and the file
+- [x] The empty state, which is what this build actually shows until somebody
+      records: the reference's two example memories are the reference's
+- [x] A memory never touches `PlaybackController`, the media session, the
+      media notification or the lock screen (D081)
+
+### Confirmed by observation - Galaxy S24
+
+- **the audio really comes out**: `dumpsys audio` shows
+  `type:android.media.MediaPlayer ... state:started ... sampleRate=44100` for
+  this app while the row's bar advances;
+- **and it stays out of the media session**: `dumpsys media_session` lists no
+  session for this app while a memory plays, so nothing reaches the lock
+  screen (D081);
+- **the real share sheet** shows "Sarajevo.m4a" - the memory's own name, not
+  its id - and the system's own direct-share row put **"Erika - WhatsApp"
+  first**, with no direct-share target, sharing shortcut or `ShortcutManager`
+  registered by this app. That answers the handoff's open question: the tile
+  stays out of the delivery and the system supplies the person anyway (D082);
+- **the confirmation line**: choosing a destination - Bluetooth, whose transfer
+  was then cancelled at the device picker - left "Enviada para Bluetooth" in
+  green with a tick on that row, and the file untouched;
+- **the destructive dialog**: tapping outside left both files on disk;
+  confirming removed the row and the file, and only that one - the memory the
+  traveller had already recorded on the device was still there afterwards.
+
+### Confirmed by observation - emulators
+
+- **a layout fix at 360 dp with the font at 1.5**: the duration as a third
+  column left the date reading "4 de se...". It moved into the metadata line,
+  which is D055's rule - the qualifier gives way, not the identity;
+- **the empty state** reads "Nenhuma memoria gravada nesta viagem." before
+  anything is recorded;
+- **back and tapping outside both mean "Manter"**.
+
+### Not implemented, with reasons
+
+- [ ] **No undo after deleting.** Asked and answered: the dialog says the
+      recording cannot be recovered, and that is true. A snackbar would make
+      the sentence a half-truth;
+- [ ] **No "Erika" tile drawn by this app.** The handoff's own fallback, and
+      the system does it better (D082);
+- [ ] **No share icon of our own.** The approved sprite has none; `tc-near-me`
+      stands in, as the handoff proposes, and the note for design stands.
+
 ## Later
 
 - [x] **All nineteen canonical screens exist.**
@@ -1291,7 +1350,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 298 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 306 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

@@ -5,6 +5,7 @@ import com.travelcompanion.app.data.trip.TripContent
 import com.travelcompanion.app.domain.memory.MemoryAttribution
 import com.travelcompanion.app.domain.memory.MemoryFailure
 import com.travelcompanion.app.domain.memory.MemoryPhase
+import com.travelcompanion.app.domain.memory.MemoryPlaybackState
 import com.travelcompanion.app.domain.memory.MemoryRecordingState
 import com.travelcompanion.app.domain.walk.WalkModeState
 import java.time.Instant
@@ -38,6 +39,15 @@ data class SavedMemoryUi(
     val date: String,
     val author: String,
     val duration: String,
+    val isPlaying: Boolean = false,
+    /** 0..1, for the 5dp bar drawn inside this row while it plays. */
+    val progress: Float = 0f,
+    /** Elapsed time, shown beside the duration only while playing. */
+    val positionLabel: String? = null,
+    /** "Enviada para WhatsApp", once the traveller has picked a destination. */
+    val sharedTo: String? = null,
+    /** The file behind this row would not play. */
+    val unplayable: Boolean = false,
 )
 
 /**
@@ -58,6 +68,8 @@ fun buildMemoryState(
     elapsedMs: Long,
     nowEpochMs: Long,
     zone: ZoneId,
+    playback: MemoryPlaybackState = MemoryPlaybackState(),
+    sharedTo: Map<String, String> = emptyMap(),
 ): MemoryUiState {
     val place = placeName(walkState)
     // The city of the day being lived, from the clock this screen already
@@ -93,7 +105,7 @@ fun buildMemoryState(
         } else {
             null
         },
-        previous = saved.map { memory -> memory.toRow(zone) },
+        previous = saved.map { memory -> memory.toRow(zone, playback, sharedTo[memory.id]) },
     )
 }
 
@@ -142,7 +154,11 @@ private fun failureNote(failure: MemoryFailure): String = when (failure) {
         "A gravação foi salva no aparelho, mas não entrou na lista desta viagem."
 }
 
-private fun Memory.toRow(zone: ZoneId) = SavedMemoryUi(
+private fun Memory.toRow(
+    zone: ZoneId,
+    playback: MemoryPlaybackState,
+    sharedTo: String?,
+) = SavedMemoryUi(
     id = id,
     // A memory has no title and is never asked for one. The row is named by
     // where it happened, which is something the app filled in by itself.
@@ -150,6 +166,11 @@ private fun Memory.toRow(zone: ZoneId) = SavedMemoryUi(
     date = formatDate(recordedAtEpochMs, zone),
     author = participantName,
     duration = formatDuration(durationMs),
+    isPlaying = playback.memoryId == id && playback.isPlaying,
+    progress = if (playback.memoryId == id) playback.progress else 0f,
+    positionLabel = if (playback.memoryId == id) formatDuration(playback.positionMs) else null,
+    sharedTo = sharedTo?.let { "Enviada para $it" },
+    unplayable = playback.unplayableMemoryId == id,
 )
 
 /** "02:41", the shape the approved recorder shows. */

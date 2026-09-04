@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,15 +26,22 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.travelcompanion.app.design.FieldCompanionColors
 import com.travelcompanion.app.design.TcCardShape
 import com.travelcompanion.app.design.TcChip
@@ -65,8 +73,15 @@ fun MemoryScreen(
     onFinish: () -> Unit,
     onCancel: () -> Unit,
     onDone: () -> Unit,
+    onPlayMemory: (SavedMemoryUi) -> Unit,
+    onPauseMemory: () -> Unit,
+    onShareMemory: (SavedMemoryUi) -> Unit,
+    onDeleteMemory: (SavedMemoryUi) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Which row is asking to be deleted. Screen state and nothing more: the
+    // sheet is a question, and the answer is what reaches the application.
+    var confirming by remember { mutableStateOf<SavedMemoryUi?>(null) }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -121,17 +136,47 @@ fun MemoryScreen(
                 onDone = onDone,
             )
 
-            if (state.previous.isNotEmpty()) {
-                Text(
-                    text = "Memórias desta viagem",
-                    style = TcType.sectionTitle,
-                    color = FieldCompanionColors.Ink,
-                )
+            Text(
+                text = "Memórias desta viagem",
+                style = TcType.sectionTitle,
+                color = FieldCompanionColors.Ink,
+            )
+            if (state.previous.isEmpty()) {
+                EmptyMemories()
+            } else {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    state.previous.forEach { SavedMemoryRow(it) }
+                    state.previous.forEach { memory ->
+                        SavedMemoryRow(
+                            memory = memory,
+                            onPlay = { onPlayMemory(memory) },
+                            onPause = onPauseMemory,
+                            onShare = {
+                                // Opening any sheet pauses playback, which the
+                                // handoff asks for and the traveller expects:
+                                // the phone is about to be somewhere else.
+                                onPauseMemory()
+                                onShareMemory(memory)
+                            },
+                            onDelete = {
+                                onPauseMemory()
+                                confirming = memory
+                            },
+                        )
+                    }
                 }
             }
         }
+    }
+
+    confirming?.let { memory ->
+        DeleteMemorySheet(
+            memory = memory,
+            onKeep = { confirming = null },
+            onDelete = {
+                confirming = null
+                onDeleteMemory(memory)
+            },
+        )
     }
 }
 
@@ -338,36 +383,271 @@ private fun SavedRecorder(state: MemoryUiState, onDone: () -> Unit) {
     TcPrimaryButton(onClick = onDone) { Text("Voltar para Hoje") }
 }
 
+/**
+ * One saved memory: play, share, delete — and the progress bar, when it plays.
+ *
+ * The play target is the whole line rather than an icon, which is what the
+ * handoff draws: the text is what a person aims at. The other two are 48dp
+ * each and do not overlap it.
+ */
 @Composable
-private fun SavedMemoryRow(memory: SavedMemoryUi) {
-    Row(
+private fun SavedMemoryRow(
+    memory: SavedMemoryUi,
+    onPlay: () -> Unit,
+    onPause: () -> Unit,
+    onShare: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(TcCardShape)
             .background(FieldCompanionColors.Surface)
             .border(1.dp, FieldCompanionColors.Neutral200, TcCardShape)
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = memory.title,
-                style = TcType.body.copy(fontWeight = FontWeight.Bold),
-                color = FieldCompanionColors.Ink,
-                maxLines = 1,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp)
+                    .clip(TcCardShape)
+                    .clickable { if (memory.isPlaying) onPause() else onPlay() }
+                    .semantics {
+                        contentDescription = if (memory.isPlaying) {
+                            "Pausar memória " + memory.title
+                        } else {
+                            "Tocar memória " + memory.title
+                        }
+                    }
+                    .padding(end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(
+                    imageVector = if (memory.isPlaying) TcIcons.Pause else TcIcons.Play,
+                    contentDescription = null,
+                    tint = FieldCompanionColors.Teal,
+                    modifier = Modifier.size(22.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = memory.title,
+                        style = TcType.body.copy(fontWeight = FontWeight.Bold),
+                        color = FieldCompanionColors.Ink,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    // The length belongs on this line rather than in a
+                    // column of its own: at 360dp with the font at 1.5 a third
+                    // column left the date as "4 de se…", and D055's rule is
+                    // that the qualifier gives way, not the identity.
+                    Text(
+                        text = memory.date + " · " + memory.author + " · " + memory.duration,
+                        style = TcType.meta,
+                        color = FieldCompanionColors.Neutral600,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            RowAction(
+                icon = TcIcons.NearMe,
+                tint = FieldCompanionColors.Teal,
+                label = "Compartilhar memória " + memory.title,
+                onClick = onShare,
             )
-            Text(
-                text = "${memory.date} · ${memory.author}",
-                style = TcType.meta,
-                color = FieldCompanionColors.Neutral600,
-                maxLines = 1,
+            RowAction(
+                icon = TcIcons.Close,
+                tint = FieldCompanionColors.Oxblood,
+                label = "Apagar memória " + memory.title,
+                onClick = onDelete,
             )
         }
+
+        // Inside the same card, separated by padding rather than a second
+        // frame, and indented to line up with the title.
+        if (memory.isPlaying || memory.progress > 0f) {
+            Column(
+                modifier = Modifier.padding(start = 34.dp, end = 8.dp, top = 2.dp, bottom = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(5.dp)
+                        .clip(TcPillShape)
+                        .background(FieldCompanionColors.TealSoft),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(memory.progress)
+                            .height(5.dp)
+                            .clip(TcPillShape)
+                            .background(FieldCompanionColors.Teal),
+                    )
+                }
+                Text(
+                    text = (memory.positionLabel ?: memory.duration) + " / " + memory.duration,
+                    style = TcType.meta,
+                    color = FieldCompanionColors.Neutral600,
+                )
+            }
+        }
+
+        memory.sharedTo?.let { confirmation ->
+            Row(
+                modifier = Modifier.padding(start = 34.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                // Never colour alone: the tick is half of what says this
+                // happened.
+                Icon(
+                    imageVector = TcIcons.Check,
+                    contentDescription = null,
+                    tint = FieldCompanionColors.MossInk,
+                    modifier = Modifier.size(14.dp),
+                )
+                Text(confirmation, style = TcType.meta, color = FieldCompanionColors.MossInk)
+            }
+        }
+
+        if (memory.unplayable) {
+            Text(
+                text = "Este áudio não está mais neste aparelho.",
+                style = TcType.meta,
+                color = FieldCompanionColors.Neutral600,
+                modifier = Modifier.padding(start = 34.dp, bottom = 4.dp),
+            )
+        }
+    }
+}
+
+/** A 48dp square that does one thing and says what it is. */
+@Composable
+private fun RowAction(
+    icon: ImageVector,
+    tint: Color,
+    label: String,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(TcPillShape)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+    }
+}
+
+@Composable
+private fun EmptyMemories() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(TcCardShape)
+            .border(1.dp, FieldCompanionColors.Neutral200, TcCardShape)
+            .padding(vertical = 22.dp, horizontal = 16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
         Text(
-            text = memory.duration,
+            text = "Nenhuma memória gravada nesta viagem.",
             style = TcType.meta,
             color = FieldCompanionColors.Neutral600,
+            textAlign = TextAlign.Center,
         )
+    }
+}
+
+/**
+ * The one destructive confirmation in this app, so it is written like one.
+ *
+ * The destructive action is named and the way out is named "Manter", because
+ * the question is about keeping the recording rather than about cancelling an
+ * operation. Tapping outside or pressing back is "Manter". There is no undo,
+ * and the sentence says so plainly — a snackbar would make it a half-truth.
+ */
+@Composable
+private fun DeleteMemorySheet(
+    memory: SavedMemoryUi,
+    onKeep: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Dialog(onDismissRequest = onKeep) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(28.dp))
+                .background(FieldCompanionColors.Surface)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .size(width = 44.dp, height = 4.dp)
+                    .clip(TcPillShape)
+                    .background(FieldCompanionColors.Neutral200),
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(
+                    TcIcons.Warning,
+                    contentDescription = null,
+                    tint = FieldCompanionColors.Oxblood,
+                    modifier = Modifier.size(16.dp),
+                )
+                Text(
+                    text = "APAGAR MEMÓRIA",
+                    style = TcType.eyebrow,
+                    color = FieldCompanionColors.Oxblood,
+                )
+            }
+            Text(
+                text = memory.title,
+                style = TcType.subheadline,
+                color = FieldCompanionColors.Ink,
+            )
+            Text(
+                text = memory.date + " · " + memory.author + " · " + memory.duration +
+                    " · a gravação sai deste aparelho e não pode ser recuperada.",
+                style = TcType.body,
+                color = FieldCompanionColors.Neutral700,
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp)
+                    .clip(TcCardShape)
+                    .background(FieldCompanionColors.Oxblood)
+                    .clickable(onClick = onDelete),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("Apagar", style = TcType.action, color = FieldCompanionColors.White)
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp)
+                    .clip(TcCardShape)
+                    .background(FieldCompanionColors.Surface)
+                    .border(1.dp, FieldCompanionColors.Neutral200, TcCardShape)
+                    .clickable(onClick = onKeep),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("Manter", style = TcType.action, color = FieldCompanionColors.Ink)
+            }
+        }
     }
 }

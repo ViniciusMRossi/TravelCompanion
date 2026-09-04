@@ -7,7 +7,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -16,6 +18,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.travelcompanion.app.data.trip.TripContent
 import com.travelcompanion.app.domain.memory.MemoryPhase
+import com.travelcompanion.app.service.external.ExternalActionLauncher
 import com.travelcompanion.app.service.memory.MemoryController
 import com.travelcompanion.app.service.walk.WalkModeController
 import kotlinx.coroutines.delay
@@ -76,6 +79,24 @@ fun MemoryRoute(
 
     val attribution = buildAttribution(content, walkState, participantId, LocalDate.now())
 
+    val playing by memoryController.playing.collectAsStateWithLifecycle()
+
+    // Which destination each memory went to, for the confirmation on its row.
+    // Screen state on purpose: it describes something that just happened here,
+    // and nothing outside this screen has any use for it.
+    var sharedTo by remember { mutableStateOf(emptyMap<String, String>()) }
+
+    val launcher = remember(context) { ExternalActionLauncher(context) }
+
+    // A memory stops when this screen goes, which is the opposite of what an
+    // audioguide does — and deliberate. A guide survives the pocket because it
+    // has a notification and a lock screen to be paused from; a memory has
+    // controls only in its own row, so leaving it playing would be audio with
+    // nothing to stop it (D083).
+    DisposableEffect(Unit) {
+        onDispose { memoryController.stopMemory() }
+    }
+
     // Asked immediately before it is needed, never at launch — the timing
     // brief §23 asks for, and the same shape Phase 3 uses for location. A
     // refusal costs the recording and not the screen (D030).
@@ -98,6 +119,8 @@ fun MemoryRoute(
         elapsedMs = elapsedMs,
         nowEpochMs = nowEpochMs,
         zone = ZoneId.systemDefault(),
+        playback = playing,
+        sharedTo = sharedTo,
     )
 
     MemoryScreen(
@@ -121,6 +144,27 @@ fun MemoryRoute(
         onDone = {
             memoryController.acknowledge()
             onBack()
+        },
+        onPlayMemory = { row ->
+            val memory = saved.firstOrNull { it.id == row.id } ?: return@MemoryScreen
+            if (playing.memoryId == memory.id) {
+                memoryController.resumeMemory()
+            } else {
+                memoryController.playMemory(memory)
+            }
+        },
+        onPauseMemory = memoryController::pauseMemory,
+        onShareMemory = { row ->
+            launcher.shareAudio(
+                file = memoryController.fileFor(row.id),
+                title = row.title,
+                subtitle = "Arquivo de áudio · " + row.duration + " · fica salvo no aparelho",
+                onSharedTo = { destination -> sharedTo = sharedTo + (row.id to destination) },
+            )
+        },
+        onDeleteMemory = { row ->
+            saved.firstOrNull { it.id == row.id }?.let(memoryController::deleteMemory)
+            sharedTo = sharedTo - row.id
         },
         modifier = modifier,
     )

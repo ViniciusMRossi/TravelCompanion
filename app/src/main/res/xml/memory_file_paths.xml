@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    What the FileProvider is allowed to hand out, and nothing more.
+
+    Only `files/memories/`, never `filesDir` itself: sharing is the first thing
+    in this app that leaves the phone, and the door it opens should be exactly
+    the width of the one file the traveller chose to send (D082).
+-->
+<paths>
+    <files-path name="memories" path="memories/" />
+</paths>

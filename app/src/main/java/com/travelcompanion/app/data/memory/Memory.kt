@@ -27,10 +27,13 @@ data class Memory(
 /**
  * Where memories live, behind the narrowest interface that works.
  *
- * Two operations: keep one, and read them back newest first. The screen needs
- * nothing else, and neither does anything else in the app.
+ * Three operations: keep one, read them back newest first, and remove one.
+ * The screen needs nothing else, and neither does anything else in the app.
  */
 interface MemoryRepository {
     fun memories(): Flow<List<Memory>>
     suspend fun save(memory: Memory)
+
+    /** Removes the row. The audio file is the caller's to delete. */
+    suspend fun delete(id: String)
 }

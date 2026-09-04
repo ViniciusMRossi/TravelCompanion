@@ -5,6 +5,7 @@ import com.travelcompanion.app.data.memory.MemoryRepository
 import com.travelcompanion.app.domain.memory.MemoryAttribution
 import com.travelcompanion.app.domain.memory.MemoryFailure
 import com.travelcompanion.app.domain.memory.MemoryPhase
+import com.travelcompanion.app.domain.memory.MemoryPlaybackState
 import com.travelcompanion.app.domain.memory.MemoryRecordingState
 import com.travelcompanion.app.domain.memory.acknowledge
 import com.travelcompanion.app.domain.memory.cancelRecording
@@ -42,6 +43,7 @@ class MemoryController(
     private val recorder: AudioRecorder,
     private val memories: MemoryRepository,
     private val playback: PlaybackController,
+    private val player: MemoryAudioPlayer,
     private val filesDir: () -> File,
     private val scope: CoroutineScope,
     private val now: () -> Long = System::currentTimeMillis,
@@ -59,7 +61,13 @@ class MemoryController(
     /** The list under the recorder, straight from Room. */
     fun saved(): Flow<List<Memory>> = memories.memories()
 
+    private val _playing = MutableStateFlow(MemoryPlaybackState())
+
+    /** Which memory is playing, and how far in. Nothing else listens. */
+    val playing: StateFlow<MemoryPlaybackState> = _playing.asStateFlow()
+
     private var ticker: Job? = null
+    private var playbackTicker: Job? = null
 
     /**
      * Whether this controller is the one that paused the audioguide.
@@ -81,8 +89,12 @@ class MemoryController(
     fun start(attribution: MemoryAttribution) {
         if (_state.value.isActive) return
 
+        // A memory playing while the microphone opens would be recorded into
+        // the new one, for the same reason the audioguide gives way.
+        stopMemory()
+
         val id = newId()
-        pauseGuideForRecording()
+        pauseGuide()
 
         val output = fileFor(id)
         if (!recorder.start(output)) {
@@ -179,7 +191,109 @@ class MemoryController(
     /** The file a memory's audio lives in, per brief §22. */
     fun fileFor(id: String): File = File(File(filesDir(), MEMORY_DIR), "$id$EXTENSION")
 
-    private fun pauseGuideForRecording() {
+    /**
+     * Playing one memory. Starting one stops the other, so only ever one runs.
+     *
+     * The audioguide gives way here for the same reason it gives way to the
+     * microphone, and comes back the same way — only if this is what paused
+     * it (D081).
+     */
+    fun playMemory(memory: Memory) {
+        val file = fileFor(memory.id)
+        stopMemory()
+        pauseGuide()
+        if (!player.play(file) { onMemoryFinished() }) {
+            resumeGuideIfPaused()
+            _playing.value = MemoryPlaybackState(unplayableMemoryId = memory.id)
+            return
+        }
+        _playing.value = MemoryPlaybackState(
+            memoryId = memory.id,
+            isPlaying = true,
+            durationMs = player.durationMs.takeIf { it > 0 } ?: memory.durationMs,
+        )
+        startPlaybackTicker()
+    }
+
+    /** The same row pressed again, and what a sheet opening does to it. */
+    fun pauseMemory() {
+        if (!_playing.value.isPlaying) return
+        player.pause()
+        stopPlaybackTicker()
+        _playing.update { it.copy(isPlaying = false) }
+    }
+
+    fun resumeMemory() {
+        val current = _playing.value
+        if (current.memoryId == null || current.isPlaying) return
+        pauseGuide()
+        if (!player.resume()) return
+        _playing.update { it.copy(isPlaying = true) }
+        startPlaybackTicker()
+    }
+
+    /**
+     * Leaving screen 12, and every other way the memory stops for good.
+     *
+     * The opposite of what the audioguide does on the way out, on purpose: a
+     * memory has no control anywhere but its own row, so leaving it playing
+     * would be audio with nothing to stop it (D083).
+     */
+    fun stopMemory() {
+        stopPlaybackTicker()
+        player.stop()
+        if (_playing.value.memoryId != null || _playing.value.unplayableMemoryId != null) {
+            _playing.value = MemoryPlaybackState()
+        }
+        resumeGuideIfPaused()
+    }
+
+    /**
+     * Deleting one memory: the row and the file, in that order.
+     *
+     * The dialog promises the recording leaves the phone, so both halves go.
+     * Nothing is sent anywhere and nothing tries to recall what was already
+     * shared — that copy belongs to whoever received it.
+     */
+    fun deleteMemory(memory: Memory) {
+        if (_playing.value.memoryId == memory.id) stopMemory()
+        scope.launch {
+            runCatching { memories.delete(memory.id) }
+            runCatching { fileFor(memory.id).delete() }
+        }
+    }
+
+    private fun onMemoryFinished() {
+        // Back to the start with the icon on play, which is what the row draws.
+        stopPlaybackTicker()
+        player.stop()
+        _playing.value = MemoryPlaybackState()
+        resumeGuideIfPaused()
+    }
+
+    private fun startPlaybackTicker() {
+        if (playbackTicker?.isActive == true) return
+        playbackTicker = scope.launch {
+            while (isActive) {
+                _playing.update { it.copy(positionMs = player.positionMs) }
+                delay(PLAYBACK_TICK_MS)
+            }
+        }
+    }
+
+    private fun stopPlaybackTicker() {
+        playbackTicker?.cancel()
+        playbackTicker = null
+    }
+
+    /**
+     * Takes the audioguide out of the way, and remembers that it was us.
+     *
+     * Idempotent: asking twice does not forget who paused it, so a guide the
+     * traveller had already stopped is never started by this class.
+     */
+    private fun pauseGuide() {
+        if (pausedTheGuide) return
         pausedTheGuide = playback.state.value.isPlaying
         if (pausedTheGuide) playback.pause()
     }
@@ -212,5 +326,6 @@ class MemoryController(
         const val MEMORY_DIR = "memories"
         const val EXTENSION = ".m4a"
         const val LEVEL_TICK_MS = 90L
+        const val PLAYBACK_TICK_MS = 200L
     }
 }

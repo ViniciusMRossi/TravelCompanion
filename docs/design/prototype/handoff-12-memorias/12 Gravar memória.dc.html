@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400&display=swap" />
+<script src="tc-icons.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; }
+  body { background: #E7E3DA; font-family: Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #1F6F78; text-decoration: none; }
+  a:hover { color: #185860; }
+  button { font-family: inherit; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  @keyframes tcPulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  @keyframes tcWave { 0%,100% { transform: scaleY(.32); } 50% { transform: scaleY(1); } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:20px;padding:30px 20px 44px;box-sizing:border-box;color:#16232E">
+
+  <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#65717A">Travel Companion · Tela 12 · Android 412 × 915</div>
+    <div style="font-family:Fraunces,Georgia,serif;font-weight:600;font-size:24px">Gravar memória por voz</div>
+  </div>
+
+  <div style="padding:11px;background:#101619;border-radius:46px;box-shadow:0 24px 60px rgba(22,35,46,.28)">
+  <div style="position:relative;width:412px;height:915px;background:#F5F1E8;border-radius:36px;overflow:hidden">
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F5F1E8">
+      <div style="display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 20px;font-size:12px;font-weight:500;color:#16232E;flex:0 0 auto">
+        <span>12:52</span>
+        <span style="display:flex;align-items:center;gap:6px">
+          <svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-offline"></use></svg>
+          <span>67%</span>
+        </span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;padding:6px 12px 10px;flex:0 0 auto">
+        <button type="button" aria-label="Voltar" style="width:48px;height:48px;display:grid;place-items:center;border:0;background:transparent;border-radius:999px;cursor:pointer;color:#16232E">
+          <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-arrow-left"></use></svg>
+        </button>
+        <span style="font-size:16px;font-weight:500">Memória por voz</span>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;padding:0 20px 24px;display:flex;flex-direction:column;gap:18px">
+        <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#65717A;flex:0 0 auto">
+          <svg width="18" height="18" style="display:block;color:#1F6F78" aria-hidden="true"><use href="#tc-pin"></use></svg>
+          Sarajevo · Vijećnica · 12:52
+        </div>
+
+        <sc-if value="{{ recIdle }}" hint-placeholder-val="{{ true }}">
+          <section style="flex:0 0 auto;text-align:center;padding:28px;border:1px solid #DDDCD4;border-radius:20px;background:#FFFDF8">
+            <button type="button" onClick="{{ recStart }}" aria-label="Gravar memória" style="width:82px;height:82px;border-radius:999px;background:#7A2E2E;display:grid;place-items:center;margin:8px auto 18px;box-shadow:0 10px 30px rgba(122,46,46,.22);border:0;cursor:pointer">
+              <span aria-hidden="true" style="width:28px;height:28px;border-radius:999px;background:#FFFDF8"></span>
+            </button>
+            <h2 style="margin:0 0 6px;font-size:20px;line-height:26px;font-weight:500">Registrar memória</h2>
+            <p style="margin:0;color:#65717A;font-size:16px;line-height:24px">Toque e conte como foi este momento. O local e a hora entram sozinhos.</p>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ recActive }}" hint-placeholder-val="{{ false }}">
+          <section style="flex:0 0 auto;text-align:center;padding:28px;border:1px solid #DDDCD4;border-radius:20px;background:#FFFDF8">
+            <span style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:#FDECEC;color:#7A2E2E;font-size:12px;font-weight:500">
+              <span style="width:8px;height:8px;border-radius:999px;background:#7A2E2E;animation:tcPulse 1.4s ease-in-out infinite"></span>
+              Gravando
+            </span>
+            <div style="font-size:38px;font-weight:700;margin:16px 0 0;font-variant-numeric:tabular-nums">{{ recElapsed }}</div>
+            <div style="height:56px;display:flex;align-items:center;justify-content:center;gap:5px;margin:14px 0">
+              <span style="display:block;width:4px;height:22px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out infinite"></span>
+              <span style="display:block;width:4px;height:44px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out .12s infinite"></span>
+              <span style="display:block;width:4px;height:30px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out .24s infinite"></span>
+              <span style="display:block;width:4px;height:52px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out .36s infinite"></span>
+              <span style="display:block;width:4px;height:26px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out .48s infinite"></span>
+              <span style="display:block;width:4px;height:40px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out .6s infinite"></span>
+              <span style="display:block;width:4px;height:18px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out .72s infinite"></span>
+              <span style="display:block;width:4px;height:34px;border-radius:999px;background:#7A2E2E;opacity:.78;animation:tcWave 900ms ease-in-out .84s infinite"></span>
+            </div>
+            <div style="font-size:13px;color:#65717A;margin-bottom:18px">Vinícius · Sarajevo, Vijećnica</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+              <button type="button" style="min-height:52px;padding:0 18px;border:1px solid #C8CCC5;border-radius:14px;background:#FFFDF8;color:#16232E;font-size:16px;font-weight:500;cursor:pointer">Pausar</button>
+              <button type="button" onClick="{{ recFinish }}" style="min-height:52px;padding:0 18px;border:0;border-radius:14px;background:#1F6F78;color:#FFFFFF;font-size:16px;font-weight:500;cursor:pointer">Concluir</button>
+            </div>
+            <button type="button" onClick="{{ recCancel }}" style="margin-top:14px;min-height:44px;padding:0 12px;border:0;background:transparent;color:#7A2E2E;font-size:16px;font-weight:500;cursor:pointer">Cancelar</button>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ recSaved }}" hint-placeholder-val="{{ false }}">
+          <section style="flex:0 0 auto;text-align:center;padding:28px;border:1px solid #DDDCD4;border-radius:20px;background:#FFFDF8">
+            <span style="display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:#E7EDE3;color:#3D5337;font-size:12px;font-weight:500">
+              <svg width="16" height="16" style="display:block" aria-hidden="true"><use href="#tc-check"></use></svg>
+              Memória salva
+            </span>
+            <p style="margin:14px 0 0;color:#4B5962;font-size:16px;line-height:24px">Memória salva em Sarajevo · 12:54 · {{ recElapsed }}</p>
+            <button type="button" onClick="{{ recReset }}" style="margin-top:18px;width:100%;min-height:52px;border:1px solid #C8CCC5;border-radius:14px;background:#FFFDF8;color:#16232E;font-size:16px;font-weight:500;cursor:pointer">Voltar para Hoje</button>
+          </section>
+        </sc-if>
+
+        <section style="flex:0 0 auto">
+          <h2 style="margin:0 0 10px;font-size:20px;line-height:26px;font-weight:500">Memórias desta viagem</h2>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <sc-if value="{{ liveA }}" hint-placeholder-val="{{ true }}">
+            <div style="background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:8px 8px 8px 16px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <button type="button" onClick="{{ playA }}" aria-label="{{ labelA }}" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;min-height:48px;padding:0;border:0;background:transparent;text-align:left;cursor:pointer;color:#16232E">
+                  <sc-if value="{{ onA }}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" style="display:block;color:#1F6F78;flex:0 0 auto" aria-hidden="true"><use href="#tc-pause"></use></svg></sc-if><sc-if value="{{ offA }}" hint-placeholder-val="{{ true }}"><svg width="22" height="22" style="display:block;color:#1F6F78;flex:0 0 auto" aria-hidden="true"><use href="#tc-play"></use></svg></sc-if>
+                  <span style="flex:1;min-width:0">
+                    <span style="display:block;font-size:16px;font-weight:500">Ponte Latina</span>
+                    <span style="display:block;font-size:13px;color:#65717A">Hoje, 11:41 · Érika · 00:48</span>
+                  </span>
+                </button>
+                <button type="button" onClick="{{ shareA }}" aria-label="Compartilhar memória Ponte Latina" style="width:48px;height:48px;flex:0 0 auto;display:grid;place-items:center;border:0;border-radius:999px;background:transparent;cursor:pointer;color:#1F6F78">
+                  <svg width="22" height="22" style="display:block" aria-hidden="true"><use href="#tc-near-me"></use></svg>
+                </button>
+                <button type="button" onClick="{{ askA }}" aria-label="Apagar memória Ponte Latina" style="width:48px;height:48px;flex:0 0 auto;display:grid;place-items:center;border:0;border-radius:999px;background:transparent;cursor:pointer;color:#7A2E2E">
+                  <svg width="22" height="22" style="display:block" aria-hidden="true"><use href="#tc-close"></use></svg>
+                </button>
+              </div>
+              <sc-if value="{{ onA }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:2px 8px 6px 34px">
+                  <div style="height:5px;border-radius:999px;background:#E4F0F0;overflow:hidden">
+                    <span style="display:block;height:100%;width:{{ pctA }};background:#1F6F78"></span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:12px;color:#65717A;margin-top:6px;font-variant-numeric:tabular-nums">
+                    <span>{{ atA }}</span>
+                    <span>00:48</span>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ sharedA }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 8px 6px 34px;font-size:13px;color:#3D5337">
+                  <svg width="16" height="16" style="display:block;flex:0 0 auto" aria-hidden="true"><use href="#tc-check"></use></svg>
+                  {{ noteA }}
+                </div>
+              </sc-if>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ liveB }}" hint-placeholder-val="{{ true }}">
+            <div style="background:#FFFDF8;border:1px solid #DDDCD4;border-radius:14px;padding:8px 8px 8px 16px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <button type="button" onClick="{{ playB }}" aria-label="{{ labelB }}" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;min-height:48px;padding:0;border:0;background:transparent;text-align:left;cursor:pointer;color:#16232E">
+                  <sc-if value="{{ onB }}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" style="display:block;color:#1F6F78;flex:0 0 auto" aria-hidden="true"><use href="#tc-pause"></use></svg></sc-if><sc-if value="{{ offB }}" hint-placeholder-val="{{ true }}"><svg width="22" height="22" style="display:block;color:#1F6F78;flex:0 0 auto" aria-hidden="true"><use href="#tc-play"></use></svg></sc-if>
+                  <span style="flex:1;min-width:0">
+                    <span style="display:block;font-size:16px;font-weight:500">Ksamil, última manhã</span>
+                    <span style="display:block;font-size:13px;color:#65717A">14 de setembro · Vinícius · 01:22</span>
+                  </span>
+                </button>
+                <button type="button" onClick="{{ shareB }}" aria-label="Compartilhar memória Ksamil, última manhã" style="width:48px;height:48px;flex:0 0 auto;display:grid;place-items:center;border:0;border-radius:999px;background:transparent;cursor:pointer;color:#1F6F78">
+                  <svg width="22" height="22" style="display:block" aria-hidden="true"><use href="#tc-near-me"></use></svg>
+                </button>
+                <button type="button" onClick="{{ askB }}" aria-label="Apagar memória Ksamil, última manhã" style="width:48px;height:48px;flex:0 0 auto;display:grid;place-items:center;border:0;border-radius:999px;background:transparent;cursor:pointer;color:#7A2E2E">
+                  <svg width="22" height="22" style="display:block" aria-hidden="true"><use href="#tc-close"></use></svg>
+                </button>
+              </div>
+              <sc-if value="{{ onB }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:2px 8px 6px 34px">
+                  <div style="height:5px;border-radius:999px;background:#E4F0F0;overflow:hidden">
+                    <span style="display:block;height:100%;width:{{ pctB }};background:#1F6F78"></span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:12px;color:#65717A;margin-top:6px;font-variant-numeric:tabular-nums">
+                    <span>{{ atB }}</span>
+                    <span>01:22</span>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ sharedB }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 8px 6px 34px;font-size:13px;color:#3D5337">
+                  <svg width="16" height="16" style="display:block;flex:0 0 auto" aria-hidden="true"><use href="#tc-check"></use></svg>
+                  {{ noteB }}
+                </div>
+              </sc-if>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ allGone }}" hint-placeholder-val="{{ false }}">
+              <p style="margin:0;padding:16px;border:1px dashed #C8CCC5;border-radius:14px;font-size:14px;line-height:20px;color:#65717A;text-align:center">Nenhuma memória gravada nesta viagem.</p>
+            </sc-if>
+          </div>
+        </section>
+      </div>
+
+      <div style="height:22px;display:grid;place-items:center;flex:0 0 auto">
+        <span style="width:112px;height:4px;border-radius:999px;background:#C8CCC5"></span>
+      </div>
+
+      <sc-if value="{{ shareOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;z-index:5;display:flex;align-items:flex-end;background:rgba(22,35,46,.55)">
+          <div role="dialog" aria-modal="true" aria-label="Compartilhar memória" style="width:100%;background:#FFFDF8;border-radius:28px 28px 0 0;padding:24px 20px 20px">
+            <div style="width:44px;height:4px;border-radius:999px;background:#C8CCC5;margin:0 auto 18px"></div>
+            <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#65717A">Compartilhar</div>
+            <h2 style="margin:10px 0 4px;font-size:20px;line-height:26px;font-weight:500">{{ shareTitle }}</h2>
+            <p style="margin:0 0 18px;font-size:14px;line-height:20px;color:#65717A">Arquivo de áudio · {{ shareDur }} · fica salvo no aparelho</p>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <button type="button" onClick="{{ sendGroup }}" style="display:flex;align-items:center;gap:14px;width:100%;min-height:60px;padding:0 4px;border:0;background:transparent;text-align:left;cursor:pointer;color:#16232E">
+                <span style="width:44px;height:44px;flex:0 0 auto;border-radius:999px;background:#ECE9E1;color:#4B5962;display:grid;place-items:center;font-size:16px;font-weight:700">É</span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:16px;font-weight:500">Érika</span>
+                  <span style="display:block;font-size:13px;color:#65717A">Outra pessoa da viagem</span>
+                </span>
+              </button>
+              <button type="button" onClick="{{ sendWhats }}" style="display:flex;align-items:center;gap:14px;width:100%;min-height:60px;padding:0 4px;border:0;background:transparent;text-align:left;cursor:pointer;color:#16232E">
+                <span style="width:44px;height:44px;flex:0 0 auto;border-radius:999px;background:#ECE9E1;color:#4B5962;display:grid;place-items:center;font-size:16px;font-weight:700">W</span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:16px;font-weight:500">WhatsApp</span>
+                  <span style="display:block;font-size:13px;color:#65717A">Enviar como mensagem de áudio</span>
+                </span>
+              </button>
+              <button type="button" onClick="{{ sendDrive }}" style="display:flex;align-items:center;gap:14px;width:100%;min-height:60px;padding:0 4px;border:0;background:transparent;text-align:left;cursor:pointer;color:#16232E">
+                <span style="width:44px;height:44px;flex:0 0 auto;border-radius:999px;background:#ECE9E1;color:#4B5962;display:grid;place-items:center;font-size:16px;font-weight:700">D</span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:16px;font-weight:500">Google Drive</span>
+                  <span style="display:block;font-size:13px;color:#65717A">Salvar na nuvem quando houver internet</span>
+                </span>
+              </button>
+              <button type="button" onClick="{{ sendFile }}" style="display:flex;align-items:center;gap:14px;width:100%;min-height:60px;padding:0 4px;border:0;background:transparent;text-align:left;cursor:pointer;color:#16232E">
+                <span style="width:44px;height:44px;flex:0 0 auto;border-radius:999px;background:#ECE9E1;color:#4B5962;display:grid;place-items:center;font-size:16px;font-weight:700">A</span>
+                <span style="flex:1;min-width:0">
+                  <span style="display:block;font-size:16px;font-weight:500">Salvar no aparelho</span>
+                  <span style="display:block;font-size:13px;color:#65717A">Downloads</span>
+                </span>
+              </button>
+            </div>
+            <button type="button" onClick="{{ cancelShare }}" style="width:100%;min-height:56px;margin-top:16px;border:1px solid #C8CCC5;border-radius:14px;background:#FFFDF8;color:#16232E;font-size:16px;font-weight:500;cursor:pointer">Cancelar</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ askOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;z-index:5;display:flex;align-items:flex-end;background:rgba(22,35,46,.55)">
+          <div role="dialog" aria-modal="true" aria-label="Apagar memória" style="width:100%;background:#FFFDF8;border-radius:28px 28px 0 0;padding:24px 20px 20px">
+            <div style="width:44px;height:4px;border-radius:999px;background:#C8CCC5;margin:0 auto 18px"></div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7A2E2E">
+              <svg width="18" height="18" style="display:block;flex:0 0 auto" aria-hidden="true"><use href="#tc-warning"></use></svg>
+              Apagar memória
+            </div>
+            <h2 style="margin:14px 0 8px;font-size:24px;line-height:30px;font-weight:700">{{ askTitle }}</h2>
+            <p style="margin:0 0 20px;font-size:16px;line-height:24px;color:#4B5962">{{ askMeta }} · a gravação sai deste aparelho e não pode ser recuperada.</p>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <button type="button" onClick="{{ confirmDelete }}" style="width:100%;min-height:56px;border:0;border-radius:14px;background:#7A2E2E;color:#FFFFFF;font-size:16px;font-weight:500;cursor:pointer">Apagar</button>
+              <button type="button" onClick="{{ cancelDelete }}" style="width:100%;min-height:56px;border:1px solid #C8CCC5;border-radius:14px;background:#FFFDF8;color:#16232E;font-size:16px;font-weight:500;cursor:pointer">Manter</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:520px">
+    <button type="button" onClick="{{ recReset }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">gravação · parada</button>
+    <button type="button" onClick="{{ recStart }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">gravação · gravando</button>
+    <button type="button" onClick="{{ recFinish }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">gravação · salva</button>
+    <button type="button" onClick="{{ restore }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">restaurar a lista</button>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:480,&quot;height&quot;:1080}}">
+class Component extends DCLogic {
+  state = { rec: "idle", recT: 0, playing: null, t: 0, shared: {}, gone: {}, ask: null, share: null };
+
+  MEMS = {
+    A: { title: "Ponte Latina", meta: "Hoje, 11:41 · Érika · 00:48", len: 48 },
+    B: { title: "Ksamil, última manhã", meta: "14 de setembro · Vinícius · 01:22", len: 82 }
+  };
+
+  componentDidMount() {
+    this.tick = setInterval(() => {
+      if (this.state.rec === "recording") this.setState({ recT: this.state.recT + 1 });
+      if (this.state.playing) {
+        const len = this.MEMS[this.state.playing].len;
+        const next = this.state.t + 1;
+        this.setState(next > len ? { playing: null, t: 0 } : { t: next });
+      }
+    }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this.tick); }
+
+  mmss(sec) {
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+
+  sendTo = (dest) => () => this.setState({
+    shared: { ...this.state.shared, [this.state.share]: dest },
+    share: null
+  });
+
+  memVals(id) {
+    const on = this.state.playing === id;
+    const m = this.MEMS[id];
+    return {
+      ["on" + id]: on,
+      ["off" + id]: !on,
+      ["label" + id]: (on ? "Pausar" : "Tocar") + " memória " + m.title,
+      ["pct" + id]: Math.round((this.state.t / m.len) * 100) + "%",
+      ["at" + id]: this.mmss(on ? this.state.t : 0),
+      ["play" + id]: () => this.setState(
+        this.state.playing === id ? { playing: null } : { playing: id, t: 0 }
+      ),
+      ["share" + id]: () => this.setState({ share: id, playing: null }),
+      ["shared" + id]: !!this.state.shared[id],
+      ["note" + id]: "Enviada para " + this.state.shared[id],
+      ["live" + id]: !this.state.gone[id],
+      ["ask" + id]: () => this.setState({ ask: id, playing: null })
+    };
+  }
+
+  renderVals() {
+    const ask = this.state.ask, share = this.state.share;
+    return {
+      ...this.memVals("A"),
+      ...this.memVals("B"),
+      recIdle: this.state.rec === "idle",
+      recActive: this.state.rec === "recording",
+      recSaved: this.state.rec === "saved",
+      recElapsed: this.mmss(this.state.recT),
+      recStart: () => this.setState({ rec: "recording", recT: 0 }),
+      recFinish: () => this.setState({ rec: "saved" }),
+      recCancel: () => this.setState({ rec: "idle", recT: 0 }),
+      recReset: () => this.setState({ rec: "idle", recT: 0 }),
+      allGone: !!(this.state.gone.A && this.state.gone.B),
+      restore: () => this.setState({ gone: {}, shared: {} }),
+      shareOpen: !!share,
+      shareTitle: share ? this.MEMS[share].title : "",
+      shareDur: share ? this.mmss(this.MEMS[share].len) : "",
+      cancelShare: () => this.setState({ share: null }),
+      sendGroup: this.sendTo("Érika"),
+      sendWhats: this.sendTo("WhatsApp"),
+      sendDrive: this.sendTo("Google Drive"),
+      sendFile: this.sendTo("Downloads"),
+      askOpen: !!ask,
+      askTitle: ask ? this.MEMS[ask].title : "",
+      askMeta: ask ? this.MEMS[ask].meta : "",
+      cancelDelete: () => this.setState({ ask: null }),
+      confirmDelete: () => this.setState({ gone: { ...this.state.gone, [ask]: true }, ask: null })
+    };
+  }
+}
+
+</script>
+</body>
+</html>

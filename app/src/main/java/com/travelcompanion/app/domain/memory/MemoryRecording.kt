@@ -135,3 +135,22 @@ fun MemoryRecordingState.failRecording(
 /** Dismissing the confirmation, or the error, and going back to rest. */
 fun MemoryRecordingState.acknowledge(): MemoryRecordingState =
     if (phase == MemoryPhase.Saved || phase == MemoryPhase.Failed) MemoryRecordingState() else this
+
+/**
+ * Which memory is playing, and how far in.
+ *
+ * Deliberately its own small value rather than a second `PlaybackState`: a
+ * memory has no media session, no notification and no lock screen, and the
+ * only thing that reads this is the row it belongs to (D081).
+ */
+data class MemoryPlaybackState(
+    val memoryId: String? = null,
+    val isPlaying: Boolean = false,
+    val positionMs: Long = 0L,
+    val durationMs: Long = 0L,
+    /** A memory whose file would not play, so the row can say so. */
+    val unplayableMemoryId: String? = null,
+) {
+    val progress: Float
+        get() = if (durationMs <= 0L) 0f else (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
+}
