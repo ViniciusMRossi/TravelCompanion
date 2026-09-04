@@ -173,6 +173,62 @@ object TcIcons {
     }
 
     /** The "Ouvir juntos" action on screen 07. */
+    /* -- converted for the operational half (screens 13 to 18) -------------- */
+
+    /** Accommodation: the wallet's voucher row, and screen 16. */
+    val Bed: ImageVector by lazy {
+        icon(
+            "tc-bed",
+            stroke = "M3.5 20 L3.5 7 " +
+                "M3.5 14 h14 a3 3 0 0 1 3 3 v3 " +
+                "M3.5 20 L20.5 20 " +
+                "M5.7 10.4 a2.1 2.1 0 1 0 4.2 0 a2.1 2.1 0 1 0 -4.2 0 z",
+        )
+    }
+
+    /** Insurance and the papers that sit in the background of the trip. */
+    val Shield: ImageVector by lazy {
+        icon("tc-shield", stroke = "M12 3.5 L19 6 v6 c0 4.4 -3 7.6 -7 9 c-4 -1.4 -7 -4.6 -7 -9 V6 Z")
+    }
+
+    /** A telephone number that can be dialled. Screens 15, 16 and 17. */
+    val Call: ImageVector by lazy {
+        icon(
+            "tc-call",
+            stroke = "M6 3.5 h3 l1.6 4 l-2.1 1.5 a10 10 0 0 0 6.5 6.5 L16.5 13.4 l4 1.6 v3 " +
+                "A2 2 0 0 1 18.4 20 C10.4 19.5 4.5 13.6 4 5.6 A2 2 0 0 1 6 3.5 Z",
+        )
+    }
+
+    /** A document with no more specific icon of its own. */
+    val Document: ImageVector by lazy {
+        icon(
+            "tc-document",
+            stroke = "M13.5 3 H7 a2 2 0 0 0 -2 2 v14 a2 2 0 0 0 2 2 h10 a2 2 0 0 0 2 -2 V8.5 Z " +
+                "M13.5 3 L13.5 8.5 L19 8.5 " +
+                "M8.5 13 L15 13 M8.5 16.5 L13 16.5",
+        )
+    }
+
+    /** The action that opens screen 14's QR mode. */
+    val QrCode: ImageVector by lazy {
+        icon(
+            "tc-qr",
+            stroke = "M5.5 4 h3.5 a1.5 1.5 0 0 1 1.5 1.5 v3.5 a1.5 1.5 0 0 1 -1.5 1.5 " +
+                "h-3.5 a1.5 1.5 0 0 1 -1.5 -1.5 v-3.5 a1.5 1.5 0 0 1 1.5 -1.5 z " +
+                "M15 4 h3.5 a1.5 1.5 0 0 1 1.5 1.5 v3.5 a1.5 1.5 0 0 1 -1.5 1.5 " +
+                "h-3.5 a1.5 1.5 0 0 1 -1.5 -1.5 v-3.5 a1.5 1.5 0 0 1 1.5 -1.5 z " +
+                "M5.5 13.5 h3.5 a1.5 1.5 0 0 1 1.5 1.5 v3.5 a1.5 1.5 0 0 1 -1.5 1.5 " +
+                "h-3.5 a1.5 1.5 0 0 1 -1.5 -1.5 v-3.5 a1.5 1.5 0 0 1 1.5 -1.5 z",
+            fill = "M13.5 13.5 h2.6 v2.6 h-2.6 z M17.4 17.4 h2.6 v2.6 h-2.6 z",
+        )
+    }
+
+    /** Forward, where [ArrowLeft] is back. */
+    val ArrowRight: ImageVector by lazy {
+        icon("tc-arrow-right", stroke = "M4 12 L19 12 M13 6 L19 12 L13 18")
+    }
+
     val Group: ImageVector by lazy {
         icon(
             "tc-group",

@@ -137,16 +137,33 @@ fun buildDocumentState(
  */
 private fun qrState(content: TripContent, document: TripDocument): QrState {
     val qr = document.qr ?: return QrState.None
-    return when (qr.mode) {
+    val declared = when (qr.mode) {
         "embedded" -> {
             val path = content.assets.packagedPathIfPresent(qr.embeddedAssetId)
             if (path != null) QrState.Embedded(path) else QrState.AssetMissing
         }
         "generated-from-text" -> {
-            val text = qr.text?.takeIf { it.isNotBlank() } ?: return QrState.None
-            if (content.trip.metadata.isMockContent) QrState.MockContent else QrState.Generated(text)
+            val text = qr.text?.takeIf { it.isNotBlank() }
+            if (text != null) QrState.Generated(text) else QrState.None
         }
         else -> QrState.None
+    }
+
+    // Mock content withholds a code however the code would have arrived.
+    //
+    // The gate first covered only `generated-from-text`, which was the wrong
+    // half to guard: §18 says never use a *visual* placeholder QR, and a
+    // packaged image is the visual case — if anything more convincing at a
+    // counter, because it was shipped as a picture (D061, D063).
+    //
+    // It applies to the branches that would have produced a code and to no
+    // others: a document declaring `mode: none` has no code in any package,
+    // and telling its holder that one arrives with the real ticket would be a
+    // different untruth.
+    return if (declared is QrState.Ready && content.trip.metadata.isMockContent) {
+        QrState.MockContent
+    } else {
+        declared
     }
 }
 

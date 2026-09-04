@@ -847,9 +847,13 @@ does need hardware could not be reached — see below.
 - [ ] **`sensitive` is carried by the schema and does nothing yet.** §17 asks
       only that the repository not close the door on encrypted storage and
       biometric gating, and it does not;
-- [ ] **The icon set has no bed and no shield**, so a document that is not a
-      ticket shows the wallet's icon. Deciding what those look like is design
-      work, not this commit's;
+- [x] **The icons that were missing are converted.** The claim that this was
+      pending design work was wrong: the approved sprite already carries
+      `tc-bed`, `tc-shield`, `tc-call`, `tc-document`, `tc-qr` and
+      `tc-arrow-right`, and Phase 1 established how a sprite icon becomes an
+      `ImageVector`. There was no decision outstanding, only a conversion. All
+      six are converted, and the wallet's voucher row shows the bed rather
+      than the wallet;
 - [ ] **Screens 15, 16, 17 and 18 — Transporte, Hospedagem, Emergência and
       Plano B — are the second block of the operational half** and are not
       started. Screen 04 and the chapter list come after them.
@@ -932,7 +936,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 206 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 207 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

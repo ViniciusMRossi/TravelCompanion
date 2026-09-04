@@ -1,6 +1,7 @@
 package com.travelcompanion.app.domain.wallet
 
 import com.travelcompanion.app.data.trip.PackagedTripTest.Companion.packagedContent
+import com.travelcompanion.app.data.trip.TripContent
 import com.travelcompanion.app.domain.today.BookingStatusUi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -48,15 +49,34 @@ class WalletTest {
         assertTrue(state.sections.any { it.group == WalletGroup.Today })
     }
 
-    /** A day outside every document's validity leaves nothing under "Hoje". */
+    /**
+     * A document the day does not cover falls out of "Hoje".
+     *
+     * `dayFor` clamps to a real trip day whatever date it is given, so the
+     * only way to reach this is a document whose validity sits away from the
+     * trip — which is what the fixture below builds. The first version of this
+     * test asserted against a day the documents *do* cover and its comment
+     * said otherwise, which made it read as coverage it never had.
+     */
     @Test
     fun `documents that do not cover the day are not today's`() {
-        // `dayFor` clamps past the end to the last day, so this asks the
-        // grouping directly with a day the documents do not cover.
-        val state = buildWalletState(whole, tripDay)
-        val ids = state.sections.flatMap { it.rows }.map { it.documentId }
-        assertEquals(2, ids.size)
-        assertTrue(state.sections.none { it.rows.isEmpty() })
+        val moved = whole.trip.copy(
+            documents = whole.trip.documents.map {
+                it.copy(validFrom = "2030-01-01", validUntil = "2030-01-02")
+            },
+        )
+        val state = buildWalletState(TripContent(moved, whole.assets), tripDay)
+
+        assertTrue(
+            "nothing is today's when nothing covers today",
+            state.sections.none { it.group == WalletGroup.Today },
+        )
+        // The ticket is still a transport document; the voucher is neither.
+        assertEquals(
+            listOf(WalletGroup.Transport, WalletGroup.Papers),
+            state.sections.map { it.group },
+        )
+        assertEquals(2, state.totalCount)
     }
 
     @Test

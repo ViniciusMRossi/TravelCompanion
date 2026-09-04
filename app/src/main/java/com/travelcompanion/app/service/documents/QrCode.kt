@@ -15,13 +15,8 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
  * and decoded back — which is the only verification a QR can get without a
  * camera pointed at a screen (D061).
  */
-data class QrMatrix(val size: Int, private val modules: BooleanArray) {
+class QrMatrix(val size: Int, private val modules: BooleanArray) {
     fun isDark(x: Int, y: Int): Boolean = modules[y * size + x]
-
-    // Data classes over arrays compare by reference; the screen only ever
-    // reads this, so identity is the honest answer rather than a wrong one.
-    override fun equals(other: Any?): Boolean = this === other
-    override fun hashCode(): Int = System.identityHashCode(this)
 }
 
 /**

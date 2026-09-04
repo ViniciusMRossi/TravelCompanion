@@ -162,12 +162,10 @@ private fun BookingStatusUi.tone(): TcChipTone = when (this) {
     BookingStatusUi.Buy -> TcChipTone.Teal
 }
 
-/**
- * The icon set has no bed and no shield, and this is not the commit that
- * decides what those look like. A document with no icon of its own gets the
- * wallet's, which is at least true.
- */
+/** The approved sprite's own icons, one per document type it names. */
 private fun iconFor(type: String): ImageVector = when (type) {
     "ticket" -> TcIcons.Ticket
-    else -> TcIcons.Wallet
+    "accommodation" -> TcIcons.Bed
+    "insurance" -> TcIcons.Shield
+    else -> TcIcons.Document
 }

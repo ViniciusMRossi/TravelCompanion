@@ -1,6 +1,7 @@
 package com.travelcompanion.app.feature.document
 
 import com.travelcompanion.app.data.trip.PackagedTripTest.Companion.packagedContent
+import com.travelcompanion.app.data.trip.TripContent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -62,6 +63,34 @@ class DocumentStateTest {
     @Test
     fun `mock ticket data does not become a scannable code`() {
         val state = buildDocumentState(whole, "ticket.sarajevo-mostar")!!
+        assertEquals(QrState.MockContent, state.qr)
+    }
+
+    /**
+     * The other half of the gate. D061 guarded only the generated case, and
+     * §18's words are "never use a *visual* placeholder QR" — a packaged
+     * image is that case, and is if anything more convincing (D063).
+     */
+    @Test
+    fun `a packaged code is refused too while the content is mock`() {
+        val packaged = packagedContent(exists = { true })
+        val withEmbedded = packaged.trip.copy(
+            documents = packaged.trip.documents.map { document ->
+                if (document.id == "ticket.sarajevo-mostar") {
+                    document.copy(
+                        qr = com.travelcompanion.app.data.trip.DocumentQr(
+                            mode = "embedded",
+                            embeddedAssetId = "img.latin-bridge.hero",
+                        ),
+                    )
+                } else {
+                    document
+                }
+            },
+        )
+        val content = TripContent(withEmbedded, packaged.assets)
+
+        val state = buildDocumentState(content, "ticket.sarajevo-mostar")!!
         assertEquals(QrState.MockContent, state.qr)
     }
 
