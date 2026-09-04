@@ -89,8 +89,8 @@ if stale:
 # `TcHeroGeometryTest` catches this for `TcHero` by measuring it. This catches
 # the class before it is written: the tokens already name `TcCityHero` and
 # `TcAttractionHero` as components still to come, and each will have the same
-# backdrop-under-content shape. Inside any composable whose name ends in
-# "Hero", a layer is sized with `matchParentSize`, never `fillMaxSize`.
+# backdrop-under-content shape. Inside any composable whose name mentions a
+# hero, a layer is sized with `matchParentSize`, never `fillMaxSize`.
 def hero_bodies(text):
     """Yields (name, body) for every `fun ...Hero(` in a Kotlin source."""
     marker = "fun "
@@ -105,7 +105,11 @@ def hero_bodies(text):
             end_of_name += 1
         name = text[after:end_of_name]
         at = end_of_name
-        if not name.endswith("Hero"):
+        # "contains", not "ends with": the layering lives in `TcHeroWith`, and
+        # a rule that only saw names ending in "Hero" stopped covering it the
+        # moment that function was extracted — which is exactly the kind of
+        # silent hole a guard is supposed to not have.
+        if "Hero" not in name:
             continue
         # Past the parameter list first: a default argument is often `= {}`,
         # and taking the first brace after the name would match that instead of

@@ -450,13 +450,15 @@ the packaged trip, both signed in by nobody. Positions below are
   second** while the group is being asked — measured at roughly 1.2 s of a
   13 s screenshot series, longer on a cold start where anonymous sign-in is a
   round trip. Honest at that instant and self-correcting, but it is the wrong
-  sentence for someone who has just tapped "Ouvir juntos";
+  sentence for someone who has just tapped "Ouvir juntos". *(Corrected: the
+  screen now says "Esperando o grupo. Assim que alguém começar, você entra
+  junto." — see D054.)*;
 - **screen 07 announces a story whose audio is not packaged.** Simulating
   arrival at Latin Bridge put "TOCANDO AGORA · Latin Bridge" in the header
   while the player carried on with Baščaršija, because that guide's asset is
-  not in this build. Found on the device, not fixed: it is a screen 07 question
-  about what to say when a story has no audio (D021's territory), and the
-  answer is copy the approved design does not carry;
+  not in this build. *(Corrected: the header names the arrived story only while
+  the player is on that story's guide, and otherwise names the walk — no new
+  copy was needed. See D053.)*;
 - **no emulator/device behaviour difference was observed** in anything above.
   The two agreed on every state, every note and every correction; the only
   differences were incidental — screen height, gesture bar, and the emulator's
@@ -652,19 +654,29 @@ assertion can see. Both cheap guards proposed for it are now built (D056), and
 both were proved by reintroducing the defect and watching them fail.
 
 - [x] **`TcHeroGeometryTest`** composes the hero in the shape that broke —
-      content-driven height inside a vertical scroll — and asserts the backdrop
-      covers it. With `fillMaxSize` restored it fails with *"Actual height is
-      0.0.dp, expected at least 200.0.dp"*, while its fixed-height case keeps
-      passing, which is the real signature: screens 01 and 09 were never
-      affected, screen 05 was. Runs on the JVM under Robolectric, inside
-      `testDebugUnitTest` — no device, no extra command.
+      content-driven height inside a vertical scroll — and asserts two things:
+      the hero is the height its own content asked for, and the backdrop is
+      exactly the hero. Three cases: placeholder, photograph, fixed height.
+      Runs on the JVM under Robolectric, inside `testDebugUnitTest` — no
+      device, no extra command. It reached only half the component when first
+      written (see below).
 - [x] **A source rule in `tools/check_repo.py`** fails the build if any
-      composable whose name ends in "Hero" sizes a layer with `fillMaxSize`.
+      composable whose name mentions a hero sizes a layer with `fillMaxSize`.
       It catches the class before it is written: the token file already names
-      `TcCityHero` and `TcAttractionHero` as components still to come. Its
-      first version passed when it should not have — it matched a default
-      argument's `= {}` instead of the function body — which is why both
-      guards were made to fail before being kept.
+      `TcCityHero` and `TcAttractionHero` as components still to come.
+- [x] **Both were corrected after review, and the corrections matter more than
+      the guards.** The test composed `TcHero`, which in this build can only
+      reach the placeholder branch — no photograph ships — so reintroducing the
+      defect on the `Image` left it green; the source rule caught that one,
+      which is why having two was worth it. `TcHero` now delegates to an
+      `internal TcHeroWith` taking the photograph already resolved, and a
+      second case measures it. Two assertions had to be discarded on the way:
+      "at least the declared minimum" let a broken `Image` through, because it
+      measures to its painter's aspect ratio (320dp past a 200dp floor), and
+      plain equality passed too, because a `fillMaxSize` backdrop still sizes
+      its parent, so hero and backdrop inflated together. The rule had a hole
+      of its own: it matched names *ending* in "Hero", so extracting
+      `TcHeroWith` took the layering out of its reach until it was widened.
 - [ ] **A screenshot suite is still not built**, and remains the right call:
       golden images to maintain and a rendering backend to produce them, for
       screens a human pass reads in an afternoon. The visual pass is the net

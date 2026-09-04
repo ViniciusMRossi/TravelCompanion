@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -137,13 +138,19 @@ fun TcOfflineChip(
 }
 
 /**
+ * The dot's own size, named because a row that must never lose it has to be
+ * able to say how small "never lose it" is (D055, F3).
+ */
+val TcStateDotSize: androidx.compose.ui.unit.Dp = 8.dp
+
+/**
  * A state dot plus its word. State is never carried by colour alone.
  */
 @Composable
 fun TcStateDot(
     color: Color,
     modifier: Modifier = Modifier,
-    size: androidx.compose.ui.unit.Dp = 8.dp,
+    size: androidx.compose.ui.unit.Dp = TcStateDotSize,
 ) {
     Box(
         modifier = modifier
@@ -489,8 +496,33 @@ fun TcHero(
     cool: Boolean = false,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
+    TcHeroWith(
+        modifier = modifier,
+        photograph = rememberPackagedImage(imageAssetPath),
+        placeholderCaption = placeholderCaption,
+        cool = cool,
+        content = content,
+    )
+}
+
+/**
+ * The hero's layering, with the photograph already resolved.
+ *
+ * Separate for one reason: no photograph ships in this build, so the branch
+ * that draws one cannot be measured through [TcHero], and it is the branch that
+ * becomes the live one the day photography arrives. `internal`, because it is
+ * the seam a test needs and nothing else (D056).
+ */
+@Composable
+internal fun TcHeroWith(
+    modifier: Modifier = Modifier,
+    photograph: ImageBitmap? = null,
+    placeholderCaption: String? = null,
+    cool: Boolean = false,
+    content: @Composable BoxScope.() -> Unit = {},
+) {
     Box(modifier = modifier) {
-        val bitmap = rememberPackagedImage(imageAssetPath)
+        val bitmap = photograph
         // `matchParentSize`, not `fillMaxSize`: the photograph and the
         // placeholder behind it must cover whatever the hero turns out to be,
         // without being the thing that decides it. A hero whose height comes

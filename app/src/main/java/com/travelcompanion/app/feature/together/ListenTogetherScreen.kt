@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -38,6 +39,7 @@ import com.travelcompanion.app.design.TcIcons
 import com.travelcompanion.app.design.TcPillShape
 import com.travelcompanion.app.design.TcSecondaryButton
 import com.travelcompanion.app.design.TcStateDot
+import com.travelcompanion.app.design.TcStateDotSize
 import com.travelcompanion.app.design.TcType
 
 /** One row of screen 09's "Ouvindo juntos" list. */
@@ -241,10 +243,24 @@ private fun ListenersCard(state: ListenTogetherUiState) {
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    // Takes what the name left, and is floored at the dot.
+                    //
+                    // D055 lets the state word give way because the dot beside
+                    // it says the same thing without words — which only holds
+                    // while the dot is still there. The name is measured first
+                    // and unweighted, so a long enough one would have left this
+                    // row nothing at all and taken the dot with it. Not
+                    // reachable with the packaged names; closed anyway.
+                    //
+                    // Weighted rather than shrink-to-fit so the state sits at
+                    // the end of the row, which is the `flex:1` the approved
+                    // listener row gives the name.
                     Row(
-                        modifier = Modifier.weight(1f, fill = false),
+                        modifier = Modifier
+                            .weight(1f)
+                            .widthIn(min = TcStateDotSize),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(7.dp),
+                        horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.End),
                     ) {
                         TcStateDot(
                             color = when (listener.sync) {
