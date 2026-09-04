@@ -194,6 +194,7 @@ fun AppNavigation(
                     WalkRoute(
                         content = content,
                         walkId = entry.arguments?.getString("walkId").orEmpty(),
+                        participantId = participantId,
                         walkModeController = walkModeController,
                         playbackController = playbackController,
                         onExit = navController::popBackStack,

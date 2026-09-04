@@ -238,16 +238,16 @@ Four defects that the unit tests did not catch, all fixed and re-verified:
 
 ## Phase 4 — Group synchronization, screens 08 and 09
 
-**Verified on hardware at 933e4a6 / 68ceda6, and *not re-confirmed since*.**
-Samsung SM-S921B (Galaxy S24), Android 16 (API 36), over ADB on 2026-09-03,
-against a debug build with a real Firebase project configured.
+**Verified on hardware, two devices, 2026-09-04.** Samsung SM-S921B
+(Galaxy S24, Android 16, API 36) as Vinícius and a Pixel_10 AVD
+(`google_apis_playstore`, Android 17 / API 37.1, x86_64, Play Store image) as
+Érika, over ADB against a debug build with a real Firebase project configured.
 
-The observations in this section were made against that binary. 832e88e
-changed `applyCorrection`, `syncCorrection`, `PlaybackController.playAudioGuide`
-and `TogetherRoute` — the exact paths those observations exercise — so they are
-**unverified against the current commit, not re-confirmed**. Nothing here is
-withdrawn; it is dated. The list below says which claims that leaves standing
-and which need re-watching.
+The original Phase 4 pass (2026-09-03, one phone, the Firebase console standing
+in for the other) is superseded: everything it claimed has been re-watched
+against the current binary with a real second device, and three of its claims
+turned out to be artefacts of the console standing in — see "The second device"
+below.
 
 - [x] Screen 08 Sincronizando: the shared start as a 3 → 2 → 1 transition into
       screen 09, not a place anyone navigates to
@@ -269,11 +269,7 @@ and which need re-watching.
 - [x] Group sync never blocks local behaviour: every path from the group into
       the player goes through one function, and no branch of it stops, pauses
       on failure, or unloads audio (brief §3.3)
-- [ ] **A second physical device was never in the group.** Only one phone was
-      available. The "other participant" throughout was the Firebase console,
-      writing to the same nodes a second phone would write to — which exercises
-      this phone's *reading* of the group completely, and its *writing* not at
-      all. See what was not observed, below.
+- [x] **Two devices in the group.** The list below is what each of them did.
 - [ ] **Screen 09 shows the striped placeholder, not a photograph.** Schema 1.1
       gives `story` no asset field and no link to the attraction that has one,
       so there is nothing to resolve the hero image from. Guessing the
@@ -290,10 +286,12 @@ that file exists, so a fresh clone still builds; without it the repository
 reports `Disabled` and everything else behaves identically (D034). No project
 id, database URL or key is recorded in the repository or in these notes.
 
-### Confirmed by observation on the device
+### Confirmed by observation — one phone and the Firebase console (2026-09-03)
 
-Watched on the Galaxy S24 with `dumpsys media_session`, screenshots and the
-Firebase console driving the other side. No crash, ANR or Media3 error.
+Superseded by the two-device pass below, and kept because it is where three of
+this phase's defects were found. Watched on the Galaxy S24 with
+`dumpsys media_session`, screenshots and the Firebase console driving the other
+side. No crash, ANR or Media3 error.
 
 - **the group pausing this phone**: `isPlaying` set to false in the console
   moved the local player to `PAUSED(2), position=314037`;
@@ -312,15 +310,11 @@ Firebase console driving the other side. No crash, ANR or Media3 error.
 - **audio untouched throughout the outage**: 03:10 at the amber capture and
   03:41 thirty-one seconds later, `PLAYING` at both — continuous to the second.
 
-**Not observed, and not claimed:** two phones starting a guide together. The
-3 → 2 → 1 countdown was watched on this device, and what it publishes was
-watched arriving in the console, but no second device ever received it. Nor
-was another participant's row ever rendered from a real phone — the amber dot
-was only ever seen on this traveller's own row. The synchronized *start* is
-therefore verified only as far as one phone can verify it: the anchor it
-publishes is correct server time, and the correction it applies to an anchor
-someone else wrote is exact. Whether two phones actually begin narrating in
-step is untested.
+**What this pass could not see, and why it mattered:** the console is not a
+phone. It changes the group's data, which is precisely the case that kept
+working after the real one broke (D046), and it never pauses anything itself,
+which is why a pause that no code ever published looked verified (D047). Both
+were found the first hour two devices were in the group.
 
 ### Found by running it on a device
 
@@ -353,6 +347,106 @@ device and is not claimed as such.
 `NoOpGroupSyncRepository` was written this phase and deleted before it was
 committed: the no-configuration case is already handled by the Firebase
 repository reporting `Disabled` (D034), so nothing ever constructed it.
+
+### The second device — what two phones showed (2026-09-04)
+
+Vinícius on the Galaxy S24, Érika on the Play Store emulator image, both on
+the packaged trip, both signed in by nobody. Positions below are
+`dumpsys media_session` in milliseconds unless a screen is quoted.
+
+**Observed, first time:**
+
+- **a shared start reaching the second phone.** Screen 08 captured on both:
+  the S24 counting "2" with both avatars, and the emulator counting "2" as a
+  *joiner* — the guide it was about to hear was the group's, not its own;
+- **two phones narrating in step, and staying there.** The joining phone
+  landed at 126821 while the other was at 126879 — **58 ms apart** — and the
+  pair ran the whole 12-minute guide to the end together, stopping at 720007
+  and 720005, **2 ms apart**. Intermediate samples: 107 ms, 160 ms, 310 ms,
+  467 ms, 542 ms;
+- **another participant's row rendered from a real phone.** Érika's row on the
+  S24 went amber, "Sincronizando novamente", when her device actually lost the
+  network — the S24's own row staying green beside it (screenshot);
+- **F1, both sides of it.** A phone holding nothing joined a listen already
+  running and took the group's guide at the group's position (above). The
+  other side — a phone holding a *different* guide — **could not be produced**:
+  see below;
+- **F2.** With the second phone deliberately 32 s ahead (07:34 against 08:06),
+  it left screen 09 and came back: the first phone carried straight on,
+  07:41 → 08:00, never pulled to the other's position, and the second was
+  seeked *back* into step. Before 832e88e this dragged the other traveller
+  every time the screen was reopened;
+- **F3.** Sampled across a proposal at ~0.3 s intervals, the proposing phone's
+  position only ever advanced — 295546 → 298547 → 315040 — with no seek back
+  to the anchor position. The sub-second behaviour inside the three seconds is
+  the unit test's (D041); what the device adds is that nothing visible moves;
+- **the clocks, which is what §6 exists for.** The emulator's wall clock was
+  pushed **7 min 19 s** behind the S24's (`cmd time_detector`, both then
+  restored to automatic). With the two devices that far apart, the joining
+  phone landed at 706335 against 707409 — **1.07 s** — and a second, fresh
+  shared start under the same skew landed 16974 against 16994, **20 ms**. A
+  device wall clock would have put them 439 s apart in a 12-minute guide. This
+  is the one claim in §6 that no unit test can close, and it is now closed;
+- **remote pause and remote resume, phone to phone.** Pause on the S24 at
+  283625; the emulator followed to 283313, **312 ms**. Play on the S24; the
+  emulator resumed within one round. Neither was possible before this commit
+  (D047);
+- **drift closing with nobody writing anything.** A pause dispatched to the
+  emulator's media session — deliberately bypassing screen 09, so nothing was
+  published — was undone by the beat and the phone brought back into step
+  (D046). Before this commit it stayed paused indefinitely;
+- **ninety seconds idle staying green.** Nobody touching either phone: both
+  read "Sincronizado", no note, and afterwards 409514 against 410056, still in
+  step;
+- **§3.3, the way it was always meant to be watched.** Airplane mode on the
+  emulator at 08:42:18. Within 25 s its screen showed both rows amber and the
+  approved note, "Não foi possível sincronizar o grupo agora. Seu audioguia
+  continua funcionando normalmente."; the S24 showed itself green and Érika
+  amber. **Both phones kept narrating throughout** — the emulator 425077 →
+  455107 → 506151, the S24 424543 → 454600 → 505684, monotonic across the
+  outage. Network back at 08:43:02; within 30 s both rows were green again on
+  both phones, with no restart. Only the group's state was ever unavailable.
+
+**Found by running it on two devices, and fixed here:**
+
+- **a group node outliving the listen it describes** — the very first thing two
+  phones hit, and it stopped the shared start from ever happening (D045);
+- **corrections stopping once the group settled** — the `StateFlow` conflating
+  equal snapshots, invisible to a pass whose "other participant" was a console
+  making the data change (D046);
+- **the transport on screen 09 publishing nothing** — pause, resume and ±15
+  were local-only, so the two phones desynchronised silently while both read
+  "Sincronizado" (D047);
+- **screen 06 calling the wrong participant "você"** — labelled by list
+  position, so Érika's phone called itself Vinícius (D048);
+- **an ask spent on an answer that had nothing in it** — introduced by the
+  D045 fix and caught by the same two phones an hour later (D045).
+
+**Not observed, with reasons:**
+
+- **the divergence state — "Ouvindo outra história" — was never rendered on a
+  device.** The runtime package carries exactly one playable audioguide
+  (`audio.bascarsija`; the city and Latin Bridge assets are declared but not
+  packaged), so two phones cannot hold two different guides. Adding a second
+  placeholder asset is a change to `trip.json`, which D043 froze until the
+  content phase. Covered by unit tests only;
+- **a paused group node from an earlier session** — see D045 for why it was
+  left rather than guessed at;
+- **the joining phone shows "Comece um audioguia para ouvir junto" for about a
+  second** while the group is being asked — measured at roughly 1.2 s of a
+  13 s screenshot series, longer on a cold start where anonymous sign-in is a
+  round trip. Honest at that instant and self-correcting, but it is the wrong
+  sentence for someone who has just tapped "Ouvir juntos";
+- **screen 07 announces a story whose audio is not packaged.** Simulating
+  arrival at Latin Bridge put "TOCANDO AGORA · Latin Bridge" in the header
+  while the player carried on with Baščaršija, because that guide's asset is
+  not in this build. Found on the device, not fixed: it is a screen 07 question
+  about what to say when a story has no audio (D021's territory), and the
+  answer is copy the approved design does not carry;
+- **no emulator/device behaviour difference was observed** in anything above.
+  The two agreed on every state, every note and every correction; the only
+  differences were incidental — screen height, gesture bar, and the emulator's
+  system language.
 
 ### Corrections after review — the second participant
 
@@ -412,6 +506,8 @@ was shaped for.
       into step at once rather than at zero. The approved design has no state
       for arriving late; the alternative, three silent seconds, tells the
       traveller less.
+- [ ] **Divergence is still untested in the field.** One playable guide in the
+      package means two phones cannot hold two different ones (D043).
 - [ ] **A phone arriving while the group is paused waits, and says nothing
       while it waits.** The invitation is kept, not spent, and the countdown
       does not start — a transition into playback must not run at a group that
@@ -421,13 +517,8 @@ was shaped for.
       approved design does not carry, and one such item is already open
       ("Ouvindo outra história"), so it was not invented. Loading into a paused
       player is the other way out and was not built either.
-- [ ] **Still only one device, and the Phase 4 device pass is now dated.**
-      F1 and F2 above are covered by tests, not by field observation, and
-      nothing in this round was watched on hardware. The observations under
-      "Confirmed by observation on the device" were made against 933e4a6 /
-      68ceda6; every one of them runs through code 832e88e changed, so they
-      are unverified against the current binary and want re-watching — with a
-      second device this time, which is what they always wanted.
+- [x] **Re-watched on two devices against the current binary**, including
+      everything the one-phone pass had claimed. See "The second device".
 
 ## Phase 5
 - [ ] Voice memories
@@ -509,12 +600,12 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 145 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 157 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is
-promised here. Instrumented/device tests: not run — no
-emulator or device is available in this environment.
+promised here. Instrumented tests: none written. Real-device testing is manual and
+is recorded per phase; Phase 4's was re-done on two devices on 2026-09-04.
 
 `git diff --check` reports trailing whitespace inside `content/templates/`.
 Those are Markdown hard line breaks on the fill-in label lines, where dropping

@@ -56,6 +56,21 @@ class GroupPlaybackTest {
      * per second, so most of the window is past the two-second tolerance and
      * the player gets dragged back to where the shared listen will begin.
      */
+    /**
+     * A group node has no expiry, so this is what tells a live listen from
+     * one an earlier session left behind (D045).
+     */
+    @Test
+    fun `a listen is finished once it has run past its own guide`() {
+        val g = group(positionMs = 0L, anchorServerMs = 0L)
+
+        assertEquals(false, isFinished(g, serverNowMs = 600_000L, durationMs = 720_000L))
+        assertEquals(true, isFinished(g, serverNowMs = 720_000L, durationMs = 720_000L))
+        assertEquals(true, isFinished(g, serverNowMs = 90_000_000L, durationMs = 720_000L))
+        // A length this build cannot state ends nothing.
+        assertEquals(false, isFinished(g, serverNowMs = 90_000_000L, durationMs = 0L))
+    }
+
     @Test
     fun `nothing moves before the agreed start moment arrives`() {
         val g = group(positionMs = 300_000L, anchorServerMs = 10_000L)

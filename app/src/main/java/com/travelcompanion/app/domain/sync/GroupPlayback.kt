@@ -64,6 +64,22 @@ fun expectedPosition(group: GroupPlayback, serverNowMs: Long): Long {
 }
 
 /**
+ * Whether the listen this describes has already run past its own guide.
+ *
+ * Nothing writes a stop when a guide simply ends, and nothing writes one when
+ * everybody walks away, so `playback` outlives the listen it describes: it
+ * comes back the next day still saying "playing", with an anchor from
+ * yesterday and an expected position hours past the end. Watched on two
+ * devices — the node left by an earlier session made one phone join a listen
+ * that was over, at 12:00 of a 12:00 guide (D045).
+ *
+ * [durationMs] is the guide's own length, which is packaged content. Zero
+ * means it is not known here, and an unknown length ends nothing.
+ */
+fun isFinished(group: GroupPlayback, serverNowMs: Long, durationMs: Long): Boolean =
+    durationMs > 0L && expectedPosition(group, serverNowMs) >= durationMs
+
+/**
  * What to do when this phone and the group disagree.
  *
  * The answer is deliberately a value: "two participants diverge" is the
@@ -115,7 +131,7 @@ fun syncCorrection(
     // as it stands. Its expected position keeps advancing past the guide, and
     // acting on that would drag the player back to the last frame and start it
     // again — once per heartbeat, forever. A guide that finished has finished.
-    if (local.durationMs > 0L && expected >= local.durationMs) return SyncCorrection.None
+    if (isFinished(group, serverNowMs, local.durationMs)) return SyncCorrection.None
 
     if (!local.isPlaying) return SyncCorrection.Resume(expected)
 

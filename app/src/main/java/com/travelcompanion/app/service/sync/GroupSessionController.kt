@@ -7,6 +7,7 @@ import com.travelcompanion.app.data.sync.ParticipantSync
 import com.travelcompanion.app.domain.sync.GroupPlayback
 import com.travelcompanion.app.domain.sync.LocalPlayback
 import com.travelcompanion.app.domain.sync.ServerClock
+import com.travelcompanion.app.domain.sync.isFinished
 import com.travelcompanion.app.domain.sync.SyncCorrection
 import com.travelcompanion.app.domain.sync.syncCorrection
 import com.travelcompanion.app.service.playback.AudioGuideRequest
@@ -82,6 +83,16 @@ class GroupSessionController(
     private var lastAckAtMs: Long = 0L
 
     /**
+     * The packaged trip, as a lookup, for as long as screens 08/09 are open.
+     *
+     * The controller carries no content of its own, and it needs two things
+     * from it: whether the group's guide is playable here, and how long that
+     * guide is — which is what says whether a shared listen is still running
+     * or has been over since yesterday (D045).
+     */
+    private var guides: ((String) -> AudioGuideRequest?)? = null
+
+    /**
      * The traveller's "Ouvir juntos", waiting for the group to answer.
      *
      * What the request means depends on what the group is doing, and on
@@ -89,14 +100,26 @@ class GroupSessionController(
      * replied. So the intent is held until the group says something
      * conclusive, and [resolveArrival] decides then.
      */
-    private var arrival: ((String) -> AudioGuideRequest?)? = null
+    private var arrivalPending = false
 
     /**
      * One-shot permission for [applyCorrection] to put the group's guide on
      * this phone. Set only by [resolveArrival], and only for a phone that has
      * nothing playing.
      */
-    private var invitation: ((String) -> AudioGuideRequest?)? = null
+    private var invited = false
+
+    /**
+     * The last thing the group said.
+     *
+     * Kept because a snapshot is not what drives a correction — the beat is.
+     * Two people simply listening write nothing but their own `seenAt`, which
+     * this repository maps away, so consecutive snapshots arrive equal and the
+     * state flow drops them. Watched on two devices: once the group settled,
+     * the controller stopped hearing anything at all, and with it every
+     * correction (D046).
+     */
+    private var lastGroup: GroupSyncState = GroupSyncState()
 
     /** Screen 09 opening: start listening to the group, if there is one. */
     fun join() {
@@ -121,8 +144,10 @@ class GroupSessionController(
         observeJob = null
         heartbeatJob = null
         lastAckAtMs = 0L
-        arrival = null
-        invitation = null
+        lastGroup = GroupSyncState()
+        guides = null
+        arrivalPending = false
+        invited = false
         scope.launch { sync.disconnect() }
         _state.value = GroupSessionState()
     }
@@ -171,7 +196,8 @@ class GroupSessionController(
      */
     fun listenTogether(guides: (String) -> AudioGuideRequest?) {
         if (participantId() == null) return
-        arrival = guides
+        this.guides = guides
+        arrivalPending = true
         // Deliberately not decided here. The snapshot in hand was left over
         // from before [join] asked, and reading "the group has nothing" off it
         // is how a phone ends up re-anchoring a listen that was already
@@ -186,7 +212,7 @@ class GroupSessionController(
      * asked for it.
      */
     private fun resolveArrival(group: GroupSyncState) {
-        val guides = arrival ?: return
+        if (!arrivalPending) return
         // "Connecting" and "Disabled" are not answers: one is the question
         // still in flight, the other is a build with no group configured at
         // all (D034). Everything else is conclusive, including the ones that
@@ -197,22 +223,33 @@ class GroupSessionController(
             group.status == GroupSyncState.Status.Offline
         if (!answered) return
 
-        val shared = group.playback.takeIf { group.isLive && !isStale() }
+        val shared = sharedListen(group)
         val localMediaId = playback.state.value.mediaId
-        arrival = null
 
         when {
             // Nobody is listening together yet: this is the phone that
             // proposes, which is the flow the prototype draws — screen 07's
             // "Ouvir juntos", then screen 08's 3–2–1.
-            shared == null ->
-                localMediaId?.let { startTogether(it, playback.state.value.positionMs) }
+            //
+            // Unless it has nothing to propose with. A phone holding no guide,
+            // with no listen to join, has not been answered yet in any useful
+            // sense — so the ask is kept rather than spent, and it joins when
+            // somebody does start one. Spending it here left the second phone
+            // sitting on "Comece um audioguia" while the first counted down,
+            // which is what two devices showed (D045).
+            shared == null -> {
+                val id = localMediaId ?: return
+                arrivalPending = false
+                startTogether(id, playback.state.value.positionMs)
+            }
 
             // Already on the guide the group is listening to. Following is all
             // that is left, and the drift correction does it. Publishing again
             // would drag everyone else to this phone's position.
-            shared.mediaId == localMediaId ->
+            shared.mediaId == localMediaId -> {
+                arrivalPending = false
                 _state.update { it.copy(sharedMediaId = shared.mediaId) }
+            }
 
             // Nothing playing here, and the group is already listening. The
             // traveller asked to join them, so this phone takes their guide —
@@ -225,7 +262,8 @@ class GroupSessionController(
             // "Comece um audioguia" about the very listen they were joining.
             // The count now belongs to the load, in [loadIfInvited] (D044).
             localMediaId == null -> {
-                invitation = guides
+                arrivalPending = false
+                invited = true
                 _state.update { it.copy(sharedMediaId = shared.mediaId) }
             }
 
@@ -233,7 +271,46 @@ class GroupSessionController(
             // it, and neither does this phone replace the group's. What was
             // missing is that the screen said nothing about it — see
             // [GroupSessionState.isDiverged].
-            else -> _state.update { it.copy(sharedMediaId = shared.mediaId) }
+            else -> {
+                arrivalPending = false
+                _state.update { it.copy(sharedMediaId = shared.mediaId) }
+            }
+        }
+    }
+
+    /**
+     * Offers what this phone's transport just did to the group.
+     *
+     * Screen 09 is the shared player, and the approved design gives both
+     * phones the same full transport with no host and no client — so pausing,
+     * resuming and skipping there are things the group does, not things one
+     * phone does behind the others' backs. Nothing published them, which left
+     * [SyncCorrection.Pause] and [SyncCorrection.Resume] reachable only by
+     * editing the database by hand; on two devices one traveller paused, the
+     * other narrated on, and both screens read "Sincronizado" (D047).
+     *
+     * The payload is the same five fields as a shared start. The anchor is
+     * now rather than a moment ahead: this is a correction to a listen that is
+     * already running, not a new one being agreed.
+     */
+    fun shareLocalPlayback() {
+        val id = participantId() ?: return
+        val local = playback.state.value
+        val mediaId = local.mediaId ?: return
+        // Only for the listen this phone actually joined. A phone that is on
+        // its own guide does not get to move the group (D042).
+        if (_state.value.sharedMediaId != mediaId) return
+
+        scope.launch {
+            sync.publish(
+                GroupPlayback(
+                    mediaId = mediaId,
+                    positionMs = local.positionMs,
+                    isPlaying = local.isPlaying,
+                    anchorServerMs = clock.serverNow(now()),
+                    updatedBy = id,
+                ),
+            )
         }
     }
 
@@ -266,6 +343,12 @@ class GroupSessionController(
             _state.update { it.moveTo(GroupSyncState.Status.Synchronized, from = GroupSyncState.Status.Reconnecting) }
         }
         checkStaleness()
+        // "Each device periodically computes expected playback position"
+        // (brief §5) — periodically, which until now meant "whenever the
+        // group's snapshot happened to differ". It stopped differing as soon
+        // as two people settled into listening, and every correction stopped
+        // with it (D046).
+        applyCorrection(lastGroup)
     }
 
     /** Moves the screen to the amber state once the round trips stop landing. */
@@ -310,12 +393,13 @@ class GroupSessionController(
 
     private fun onGroupState(group: GroupSyncState) {
         clock = group.clock
+        lastGroup = group
         // Before the screen is told anything: an arrival that resolves into a
         // proposal or an invitation has to be part of the same snapshot the
         // correction below acts on.
         resolveArrival(group)
 
-        val shared = group.playback.takeIf { group.isLive && !isStale() }
+        val shared = sharedListen(group)
         val localMediaId = playback.state.value.mediaId
         _state.update { current ->
             current.copy(
@@ -359,8 +443,9 @@ class GroupSessionController(
             isPlaying = playback.state.value.isPlaying,
             durationMs = playback.state.value.durationMs,
         )
-        // A group that is not live has nothing to say about this phone.
-        val remote = group.playback.takeIf { group.isLive && !isStale() }
+        // A group that is not live — or whose listen is long over — has
+        // nothing to say about this phone.
+        val remote = sharedListen(group)
 
         when (val correction = syncCorrection(local, remote, group.clock.serverNow(now()))) {
             SyncCorrection.None -> Unit
@@ -370,9 +455,30 @@ class GroupSessionController(
                 playback.play()
             }
             SyncCorrection.Pause -> playback.pause()
-            is SyncCorrection.Load -> loadIfInvited(correction, local, group.playback)
+            is SyncCorrection.Load -> loadIfInvited(correction, local, remote)
         }
     }
+
+    /**
+     * The group's listen, when there is one to follow.
+     *
+     * Null when the group is not live, when this phone has stopped reaching
+     * it, and — the case two devices found — when the listen it describes is
+     * already over. `playback` has no expiry: nothing writes a stop when a
+     * guide ends or when everyone walks away, so the node from an earlier
+     * session comes back still saying "playing". Acting on it made the first
+     * traveller to tap "Ouvir juntos" join a dead listen instead of starting
+     * one, and put the other phone at the last second of the guide (D045).
+     */
+    private fun sharedListen(group: GroupSyncState): GroupPlayback? {
+        val live = group.playback?.takeIf { group.isLive && !isStale() } ?: return null
+        val duration = declaredDurationMs(live.mediaId)
+        return live.takeIf { !isFinished(it, group.clock.serverNow(now()), duration) }
+    }
+
+    /** The packaged length of a guide, or zero when this build cannot say. */
+    private fun declaredDurationMs(mediaId: String): Long =
+        (guides?.invoke(mediaId) as? AudioGuideRequest.Playable)?.declaredDurationMs ?: 0L
 
     /**
      * The only case in which the group's guide reaches this player.
@@ -395,13 +501,13 @@ class GroupSessionController(
         // A group that is paused has nothing to join yet. The invitation is
         // kept rather than spent, so joining happens when they start again.
         if (remote?.isPlaying != true) return
-        val guides = invitation ?: return
+        if (!invited) return
         // A guide this build does not carry is not playable, and saying so is
         // content's job, not the player's (D021). Asked before the invitation
         // is spent, so an unplayable answer costs nothing: the ask is still
         // good for whatever the group plays next (D044).
-        val request = guides(load.mediaId) as? AudioGuideRequest.Playable ?: return
-        invitation = null
+        val request = guides?.invoke(load.mediaId) as? AudioGuideRequest.Playable ?: return
+        invited = false
         playback.playAudioGuide(request, startPositionMs = load.positionMs)
         // Screen 08, now that there is something to count down into. The
         // audio is already coming into step behind it — the group is mid-guide

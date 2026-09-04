@@ -142,12 +142,20 @@ fun StartWalkScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    state.participants.forEachIndexed { index, participant ->
+                    state.participants.forEach { participant ->
                         ParticipantPill(
                             initial = participant.initial,
                             // "você" is the participant this phone belongs to;
                             // everyone else is simply along on the same walk.
-                            label = participant.name + if (index == 0) " · você" else " · por perto",
+                            // It used to be whoever the package listed first,
+                            // so Érika's phone called itself Vinícius —
+                            // invisible until two phones ran it (D048).
+                            label = participant.name +
+                                if (participant.id == state.localParticipantId) {
+                                    " · você"
+                                } else {
+                                    " · por perto"
+                                },
                         )
                     }
                 }

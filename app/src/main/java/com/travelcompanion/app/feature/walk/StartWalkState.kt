@@ -32,6 +32,8 @@ data class StartWalkUiState(
     val automaticStories: Boolean,
     val locationGranted: Boolean,
     val participants: List<Participant>,
+    /** Who is holding this phone, so the pills can say which one is "você". */
+    val localParticipantId: String?,
 ) {
     val readiness: List<ReadinessLine>
         get() = listOf(
@@ -83,6 +85,7 @@ fun buildStartWalkState(
     headphonesConnected: Boolean,
     automaticStories: Boolean,
     locationGranted: Boolean,
+    localParticipantId: String?,
 ): StartWalkUiState? {
     val walk = content.walk(walkId) ?: return null
     val startTime = content.dayFor(date)
@@ -103,6 +106,7 @@ fun buildStartWalkState(
         automaticStories = automaticStories,
         locationGranted = locationGranted,
         participants = content.info.participants,
+        localParticipantId = localParticipantId,
     )
 }
 

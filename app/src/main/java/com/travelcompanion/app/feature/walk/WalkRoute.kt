@@ -38,6 +38,7 @@ import java.time.LocalDate
 fun WalkRoute(
     content: TripContent,
     walkId: String,
+    participantId: String,
     walkModeController: WalkModeController,
     playbackController: PlaybackController,
     onExit: () -> Unit,
@@ -120,6 +121,7 @@ fun WalkRoute(
                 headphonesConnected = headphonesConnected,
                 automaticStories = walkState.automaticStories,
                 locationGranted = walkState.locationQuality != com.travelcompanion.app.domain.walk.LocationQuality.Denied,
+                localParticipantId = participantId,
             )
             if (state == null) {
                 PlaceholderScreen(

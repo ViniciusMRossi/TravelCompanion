@@ -113,12 +113,21 @@ fun TogetherRoute(
         showTranscript = showTranscript,
     ) ?: return
 
+    // The transport on screen 09 acts on the shared listen: the local player
+    // first, then the group is told what it now says. Telling the group is
+    // deliberately not a second way into this phone's player — the answer
+    // comes back through the same correction as everyone else's (D047).
+    fun shared(action: () -> Unit): () -> Unit = {
+        action()
+        groupSessionController.shareLocalPlayback()
+    }
+
     ListenTogetherScreen(
         state = state,
         onBack = onBack,
-        onTogglePlayPause = playbackController::togglePlayPause,
-        onSkipBack = { playbackController.seekBy(-SKIP_MILLIS) },
-        onSkipForward = { playbackController.seekBy(SKIP_MILLIS) },
+        onTogglePlayPause = shared(playbackController::togglePlayPause),
+        onSkipBack = shared { playbackController.seekBy(-SKIP_MILLIS) },
+        onSkipForward = shared { playbackController.seekBy(SKIP_MILLIS) },
         // Offered only when a story actually backs this guide.
         onToggleTranscript = { showTranscript = !showTranscript }.takeIf { story != null },
         // Offered only while the walk still has somewhere to go.

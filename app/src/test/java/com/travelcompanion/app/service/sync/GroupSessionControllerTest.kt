@@ -511,6 +511,83 @@ class GroupSessionControllerTest {
         assertEquals(40_000L, engine.preparedStartPositionMs)
     }
 
+    /**
+     * The node an earlier session left behind, watched on two devices.
+     *
+     * `playback` has no expiry: nothing writes a stop when a guide ends or
+     * when everybody walks away, so the node from yesterday comes back still
+     * saying "playing" with yesterday's anchor. On the Galaxy S24 and the
+     * emulator the first traveller to tap "Ouvir juntos" was treated as
+     * joining that dead listen — no 3–2–1, nothing published — and the second
+     * phone loaded the guide at 12:00 of a 12:00 guide, stopped (D045).
+     */
+    @Test
+    fun `a listen that ran past its own guide is not something to join`() {
+        playLocally()
+        controller.join()
+        controller.listenTogether(guides())
+
+        // Anchored at server 0, and server time is now a quarter of an hour
+        // past the end of a twelve-minute guide.
+        sync.emit(erikaIsListeningTo(guide, positionMs = 0L, serverNowMs = 900_000L))
+
+        val published = sync.published.single()
+        assertEquals(guide, published.mediaId)
+        assertEquals("a dead listen is not one to join", 3, controller.state.value.countdown)
+    }
+
+    /** And nobody is dropped at the last second of a guide that is over. */
+    @Test
+    fun `a phone with nothing playing does not join a listen that is over`() {
+        controller.join()
+        controller.listenTogether(guides())
+
+        sync.emit(erikaIsListeningTo(guide, positionMs = 0L, serverNowMs = 900_000L))
+
+        assertEquals(0, engine.prepareCount)
+        assertNull(playback.state.value.mediaId)
+        assertNull(controller.state.value.countdown)
+    }
+
+    /** A listen still inside its guide is joined exactly as before. */
+    @Test
+    fun `a listen still running is unaffected by the expiry rule`() {
+        controller.join()
+        controller.listenTogether(guides())
+
+        sync.emit(erikaIsListeningTo(guide, positionMs = 0L, serverNowMs = 120_000L))
+
+        assertEquals(guide, playback.state.value.mediaId)
+        assertEquals(120_000L, engine.preparedStartPositionMs)
+    }
+
+    /**
+     * The ask survives a group that has nothing to join yet.
+     *
+     * Watched on two devices: the first snapshot the second phone saw carried
+     * only the node an earlier session had left behind, which the expiry rule
+     * correctly refuses. Spending the ask on that answer left the traveller on
+     * "Comece um audioguia para ouvir junto" while the other phone counted
+     * 3–2–1 and started narrating alone (D045).
+     */
+    @Test
+    fun `a phone holding no guide keeps asking until there is a listen to join`() {
+        controller.join()
+        controller.listenTogether(guides())
+
+        // An answer with nothing to join: the group is live and its node is
+        // the dead one from yesterday.
+        sync.emit(erikaIsListeningTo(guide, positionMs = 0L, serverNowMs = 900_000L))
+        assertEquals(0, engine.prepareCount)
+
+        // The other traveller starts a real one.
+        sync.emit(erikaIsListeningTo(guide, positionMs = 60_000L, serverNowMs = 30_000L))
+
+        assertEquals(guide, playback.state.value.mediaId)
+        assertEquals(90_000L, engine.preparedStartPositionMs)
+        assertEquals(3, controller.state.value.countdown)
+    }
+
     /** The group still cannot load a guide nobody asked it to. */
     @Test
     fun `a guide the group loads is not taken up without the traveller asking`() {
@@ -520,6 +597,96 @@ class GroupSessionControllerTest {
 
         assertEquals(0, engine.prepareCount)
         assertNull(playback.state.value.mediaId)
+    }
+
+    // -- corrections happen on the beat, not on the snapshot ---------------
+
+    /**
+     * The defect two devices found, and the reason it survived every earlier
+     * pass.
+     *
+     * `GroupSyncState` maps `seenAt` away, so once two people settle into
+     * listening the snapshots the repository produces are equal to one
+     * another and its state flow drops them. `onGroupState` stops being
+     * called, and every correction stops with it: on the Galaxy S24 and the
+     * emulator a phone paused on screen 09 was never resumed, the two drifted
+     * a full minute apart, and both screens went on reading "Sincronizado".
+     * The beat is what makes it periodic (brief §5, D046).
+     */
+    @Test
+    fun `the beat corrects against the group even when no snapshot arrives`() = runBlocking {
+        playLocally()
+        controller.join()
+        controller.listenTogether(guides())
+        sync.emit(erikaIsListeningTo(guide, positionMs = 0L, serverNowMs = 0L))
+
+        // The traveller pauses. Nothing about the group changes, so nothing
+        // is emitted — exactly the situation on the two devices.
+        playback.pause()
+        assertTrue(!playback.state.value.isPlaying)
+
+        nowMs += 5_000L
+        controller.beat()
+
+        assertTrue("the beat has to bring a paused phone back in", playback.state.value.isPlaying)
+    }
+
+    /** And drift closes on the beat too, with no writes from anyone. */
+    @Test
+    fun `the beat closes drift with nothing arriving`() = runBlocking {
+        playLocally()
+        controller.join()
+        controller.listenTogether(guides())
+        sync.emit(erikaIsListeningTo(guide, positionMs = 0L, serverNowMs = 0L))
+
+        engine.advanceTo(60_000L)
+        playback.refreshProgress()
+        nowMs += 5_000L
+        controller.beat()
+
+        assertTrue(
+            "expected the beat to seek towards the group",
+            engine.commands.any { it.startsWith("seekTo(") && it != "seekTo(60000)" },
+        )
+    }
+
+    /**
+     * Screen 09's transport is the shared player's transport (D047).
+     *
+     * Nothing published what it did, so [SyncCorrection.Pause] and
+     * [SyncCorrection.Resume] could only ever be produced by editing the
+     * database by hand — which is how they came to be recorded as verified.
+     */
+    @Test
+    fun `the transport on screen 09 tells the group what it did`() {
+        playLocally()
+        controller.join()
+        controller.listenTogether(guides())
+        sync.emit(erikaIsListeningTo(guide, positionMs = 0L, serverNowMs = 0L))
+        sync.published.clear()
+
+        playback.pause()
+        controller.shareLocalPlayback()
+
+        val published = sync.published.single()
+        assertEquals(guide, published.mediaId)
+        assertTrue("a pause has to reach the group as a pause", !published.isPlaying)
+        assertEquals("vinicius", published.updatedBy)
+    }
+
+    /** A phone on its own guide still does not get to move the group. */
+    @Test
+    fun `a phone outside the shared listen publishes nothing from its transport`() {
+        playLocally()
+        controller.join()
+        controller.listenTogether(guides())
+        sync.emit(erikaIsListeningTo("ag.latin-bridge", positionMs = 0L, serverNowMs = 0L))
+        sync.published.clear()
+
+        playback.pause()
+        controller.shareLocalPlayback()
+
+        assertTrue(sync.published.isEmpty())
     }
 
     // -- silence is not failure, and silence is not health -----------------
