@@ -53,6 +53,8 @@ import com.travelcompanion.app.feature.today.TodayViewModel
 import com.travelcompanion.app.feature.document.DocumentRoute
 import com.travelcompanion.app.feature.emergency.EmergencyScreen
 import com.travelcompanion.app.feature.fullday.FullDayScreen
+import com.travelcompanion.app.feature.city.CityScreen
+import com.travelcompanion.app.feature.city.buildCityState
 import com.travelcompanion.app.feature.more.MoreScreen
 import com.travelcompanion.app.domain.more.buildMoreState
 import com.travelcompanion.app.domain.fullday.FullDayUseCase
@@ -69,7 +71,9 @@ import com.travelcompanion.app.domain.wallet.buildWalletState
 import com.travelcompanion.app.feature.together.TogetherRoute
 import com.travelcompanion.app.feature.walk.WalkRoute
 import com.travelcompanion.app.service.external.ExternalActionLauncher
+import com.travelcompanion.app.service.playback.AudioGuideRequest
 import com.travelcompanion.app.service.playback.PlaybackController
+import com.travelcompanion.app.service.playback.audioGuideRequest
 import com.travelcompanion.app.service.memory.MemoryController
 import com.travelcompanion.app.service.sync.GroupSessionController
 import com.travelcompanion.app.service.walk.WalkModeController
@@ -161,10 +165,7 @@ fun AppNavigation(
                     FullDayRoute(content, navController, launcher, onBack = null)
                 }
                 composable(Routes.EXPLORE) {
-                    PlaceholderScreen(
-                        title = "Explorar",
-                        message = "Tela 04 Cidade e navegação editorial — fase 6.",
-                    )
+                    CityRoute(content, playbackController, navController, launcher)
                 }
                 composable(Routes.WALLET) {
                     WalletScreen(
@@ -404,6 +405,68 @@ private fun AttractionRoute(
  * The selected day is the only state here and it survives rotation; everything
  * else is a pure function of that date and the clock.
  */
+/**
+ * Screen 04, for the city the traveller is in today.
+ *
+ * The city guide and the stories play through the same `PlaybackController`
+ * every other screen uses, and the chapter list drives `seekToChapter`, which
+ * has had no approved surface until now (D025).
+ */
+@Composable
+private fun CityRoute(
+    content: TripContent,
+    playbackController: PlaybackController,
+    navController: NavHostController,
+    launcher: ExternalActionLauncher,
+) {
+    val today = LocalDate.now()
+    val cityId = content.dayFor(today)?.let { it.baseCityId ?: it.cityIds.firstOrNull() }
+    val state = buildCityState(content, cityId, today)
+
+    if (state == null) {
+        PlaceholderScreen(
+            title = "Explorar",
+            message = "Esta viagem ainda não traz a cidade em conteúdo.",
+        )
+        return
+    }
+
+    CityScreen(
+        state = state,
+        // A root tab has nothing behind it, so the hero's back button is not
+        // drawn here.
+        onBack = null,
+        onPlayGuide = {
+            audioGuideRequest(content, state.guide?.id, subtitle = state.name)
+                ?.let(playbackController::playAudioGuide)
+        },
+        onSeekToChapter = { index ->
+            // Selecting a chapter of a guide that is not loaded loads it first
+            // and starts there, rather than seeking whatever happens to be
+            // playing — the list belongs to this guide.
+            val request = audioGuideRequest(content, state.guide?.id, subtitle = state.name)
+            if (playbackController.state.value.mediaId == state.guide?.id) {
+                playbackController.seekToChapter(index)
+            } else if (request is AudioGuideRequest.Playable) {
+                playbackController.playAudioGuide(
+                    request,
+                    startPositionMs = request.chapters.getOrNull(index)?.startMs,
+                )
+            }
+        },
+        onOpenAttraction = { id -> navController.navigate(Routes.attraction(id)) },
+        onStartWalk = { id -> navController.navigate(Routes.walk(id)) },
+        onPlayStory = { storyId ->
+            audioGuideRequest(
+                content,
+                content.story(storyId)?.audioGuideId,
+                subtitle = content.story(storyId)?.title,
+            )?.let(playbackController::playAudioGuide)
+        },
+        onOpenAction = { action -> launcher.open(action.uri, action.fallbackUri) },
+    )
+}
+
 @Composable
 private fun FullDayRoute(
     content: TripContent,

@@ -1009,9 +1009,77 @@ follows in its own commit — it is the densest screen in the app.
       `trip.schema.json` was not touched — the same treatment as D069;
 - [ ] **Live group state on screen 19.** By decision, not omission (D071).
 
+## Screen 04 — Cidade, and the chapter list (2026-09-04)
+
+The last of the three placeholder tabs. With it the editorial layer is
+complete and **only screens 10 and 11 remain of the nineteen canonical
+screens** — seventeen exist.
+
+**Verified on both emulators** (360 × 760 dp with the system font at 1.5, and
+480 × 1040 dp). No hardware was needed and none was asked for.
+
+- [x] Hero of 300px with the country, the name and the stretch of the trip
+      spent in the city
+- [x] Editorial opening, with no operational number in it — asserted, not
+      just intended
+- [x] Teal city-guide card with a 46dp play, and **the numbered chapter list
+      with each chapter's length**, which is where D025 lands
+- [x] Horizontal attraction cards with thumbnail, the hour the itinerary gives
+      them, and status pills
+- [x] Ink card for the day's walk: distance, duration, how many stories
+- [x] Onde comer, with walking distance and the practical note
+- [x] Short stories with *Ouvir* and *Ler*
+
+### Confirmed by observation
+
+- **the hero's text was nearly invisible** on the paper placeholder — the
+  country and the dates in light grey-blue on light beige. Screen 05 had
+  already solved this with the cool placeholder and white at 85%; the city
+  hero and the attraction thumbnails now do the same (D075);
+- **the pills wrap in the real package**: Baščaršija carries "Audioguia",
+  "Offline" and "Entrada livre", and the third takes its own line at 360 dp
+  rather than being squeezed;
+- **the chapter list opens and each row carries its length** — "1 Introdução
+  · 6 min" — and the guide's line reads "3 capítulos · 34 min · ainda não
+  salvo neste aparelho", because that file is not in this build;
+- **only the story that has audio offers *Ouvir***;
+- **the restaurant row was fixed at 360 dp with the font at 1.5**: the name
+  takes two lines there and a vertically centred distance floated into the
+  middle of them. Top-aligned now.
+
+### Found by reasoning, not in the field
+
+- **A chapter picked while another guide is loaded would have sought inside
+  that other recording.** Picking a chapter now loads the city guide and
+  starts there (D074).
+
+### Not observed, and not claimed
+
+- **No chapter was heard.** The city guide's audio is not packaged, so
+  pressing a chapter row asks the player for a guide it cannot load — the
+  card says so ("ainda não salvo neste aparelho"). What is proved is the
+  index handed to `seekToChapter`, in a Robolectric test that presses the real
+  row (D074). Hearing chapter three start at 6:00 waits for the audio;
+- **the attraction thumbnails and the hero have never drawn a photograph**,
+  because none is packaged (D005 remains open).
+
+### Not implemented, with reasons
+
+- [ ] **The "10 KM" pill the sheet shows on attraction cards.** Distance from
+      where — the city has no centre point in the schema, and an attraction's
+      distance from the traveller is a live location, which this screen is
+      explicitly not about. Left out rather than invented;
+- [ ] **Fraunces** (D005): the name, the chapter titles and the story titles
+      use the serif fallback;
+- [ ] **A test for D055 on the attraction pills.** One was written and then
+      deleted: it passed with the wrap and passed without it, so it proved
+      nothing (D076). The wrap is verified on the emulator instead.
+
 ## Later
 
-- [ ] Remaining canonical screens
+- [ ] **Screens 10 and 11 — História disparada pela localização, and Fim do
+      passeio. They are the last two: seventeen of the nineteen canonical
+      screens exist, and with these the set is complete.**
 - [ ] Weather (live/cached states; only the trip fallback exists today)
 - [ ] Notifications
 - [ ] Real Balkans package
@@ -1087,7 +1155,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 258 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 271 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is
