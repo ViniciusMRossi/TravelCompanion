@@ -44,6 +44,8 @@ data class LocalPlayback(
     val mediaId: String?,
     val positionMs: Long,
     val isPlaying: Boolean,
+    /** 0 when the guide's length is not known yet. */
+    val durationMs: Long = 0L,
 )
 
 /**
@@ -92,6 +94,15 @@ fun syncCorrection(
     if (!group.isPlaying) {
         return if (local.isPlaying) SyncCorrection.Pause else SyncCorrection.None
     }
+
+    // The group is asking for a point this guide does not have.
+    //
+    // Nothing publishes a stop when a guide simply ends, so a shared listen
+    // that ran to the end leaves the group node saying "playing" for as long
+    // as it stands. Its expected position keeps advancing past the guide, and
+    // acting on that would drag the player back to the last frame and start it
+    // again — once per heartbeat, forever. A guide that finished has finished.
+    if (local.durationMs > 0L && expected >= local.durationMs) return SyncCorrection.None
 
     if (!local.isPlaying) return SyncCorrection.Resume(expected)
 

@@ -165,6 +165,44 @@ class GroupSessionControllerTest {
         assertEquals(prepareCountBefore, engine.prepareCount)
     }
 
+    /**
+     * The heartbeat (D039) makes the group's snapshot arrive every few seconds
+     * instead of only when someone touches something, which puts every branch
+     * of the correction on a five-second loop. A guide that has finished on
+     * both phones leaves the group node saying "playing" — nobody publishes a
+     * stop when a guide simply ends — and each snapshot then asks this phone
+     * to resume a guide that is over.
+     */
+    @Test
+    fun `a guide that has ended is not resurrected by a group nobody stopped`() {
+        playLocally()
+        engine.advanceTo(720_000L)
+        engine.finish()
+        playback.refreshProgress()
+        controller.join()
+
+        val commandsBefore = engine.commands.size
+
+        // Five snapshots, as five heartbeats would deliver them, with the
+        // group still anchored back where the shared listen began.
+        repeat(5) {
+            nowMs += 5_000L
+            sync.emit(
+                GroupSyncState(
+                    status = GroupSyncState.Status.Synchronized,
+                    playback = group(positionMs = 0L, anchorServerMs = 0L),
+                    clock = ServerClock.fromObservation(serverMs = 900_000L, deviceMs = nowMs),
+                ),
+            )
+        }
+
+        assertEquals(
+            "a finished guide must not be seeked and played once per heartbeat",
+            commandsBefore,
+            engine.commands.size,
+        )
+    }
+
     // -- the shared start -------------------------------------------------
 
     @Test

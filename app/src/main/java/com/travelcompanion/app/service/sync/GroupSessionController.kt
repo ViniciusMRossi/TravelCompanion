@@ -234,6 +234,7 @@ class GroupSessionController(
             mediaId = playback.state.value.mediaId,
             positionMs = playback.state.value.positionMs,
             isPlaying = playback.state.value.isPlaying,
+            durationMs = playback.state.value.durationMs,
         )
         // A group that is not live has nothing to say about this phone.
         val remote = group.playback.takeIf { group.isLive && !isStale() }

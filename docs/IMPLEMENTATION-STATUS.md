@@ -333,6 +333,16 @@ Two defects the unit tests did not catch, both fixed and re-verified:
   phone that lost the group. Status and the traveller's row now move together
   (D040).
 
+A third defect was found after those two, by reasoning rather than by
+watching: the heartbeat makes the group's snapshot arrive every few seconds
+instead of only when someone acts, which puts every branch of the correction
+on the same loop. Nothing publishes a stop when a guide simply ends, so a
+finished shared listen left the group saying "playing" and resurrected the
+guide on each beat — a failing test showed five snapshots producing five
+commands to the audio engine. A correction that points at or past the end of
+the loaded guide is now `None` (D039). This one was never observed on the
+device and is not claimed as such.
+
 `NoOpGroupSyncRepository` was written this phase and deleted before it was
 committed: the no-configuration case is already handled by the Firebase
 repository reporting `Disabled` (D034), so nothing ever constructed it.
