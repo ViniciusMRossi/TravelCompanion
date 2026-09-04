@@ -16,7 +16,7 @@ Keep this short. This is not an SDD.
 - [x] Confirm unit tests
 - [x] Confirm debug APK
 - [x] Confirm starter on emulator/device (2026-09-04, two emulators)
-- [ ] Add Room when structured runtime persistence is first needed
+- [x] Add Room when structured runtime persistence is first needed (Phase 5: voice memories are the first table — D057)
 
 Phase 0 required two baseline corrections before it would build; see D006 and
 D007 in `DECISIONS.md`.
@@ -693,10 +693,87 @@ Fraunces fallback reads at arm's length. Emulator screenshots settle geometry
 and hex values; they do not settle how a screen looks in the hand. Nothing in
 this pass claims otherwise.
 
-## Phase 5
-- [ ] Voice memories
+## Phase 5 — Screen 12, Gravar memória por voz
+
+**Verified on hardware.** Samsung SM-S921B (Galaxy S24), Android 16 (API 36),
+over ADB on 2026-09-04, plus both emulators for layout.
+
+- [x] Screen 12 with the sheet's three states in one place: the 82dp oxblood
+      button with its 28dp core, the pulsing "Gravando" chip over a 38px
+      timer, eight waveform bars, attribution, Pausar / Concluir / Cancelar,
+      and the green "Memória salva" confirmation with place, hour and duration
+- [x] "Memórias desta viagem" — the list of past recordings, newest first,
+      with date, author and duration
+- [x] No text field anywhere, and no title asked for. A row is named by where
+      it happened, which is something the app filled in by itself
+- [x] Audio at `files/memories/<id>.m4a`, metadata in Room (brief §22, D057)
+- [x] A finished recording is never lost: past `stop()` the audio is on disk
+      and no failure in the bookkeeping throws it away — a row that cannot be
+      written is reported as "A gravação foi salva no aparelho, mas não entrou
+      na lista desta viagem", not as nothing having happened
+- [x] `RECORD_AUDIO` asked for immediately before the first recording, never
+      at launch (brief §23). A refusal costs the recording and not the screen
+      (D030). The permission was declared in Phase 0 and unused until now, so
+      the manifest does not change
+- [x] The audioguide pauses for the microphone and comes back afterwards
+      (D058), locally — nothing is published to the group
+- [x] Recording is application-scoped, like playback and Walk Mode: something
+      that cannot be recorded again must not belong to a screen
+
+### Confirmed by observation
+
+On the Galaxy S24, with the guide playing before the recording started:
+
+- **the guide gives way and comes back**: `PLAYING position=448873` before,
+  `PAUSED(2) position=466611` during, `PLAYING position=469572` after;
+- **the microphone actually captures**. A 30.8s recording came back as mono
+  AAC, 44.1kHz, **97.8 kbps** against the 96 kbps asked for, 376 812 bytes —
+  and, decoded, **mean −45.8 dBFS with peaks at −22.1 dBFS**, which is a quiet
+  room's floor rather than the −∞ of a dead microphone path;
+- **the memory survives the process**: force-stopped and reopened, the list
+  still read "Sarajevo · 4 de setembro · Vinícius · 00:31".
+
+On both emulators (360 × 760 dp with the system font at 1.5, and
+480 × 1040 dp):
+
+- the whole flow — idle, recording, pause, resume, finish, saved, list;
+- **pausing really pauses**: the timer held at 00:16 across four seconds and
+  then continued, which is what the banked-time machine exists for;
+- **a refused microphone leaves the screen standing**, with the sentence about
+  device settings and the record button still there;
+- the audio file lands where §22 says, and its size matches the bitrate
+  (263 101 bytes for 21s).
+
+### Not observed, and not claimed
+
+- **whether a person speaking at arm's length is intelligible.** Nobody spoke
+  into the phone — the level test proves the microphone path is live and the
+  encoder is producing real audio, and it proves nothing about a voice. This
+  is the one claim in the phase that only a person can settle, by recording a
+  memory and listening to it;
+- **a Bluetooth headset connected while recording** — no headset was paired to
+  the device during the session;
+- **audio focus taken mid-recording by an incoming call.** Phase 2 verified
+  the two playback cases; the recording case was not exercised, because
+  placing a real call to the traveller's own phone was out of proportion to
+  the session.
+
+### Not implemented, with reasons
+
+- [ ] **A recording interrupted by process death is lost.** The invariant is
+      about a *finished* recording (§22), and that one holds. A recording still
+      running when the process is killed leaves an unfinalized file and no row.
+      Recovering it would mean writing the row before the audio exists and
+      reconciling on the next launch, which is a design of its own;
+- [ ] **Memories cannot be played back in the app.** The approved sheet's list
+      carries title, date, author and duration and does not draw a play
+      control, and screen 12's job is to record. Nothing was invented;
+- [ ] **Screens 10 and 11 remain out of scope**, so the canonical 11 → 12 flow
+      is still not walkable end to end. Screen 12 is reached from the "Gravar
+      memória" shortcut on screen 02 (D058).
 
 ## Later
+
 - [ ] Remaining canonical screens
 - [ ] Weather (live/cached states; only the trip fallback exists today)
 - [ ] Notifications
@@ -773,7 +850,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 166 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 186 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

@@ -47,10 +47,12 @@ import com.travelcompanion.app.feature.attraction.AttractionViewModel
 import com.travelcompanion.app.feature.placeholder.PlaceholderScreen
 import com.travelcompanion.app.feature.today.TodayScreen
 import com.travelcompanion.app.feature.today.TodayViewModel
+import com.travelcompanion.app.feature.memory.MemoryRoute
 import com.travelcompanion.app.feature.together.TogetherRoute
 import com.travelcompanion.app.feature.walk.WalkRoute
 import com.travelcompanion.app.service.external.ExternalActionLauncher
 import com.travelcompanion.app.service.playback.PlaybackController
+import com.travelcompanion.app.service.memory.MemoryController
 import com.travelcompanion.app.service.sync.GroupSessionController
 import com.travelcompanion.app.service.walk.WalkModeController
 import com.travelcompanion.app.service.playback.PlaybackState
@@ -97,6 +99,7 @@ fun AppNavigation(
     playbackController: PlaybackController,
     walkModeController: WalkModeController,
     groupSessionController: GroupSessionController,
+    memoryController: MemoryController,
     onResetParticipant: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -212,11 +215,12 @@ fun AppNavigation(
                     )
                 }
                 composable(Routes.MEMORY) {
-                    PlaceholderScreen(
-                        title = "Gravar memória",
-                        message = "Tela 12 Memória por voz — fase 5.",
-                        actionLabel = "Voltar",
-                        onAction = navController::popBackStack,
+                    MemoryRoute(
+                        content = content,
+                        participantId = participantId,
+                        walkModeController = walkModeController,
+                        memoryController = memoryController,
+                        onBack = navController::popBackStack,
                     )
                 }
             }

@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
 }
 
 // Applied only when the file is actually there. The plugin turns
@@ -73,6 +74,15 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.datastore.preferences)
 
+    // Room arrives here and not before. Phase 0 has carried "add Room when
+    // structured runtime persistence is first needed" since the beginning;
+    // until now every runtime fact fitted in DataStore or came from the
+    // packaged trip. Voice memories are the first thing with rows to query —
+    // a list of previous recordings, by date, with an author (D057).
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
 
@@ -98,6 +108,7 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(composeBom)
     testImplementation("androidx.compose.ui:ui-test-junit4")
+    testImplementation("androidx.test:core")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")

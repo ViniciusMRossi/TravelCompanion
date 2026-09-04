@@ -5,6 +5,9 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.room.Room
+import com.travelcompanion.app.data.memory.MemoryDatabase
+import com.travelcompanion.app.data.memory.RoomMemoryRepository
 import com.travelcompanion.app.data.preferences.ParticipantPreferences
 import com.travelcompanion.app.data.sync.FirebaseGroupSyncRepository
 import com.travelcompanion.app.data.sync.GroupSyncRepository
@@ -15,6 +18,9 @@ import com.travelcompanion.app.service.location.FusedLocationSource
 import com.travelcompanion.app.service.playback.DataStorePlaybackPositionStore
 import com.travelcompanion.app.service.playback.Media3AudioEngine
 import com.travelcompanion.app.service.playback.PlaybackController
+import android.os.SystemClock
+import com.travelcompanion.app.service.memory.MediaAudioRecorder
+import com.travelcompanion.app.service.memory.MemoryController
 import com.travelcompanion.app.service.walk.AndroidWalkPresence
 import com.travelcompanion.app.service.sync.GroupSessionController
 import com.travelcompanion.app.service.walk.WalkModeController
@@ -95,6 +101,38 @@ class AppContainer(context: Context) {
             participantId = participantId,
         ).also { groupSession = it }
     }
+
+    /**
+     * Room, and only here.
+     *
+     * Phase 0 has carried "add Room when structured runtime persistence is
+     * first needed" from the start. Until voice memories there was nothing to
+     * query: everything was either a single value in DataStore or came from
+     * the packaged trip. A list of past recordings, newest first, with an
+     * author and a duration, is the first thing that is a table (D057).
+     */
+    private val memoryDatabase: MemoryDatabase by lazy {
+        Room.databaseBuilder(appContext, MemoryDatabase::class.java, "memories.db").build()
+    }
+
+    /**
+     * Application-scoped like playback and Walk Mode, and for a sharper
+     * reason: a recording in progress cannot be made again, so it must not
+     * belong to a screen that can be navigated away from.
+     *
+     * Elapsed time is measured on the monotonic clock and the recording's date
+     * on the wall clock — a memory made across midnight, or while the phone
+     * corrects its time, must not end up with a negative duration.
+     */
+    val memoryController = MemoryController(
+        recorder = MediaAudioRecorder(appContext),
+        memories = RoomMemoryRepository(memoryDatabase.memories()),
+        playback = playbackController,
+        filesDir = appContext::getFilesDir,
+        scope = playbackScope,
+        now = SystemClock::elapsedRealtime,
+        epochNow = System::currentTimeMillis,
+    )
 
     val walkModeController = WalkModeController(
         locationSource = FusedLocationSource(appContext),

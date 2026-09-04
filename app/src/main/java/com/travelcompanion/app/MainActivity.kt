@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
                     playbackController = container.playbackController,
                     walkModeController = container.walkModeController,
                     groupSessionController = container::groupSessionController,
+                    memoryController = container.memoryController,
                 )
             }
         }
