@@ -48,6 +48,10 @@ import com.travelcompanion.app.feature.placeholder.PlaceholderScreen
 import com.travelcompanion.app.feature.today.TodayScreen
 import com.travelcompanion.app.feature.today.TodayViewModel
 import com.travelcompanion.app.feature.document.DocumentRoute
+import com.travelcompanion.app.feature.emergency.EmergencyScreen
+import com.travelcompanion.app.feature.emergency.buildEmergencyState
+import com.travelcompanion.app.feature.planb.PlanBScreen
+import com.travelcompanion.app.feature.planb.buildPlanBState
 import com.travelcompanion.app.feature.stay.StayScreen
 import com.travelcompanion.app.feature.stay.buildStayState
 import com.travelcompanion.app.feature.transport.TransportScreen
@@ -77,6 +81,7 @@ private object Routes {
     const val ATTRACTION = "attraction/{attractionId}"
     const val DOCUMENT = "document/{documentId}"
     const val PLAN_B = "plan-b/{planBId}"
+    const val EMERGENCY = "emergency"
     const val TRANSPORT = "transport/{transportId}"
     const val STAY = "stay/{stayId}"
     const val WALK = "walk/{walkId}"
@@ -162,11 +167,17 @@ fun AppNavigation(
                     )
                 }
                 composable(Routes.MORE) {
+                    // Screen 19 is not in this block, so its list does not exist
+                    // yet. Emergency is reached from here in the meantime rather
+                    // than being built and unreachable — the row moves into 19
+                    // when 19 is drawn (D068).
                     PlaceholderScreen(
                         title = "Mais",
-                        message = "Emergência, frases, apps, grupo e configurações — fase 6.",
-                        actionLabel = "Trocar participante",
-                        onAction = onResetParticipant,
+                        message = "Frases, apps, grupo e configurações — fase 6.",
+                        actionLabel = "Emergência",
+                        onAction = { navController.navigate(Routes.EMERGENCY) },
+                        secondaryLabel = "Trocar participante",
+                        onSecondary = onResetParticipant,
                     )
                 }
 
@@ -245,13 +256,45 @@ fun AppNavigation(
                         )
                     }
                 }
-                composable(Routes.PLAN_B) {
-                    PlaceholderScreen(
-                        title = "Plano B",
-                        message = "Tela 18 — fase 6.",
-                        actionLabel = "Voltar",
-                        onAction = navController::popBackStack,
+                composable(Routes.EMERGENCY) {
+                    val state = buildEmergencyState(content, LocalDate.now())
+                    if (state == null) {
+                        PlaceholderScreen(
+                            title = "Emergência",
+                            message = "Esta viagem não traz um perfil de emergência.",
+                            actionLabel = "Voltar",
+                            onAction = navController::popBackStack,
+                        )
+                    } else {
+                        EmergencyScreen(
+                            state = state,
+                            onBack = navController::popBackStack,
+                            onDial = { number -> launcher.dial(number) },
+                        )
+                    }
+                }
+                composable(Routes.PLAN_B) { entry ->
+                    val state = buildPlanBState(
+                        content = content,
+                        planBId = entry.arguments?.getString("planBId"),
+                        now = LocalTime.now(),
                     )
+                    if (state == null) {
+                        PlaceholderScreen(
+                            title = "Plano B",
+                            message = "Este plano não está no pacote desta viagem.",
+                            actionLabel = "Voltar",
+                            onAction = navController::popBackStack,
+                        )
+                    } else {
+                        PlanBScreen(
+                            state = state,
+                            onBack = navController::popBackStack,
+                            onAction = { action -> launcher.open(action.uri, action.fallbackUri) },
+                            onDial = { number -> launcher.dial(number) },
+                            onOpenDocument = { id -> navController.navigate(Routes.document(id)) },
+                        )
+                    }
                 }
                 composable(Routes.WALK) { entry ->
                     WalkRoute(

@@ -26,6 +26,10 @@ fun PlaceholderScreen(
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
+    /** A second way out, for a placeholder that already has one finished
+     *  screen behind it. */
+    secondaryLabel: String? = null,
+    onSecondary: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier
@@ -40,6 +44,11 @@ fun PlaceholderScreen(
         if (actionLabel != null && onAction != null) {
             TcSecondaryButton(onClick = onAction, modifier = Modifier.fillMaxWidth()) {
                 Text(actionLabel)
+            }
+        }
+        if (secondaryLabel != null && onSecondary != null) {
+            TcSecondaryButton(onClick = onSecondary, modifier = Modifier.fillMaxWidth()) {
+                Text(secondaryLabel)
             }
         }
     }

@@ -854,9 +854,96 @@ does need hardware could not be reached — see below.
       `ImageVector`. There was no decision outstanding, only a conversion. All
       six are converted, and the wallet's voucher row shows the bed rather
       than the wallet;
-- [ ] **Screens 15, 16, 17 and 18 — Transporte, Hospedagem, Emergência and
-      Plano B — are the second block of the operational half** and are not
-      started. Screen 04 and the chapter list come after them.
+- [x] **Screens 15, 16, 17 and 18 — Transporte, Hospedagem, Emergência and
+      Plano B — are the second block of the operational half** and are the
+      section below. Screen 04 and the chapter list come after them.
+
+## The operational half closes — screens 15, 16, 17 and 18 (2026-09-04)
+
+Second and last block of the operational half, in two commits: 15 + 16
+(operações) and 17 + 18 (segurança e recuperação). With this the app has
+fifteen of its nineteen canonical screens.
+
+**Verified on both emulators** (360 × 760 dp with the system font at 1.5, and
+480 × 1040 dp). The Galaxy S24 was **not** asked for — see what that costs,
+below.
+
+- [x] Screen 15 Transporte: critical item at the top with the instruction
+      apart from the departure time, *Mostrar passagem* and *Ver ponto de
+      embarque*, the vertical journey with 28px times and full station names,
+      the duration / people / price footer, the action list ending in the
+      operator's telephone, and the Plan B summary linking to screen 18
+- [x] Screen 16 Hospedagem: hero and name, "Pago", check-in and check-out
+      cards, its own critical item (reception closes at 23:00, act by 22:45),
+      the offline voucher and Maps actions, and the host's instructions as
+      running text
+- [x] Screen 17 Emergência: high contrast, **no bottom bar**, no editorial
+      hierarchy, the location in plain text, one 88dp "Ligar 112" with the
+      note that it works without credit, police and ambulance as two large
+      buttons, three 48dp contacts each with its own accessibility label, and
+      the ink card in Bosnian to show a stranger with the translation below
+- [x] Screen 18 Plano B: the scenario in human language, the reassurance that
+      nobody sleeps in the street, the steps numbered in order of attempt with
+      what to expect, and the alternatives the package has already saved
+- [x] `ActionWindow` and the current Plan B step are pure functions over a
+      fixed clock in `domain/operations` — no Compose, no Android
+- [x] Every telephone goes out as `ACTION_DIAL`; no permission was added
+
+### Confirmed by observation
+
+- **the dialer opens with the right number and stops there.** "Ligar 112" was
+  pressed once on the emulator: the system dialer came up with `112` filled in
+  and the call button untouched. **No call was completed, on any device, to
+  112 or to anything beside it** — and `ACTION_DIAL` is what makes that a
+  property of the app rather than of the tester's restraint (D067);
+- **the withheld rows are rows, not buttons.** Insurance, hotel and consulate
+  each draw with "O número chega com os dados reais da viagem." and reach no
+  dialer, while 112 / 122 / 124 stay live in the same mock package (D064);
+- **screen 17 fits without a bottom bar** — the whole screen at 480 dp, and
+  scrolled at 360 dp with the font at 1.5 — and nothing sits under the system
+  bar at either size;
+- **screen 18 reads calm and in order**: step 1 marked as current in teal,
+  2 and 3 neutral, the withheld host telephone inside step 2, and "JÁ
+  GUARDADO" carrying the bus ticket the package actually holds.
+
+### Found by reasoning, not in the field
+
+- **`currentStepIndex` compared steps by value**, so a plan that repeated an
+  identical step would have marked the first of them current whichever one was
+  reached. It computes the index directly now. No packaged plan repeats a
+  step, so nothing on screen was ever wrong.
+
+### Not observed, and not claimed
+
+- **Screen 17's contrast was seen only on an emulator.** Contrast on OLED in
+  strong daylight is what decides whether that screen works at the moment it
+  matters, and an emulator cannot answer it. The Galaxy S24 was not requested,
+  so this stays open and is not described as verified;
+- **no emergency call was placed and none will be.** What is asserted instead
+  is the number handed to the launcher, in a Robolectric test that presses the
+  real button (D067);
+- **the withheld numbers have never been dialled**, because there are none to
+  dial: the package ships `+000000000` and `+387000000000`.
+
+### Not implemented, with reasons
+
+- [ ] **Walking distance at both ends of the leg** (screen 15). The schema
+      carries station names and platform and has no field for it. Left out
+      rather than invented; `trip.schema.json` was not touched (D069);
+- [ ] **The insurance policy number** (screen 17). `emergencyContact` has
+      `label`, `phone` and `note`, and that `note` is an authoring instruction
+      rather than a line for a traveller, so the row carries the label alone
+      (D069);
+- [ ] **Deadlines on the Plan B steps** (screen 18). Here the schema is not
+      the gap — `planBStep.deadline` exists and the packaged plan declares
+      none, so the steps draw without one and the first is current because
+      nothing has expired (D069);
+- [ ] **Screen 19 Mais**, whose list is screen 17's canonical way in. Until it
+      exists the "Mais" placeholder carries an "Emergência" row, provisionally
+      (D068);
+- [ ] **What remains of the app**: screens 03 (dia completo), 04, 10, 11 and
+      19, and the chapter list. The editorial and operational halves are both
+      complete.
 
 ## Later
 
@@ -936,7 +1023,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 227 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 240 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

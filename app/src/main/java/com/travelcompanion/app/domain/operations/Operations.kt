@@ -49,19 +49,15 @@ fun actionWindow(item: CriticalItem, now: LocalTime): ActionWindow {
  * traveller is on; when none of them declare a deadline, that is the first
  * step, because nothing has expired.
  */
-fun currentStep(plan: PlanB, now: LocalTime): PlanBStep? {
-    if (plan.steps.isEmpty()) return null
-    return plan.steps.firstOrNull { step ->
-        val deadline = step.deadline?.let(::parseTime) ?: return@firstOrNull true
-        now.isBefore(deadline)
-    }
-}
+fun currentStep(plan: PlanB, now: LocalTime): PlanBStep? =
+    currentStepIndex(plan, now)?.let(plan.steps::get)
 
 /** Index of [currentStep], for the screen to mark the row. */
-fun currentStepIndex(plan: PlanB, now: LocalTime): Int? {
-    val step = currentStep(plan, now) ?: return null
-    return plan.steps.indexOf(step).takeIf { it >= 0 }
-}
+fun currentStepIndex(plan: PlanB, now: LocalTime): Int? =
+    plan.steps.indexOfFirst { step ->
+        val deadline = step.deadline?.let(::parseTime) ?: return@indexOfFirst true
+        now.isBefore(deadline)
+    }.takeIf { it >= 0 }
 
 /** "19:30" as a time, or null when the package wrote something else. */
 private fun parseTime(value: String): LocalTime? =
