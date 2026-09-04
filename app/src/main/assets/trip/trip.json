@@ -50,7 +50,8 @@
       "id": "img.latin-bridge.hero",
       "type": "image",
       "path": "images/attractions/latin-bridge.jpg",
-      "mimeType": "image/jpeg"
+      "mimeType": "image/jpeg",
+      "description": "Ponte Latina, Miljacka"
     },
     {
       "id": "audio.sarajevo.city",
@@ -273,9 +274,9 @@
       "id": "story.latin-bridge",
       "cityId": "sarajevo",
       "walkId": "walk.sarajevo.historical",
-      "title": "Latin Bridge",
+      "title": "A Ponte Latina",
       "hook": "Uma ponte pequena com uma história desproporcional ao seu tamanho.",
-      "body": "Narrativa de exemplo.",
+      "body": "Vinte metros à sua frente, na esquina da Ponte Latina, o carro do arquiduque Franz Ferdinand fez uma curva errada na manhã de 28 de junho de 1914. O motorista percebeu o erro e engatou a marcha a ré.\n\nGavrilo Princip, dezenove anos, estava na calçada. Havia desistido do plano naquela manhã; o comboio já tinha passado por ele uma hora antes. O carro parou a cinco passos.\n\nA esquina não tem nada de monumental. É uma parede clara, uma placa discreta e o barulho do Miljacka correndo baixo. Foi daqui que a Europa saiu do século XIX.",
       "readDurationMinutes": 3,
       "audioGuideId": "ag.latin-bridge",
       "trigger": {
@@ -346,7 +347,7 @@
           "startSeconds": 170
         },
         {
-          "title": "O local hoje",
+          "title": "A esquina de 1914",
           "startSeconds": 390
         }
       ]

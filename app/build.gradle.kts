@@ -5,6 +5,14 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// Applied only when the file is actually there. The plugin turns
+// google-services.json into the string resources Firebase reads, and it fails
+// the build when the file is missing — which would make the repository
+// unbuildable for anyone who has not been given one (D002, D033).
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.travelcompanion.app"
     compileSdk = 36
@@ -58,8 +66,16 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
 
-    // Dependencies needed by upcoming vertical-slice phases.
-    // Firebase is intentionally deferred so Phase 0 builds without google-services.json.
+    // Group sync (Phase 4). The SDK is on the classpath unconditionally; what
+    // is conditional is the configuration, so a build with no
+    // google-services.json compiles, runs and simply never connects.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.database)
+    // Anonymous sign-in only: it exists so database rules can require
+    // auth != null instead of being open to anyone with the URL. There is no
+    // account, no login screen and nothing for the traveller to do (D035).
+    implementation(libs.firebase.auth)
+
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.session)
     implementation(libs.androidx.media3.ui.compose)

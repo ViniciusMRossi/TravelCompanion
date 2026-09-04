@@ -47,9 +47,11 @@ import com.travelcompanion.app.feature.attraction.AttractionViewModel
 import com.travelcompanion.app.feature.placeholder.PlaceholderScreen
 import com.travelcompanion.app.feature.today.TodayScreen
 import com.travelcompanion.app.feature.today.TodayViewModel
+import com.travelcompanion.app.feature.together.TogetherRoute
 import com.travelcompanion.app.feature.walk.WalkRoute
 import com.travelcompanion.app.service.external.ExternalActionLauncher
 import com.travelcompanion.app.service.playback.PlaybackController
+import com.travelcompanion.app.service.sync.GroupSessionController
 import com.travelcompanion.app.service.walk.WalkModeController
 import com.travelcompanion.app.service.playback.PlaybackState
 
@@ -94,6 +96,7 @@ fun AppNavigation(
     participantId: String,
     playbackController: PlaybackController,
     walkModeController: WalkModeController,
+    groupSessionController: GroupSessionController,
     onResetParticipant: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -198,11 +201,13 @@ fun AppNavigation(
                     )
                 }
                 composable(Routes.LISTEN_TOGETHER) {
-                    PlaceholderScreen(
-                        title = "Ouvir juntos",
-                        message = "Telas 08 Participantes sincronizados e 09 Ouvir juntos — fase 4.",
-                        actionLabel = "Voltar",
-                        onAction = navController::popBackStack,
+                    TogetherRoute(
+                        content = content,
+                        participantId = participantId,
+                        playbackController = playbackController,
+                        walkModeController = walkModeController,
+                        groupSessionController = groupSessionController,
+                        onBack = navController::popBackStack,
                     )
                 }
                 composable(Routes.MEMORY) {

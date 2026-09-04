@@ -228,14 +228,114 @@ Four defects that the unit tests did not catch, all fixed and re-verified:
   "simular chegada" were present in the release DEX — unreachable, but shipped.
   Reading the binary is what showed it; the source looked correct. It now lives
   in `src/debug` with a null-returning counterpart in `src/release`, and the
-  rebuilt release DEX carries neither (D031);
+  rebuilt release DEX carries neither. Re-checked in Phase 4 against the
+  current binary: the label string appears in the debug DEX and in no
+  release one. Grep the label, not the old symbol name (D031);
 - ending a walk could leave an undismissable notification. `stopWalk()` relied
   on the foreground service owning it, but since D030 no service is started
   without a location permission, and the walk still posts progress. The
   notification is now cancelled explicitly (D032).
 
-## Phase 4
-- [ ] Firebase group synchronization
+## Phase 4 — Group synchronization, screens 08 and 09
+
+**Verified on hardware.** Samsung SM-S921B (Galaxy S24), Android 16 (API 36),
+over ADB on 2026-09-03, against a debug build with a real Firebase project
+configured.
+
+- [x] Screen 08 Sincronizando: the shared start as a 3 → 2 → 1 transition into
+      screen 09, not a place anyone navigates to
+- [x] Screen 09 Ouvindo juntos: the teal 52 / 68 / 52 transport, the
+      participant list, the transcript toggle, and the amber note for a group
+      that could not be reached
+- [x] A real `GroupSyncRepository` over Firebase Realtime Database, behind the
+      boundary Phase 0 already had (D002) — `FirebaseGroupSyncRepository`
+      replaces nothing above it
+- [x] The shared start anchored on **server** time, never a device wall clock:
+      `startTogether` publishes `serverNow + 3s`, so both phones compute the
+      same moment even when their clocks disagree (brief §6)
+- [x] Drift correction from the group's anchor, with a two-second tolerance,
+      as pure functions in `domain/sync`
+- [x] Participant states from each phone's own `seenAt` against server time,
+      rather than assuming everyone present is keeping up (D040)
+- [x] Anonymous, invisible sign-in so database rules can require `auth != null`
+      — no account, no screen, nothing entered (D035)
+- [x] Group sync never blocks local behaviour: every path from the group into
+      the player goes through one function, and no branch of it stops, pauses
+      on failure, or unloads audio (brief §3.3)
+- [ ] **A second physical device was never in the group.** Only one phone was
+      available. The "other participant" throughout was the Firebase console,
+      writing to the same nodes a second phone would write to — which exercises
+      this phone's *reading* of the group completely, and its *writing* not at
+      all. See what was not observed, below.
+- [ ] **Screen 09 shows the striped placeholder, not a photograph.** Schema 1.1
+      gives `story` no asset field and no link to the attraction that has one,
+      so there is nothing to resolve the hero image from. Guessing the
+      convention was written and then removed rather than shipped (D036).
+- [ ] **A paused group with divergent positions is left alone.** When the group
+      is paused and two phones sit at different points, `syncCorrection`
+      answers `None` rather than seeking a paused player around. It resolves
+      itself on the next resume, which re-anchors both. Deliberate, recorded
+      here rather than left to be discovered.
+
+`google-services.json` belongs at `app/google-services.json` and is not in the
+repository. The `com.google.gms.google-services` plugin is applied only when
+that file exists, so a fresh clone still builds; without it the repository
+reports `Disabled` and everything else behaves identically (D034). No project
+id, database URL or key is recorded in the repository or in these notes.
+
+### Confirmed by observation on the device
+
+Watched on the Galaxy S24 with `dumpsys media_session`, screenshots and the
+Firebase console driving the other side. No crash, ANR or Media3 error.
+
+- **the group pausing this phone**: `isPlaying` set to false in the console
+  moved the local player to `PAUSED(2), position=314037`;
+- **drift correction landing exactly**, in both directions and in one run:
+  moving the anchor into the future seeked the player *back* from 126176 to
+  71151 — the group's own `positionMs`, since elapsed time clamps at zero —
+  and then setting `positionMs` to 360000 seeked it to **exactly 360000**,
+  still `PLAYING`, with no residue;
+- **a quiet but reachable group staying green**: ninety seconds idle on screen
+  09 with nobody touching anything, audio at 01:59, "Sincronizado" and no note;
+- **a real outage raising the amber state**: radios off at 22:22:47, and at
+  22:23:18 the traveller's own row read "Sincronizando novamente" with the
+  amber note under it;
+- **recovery without a restart**: radios back at 22:23:19, and at 22:23:49 the
+  row read "Sincronizado" and the note was gone;
+- **audio untouched throughout the outage**: 03:10 at the amber capture and
+  03:41 thirty-one seconds later, `PLAYING` at both — continuous to the second.
+
+**Not observed, and not claimed:** two phones starting a guide together. The
+3 → 2 → 1 countdown was watched on this device, and what it publishes was
+watched arriving in the console, but no second device ever received it. Nor
+was another participant's row ever rendered from a real phone — the amber dot
+was only ever seen on this traveller's own row. The synchronized *start* is
+therefore verified only as far as one phone can verify it: the anchor it
+publishes is correct server time, and the correction it applies to an anchor
+someone else wrote is exact. Whether two phones actually begin narrating in
+step is untested.
+
+### Found by running it on a device
+
+Two defects the unit tests did not catch, both fixed and re-verified:
+
+- **screen 09 accused a healthy group of having failed.** Left idle with the
+  radios on and Firebase plainly reachable — console edits were landing within
+  a second — the amber note appeared after twenty quiet seconds and stayed.
+  The staleness rule measured silence, and two people listening to the same
+  guide are silent for minutes at a time, so a normal shared listen was
+  indistinguishable from a dead one. Liveness is now an acknowledged round
+  trip, which is the one thing silence cannot fake (D039);
+- **the screen told two contradictory things at once.** "Vinícius · você —
+  Sincronizado" sat directly above "Não foi possível sincronizar o grupo
+  agora". The traveller's own row was hard-coded to synchronized on the
+  grounds that a phone knows its own playback — true, but not when it is that
+  phone that lost the group. Status and the traveller's row now move together
+  (D040).
+
+`NoOpGroupSyncRepository` was written this phase and deleted before it was
+committed: the no-configuration case is already handled by the Firebase
+repository reporting `Disabled` (D034), so nothing ever constructed it.
 
 ## Phase 5
 - [ ] Voice memories
@@ -252,11 +352,15 @@ Four defects that the unit tests did not catch, all fixed and re-verified:
 
 ```text
 01 Quem é você?  →  02 Hoje  →  05 Atração
+                                    ↓
+                    06 Iniciar passeio  →  07 Passeio ativo
+                                                  ↓
+                              08 Sincronizando  →  09 Ouvindo juntos
 ```
 
 Destinations that belong to later phases (Dia completo, Documento/QR, Plano B,
-Modo Passeio, Audioguia, Memória) exist in the navigation graph and open a
-screen that names the canonical screen and its phase.
+Audioguia, Memória, and screens 10 and 11) exist in the navigation graph and
+open a screen that names the canonical screen and its phase.
 
 ## Content pipeline (infrastructure only)
 
@@ -311,9 +415,9 @@ it does not badge them "Offline" (D013).
 `python tools/content_preflight.py <package> --allow-incomplete-authoring-files`
 (no generated package exists yet, so this is exercised against the runtime
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
-`./gradlew testDebugUnitTest assembleDebug lintDebug`
+`./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 76 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 135 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

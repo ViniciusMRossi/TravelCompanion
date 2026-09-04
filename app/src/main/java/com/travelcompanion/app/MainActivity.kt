@@ -28,6 +28,7 @@ class MainActivity : ComponentActivity() {
                     viewModel = rootViewModel,
                     playbackController = container.playbackController,
                     walkModeController = container.walkModeController,
+                    groupSessionController = container::groupSessionController,
                 )
             }
         }

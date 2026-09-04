@@ -18,6 +18,7 @@ import com.travelcompanion.app.design.FieldCompanionColors
 import com.travelcompanion.app.design.TcType
 import com.travelcompanion.app.feature.shell.AppNavigation
 import com.travelcompanion.app.service.playback.PlaybackController
+import com.travelcompanion.app.service.sync.GroupSessionController
 import com.travelcompanion.app.service.walk.WalkModeController
 import com.travelcompanion.app.feature.whoareyou.WhoAreYouScreen
 
@@ -26,6 +27,7 @@ fun TravelCompanionRoot(
     viewModel: RootViewModel,
     playbackController: PlaybackController,
     walkModeController: WalkModeController,
+    groupSessionController: (String, () -> String?) -> GroupSessionController,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val content = state.content
@@ -77,6 +79,9 @@ fun TravelCompanionRoot(
                 participantId = state.participantId!!,
                 playbackController = playbackController,
                 walkModeController = walkModeController,
+                groupSessionController = groupSessionController(
+                    content.info.sync.groupId,
+                ) { state.participantId },
                 onResetParticipant = viewModel::resetParticipant,
             )
         }
