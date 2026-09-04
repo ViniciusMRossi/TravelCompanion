@@ -952,6 +952,63 @@ below.
       19, and the chapter list. The editorial and operational halves are both
       complete.
 
+## Closing the bottom navigation — screens 03 and 19 (2026-09-04)
+
+Three of the five tabs gave a placeholder; this closes two of them. Screen 04
+follows in its own commit — it is the densest screen in the app.
+
+**Verified on both emulators** (360 × 760 dp with the system font at 1.5, and
+480 × 1040 dp). No hardware was needed and none was asked for.
+
+- [x] Screen 03 Dia completo: date, "Dia 9 de 21 · Sarajevo", back to Hoje,
+      48dp arrows for the previous and next day, the critical item first and
+      summarised with the same two buttons Today gives it, then Manhã / Tarde
+      / Noite carrying Today's own timeline rows, the end-of-day transport and
+      stay cards, and a footer of this day's documents and its Plan B
+- [x] Screen 19 Mais: Emergência at the top in oxblood at 68dp, then Na
+      estrada, Grupo and Viagem e aparelho — including what is really saved on
+      the device and how much room it takes, and "Trocar quem é você"
+- [x] The period split, the day arrows and the choice of critical item are
+      pure functions in `domain/` over a fixed date and clock
+- [x] Today's timeline row, critical card and shortcut row are **reused where
+      they stand** rather than copied or moved: screen 03 is the same day with
+      another reading, not a second model
+
+### Confirmed by observation
+
+- **the critical card's second button was 6px wide** at 360 dp with the font
+  at 1.5 — "Ver ponto de embarque" squeezed to one character per line. The
+  defect was already known and already fixed on screen 15; screen 02's copy
+  had been left alone because it was passing, and reusing it on 03 is what
+  surfaced it. Both screens wrap now (D072);
+- **the day arrows are dead ends at the edges of the package**: this trip has
+  one packaged day, so both are drawn and dimmed rather than clamping back
+  onto the same day;
+- **"Conteúdo salvo" reports 5,8 MB in one audio file**, which is exactly what
+  this build carries — no photography, no PDFs. The same rule as the wallet's
+  badge (D013) one level up: only files that are really there are counted;
+- **the Grupo section reads Offline for both travellers** with screen 09
+  unopened, and the sentence about the group finding itself again is what
+  carries the meaning (D071);
+- **screen 16 is reachable now.** The day declares an accommodation even
+  though none appears on its timeline, so screen 03's "Ver hospedagem" opens
+  it — the gap recorded in D065 closes without the package changing.
+
+### Found by reasoning, not in the field
+
+- **The sheet for screen 03 names the wrong screen numbers** — (12) for
+  transport, (13) for stay, 10 for documents, 17 for Plan B — which contradict
+  the canonical index the same document uses in its own headings. Routed by
+  name instead, and recorded rather than silently corrected (D073).
+
+### Not implemented, with reasons
+
+- [ ] **"Frases úteis" in Na estrada.** The schema has no phrase list; the
+      only phrase in the package is the sentence screen 17 shows a stranger,
+      which is not a phrasebook. Left out rather than invented, and
+      `trip.schema.json` was not touched — the same treatment as D069;
+- [ ] **Live group state on screen 19.** By decision, not omission (D071).
+
 ## Later
 
 - [ ] Remaining canonical screens
@@ -1030,7 +1087,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 243 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 258 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

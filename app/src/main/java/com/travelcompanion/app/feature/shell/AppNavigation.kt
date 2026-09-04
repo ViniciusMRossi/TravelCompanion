@@ -18,7 +18,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -49,6 +52,10 @@ import com.travelcompanion.app.feature.today.TodayScreen
 import com.travelcompanion.app.feature.today.TodayViewModel
 import com.travelcompanion.app.feature.document.DocumentRoute
 import com.travelcompanion.app.feature.emergency.EmergencyScreen
+import com.travelcompanion.app.feature.fullday.FullDayScreen
+import com.travelcompanion.app.feature.more.MoreScreen
+import com.travelcompanion.app.domain.more.buildMoreState
+import com.travelcompanion.app.domain.fullday.FullDayUseCase
 import com.travelcompanion.app.feature.emergency.buildEmergencyState
 import com.travelcompanion.app.feature.planb.PlanBScreen
 import com.travelcompanion.app.feature.planb.buildPlanBState
@@ -149,10 +156,9 @@ fun AppNavigation(
                     TodayRoute(content, participantId, navController, launcher)
                 }
                 composable(Routes.TRIP) {
-                    PlaceholderScreen(
-                        title = "Viagem",
-                        message = "Telas 03 Dia completo e roteiro da viagem — fase 6.",
-                    )
+                    // The tab and "Ver dia completo" reach the same screen; the
+                    // tab is a root, so it has no back row of its own.
+                    FullDayRoute(content, navController, launcher, onBack = null)
                 }
                 composable(Routes.EXPLORE) {
                     PlaceholderScreen(
@@ -167,17 +173,19 @@ fun AppNavigation(
                     )
                 }
                 composable(Routes.MORE) {
-                    // Screen 19 is not in this block, so its list does not exist
-                    // yet. Emergency is reached from here in the meantime rather
-                    // than being built and unreachable — the row moves into 19
-                    // when 19 is drawn (D068).
-                    PlaceholderScreen(
-                        title = "Mais",
-                        message = "Frases, apps, grupo e configurações — fase 6.",
-                        actionLabel = "Emergência",
-                        onAction = { navController.navigate(Routes.EMERGENCY) },
-                        secondaryLabel = "Trocar participante",
-                        onSecondary = onResetParticipant,
+                    val group by groupSessionController.state.collectAsStateWithLifecycle()
+                    MoreScreen(
+                        state = buildMoreState(
+                            content = content,
+                            // The state the app already holds. Opening "Mais"
+                            // never joins the group (D071).
+                            known = group.participants,
+                            localParticipantId = participantId,
+                        ),
+                        onOpenEmergency = { navController.navigate(Routes.EMERGENCY) },
+                        onOpenPlanB = { id -> navController.navigate(Routes.planB(id)) },
+                        onOpenAction = { action -> launcher.open(action.uri, action.fallbackUri) },
+                        onResetParticipant = onResetParticipant,
                     )
                 }
 
@@ -193,11 +201,11 @@ fun AppNavigation(
                 }
 
                 composable(Routes.FULL_DAY) {
-                    PlaceholderScreen(
-                        title = "Dia completo",
-                        message = "Tela 03 — fase 6.",
-                        actionLabel = "Voltar",
-                        onAction = navController::popBackStack,
+                    FullDayRoute(
+                        content = content,
+                        navController = navController,
+                        launcher = launcher,
+                        onBack = navController::popBackStack,
                     )
                 }
                 composable(Routes.DOCUMENT) { entry ->
@@ -387,6 +395,52 @@ private fun AttractionRoute(
         onOpenMaps = { uri -> launcher.open(uri) },
         onDirections = { uri, fallback -> launcher.open(uri, fallback) },
         onStartWalk = { walkId -> navController.navigate(Routes.walk(walkId)) },
+    )
+}
+
+/**
+ * Screen 03, with the day it is showing.
+ *
+ * The selected day is the only state here and it survives rotation; everything
+ * else is a pure function of that date and the clock.
+ */
+@Composable
+private fun FullDayRoute(
+    content: TripContent,
+    navController: NavHostController,
+    launcher: ExternalActionLauncher,
+    onBack: (() -> Unit)?,
+) {
+    val useCase = remember(content) { FullDayUseCase(content) }
+    var selected by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
+    val state = useCase(LocalDate.parse(selected), LocalTime.now())
+
+    if (state == null) {
+        PlaceholderScreen(
+            title = "Dia completo",
+            message = "Esta viagem ainda não traz os dias em conteúdo.",
+            actionLabel = onBack?.let { "Voltar" },
+            onAction = onBack,
+        )
+        return
+    }
+
+    FullDayScreen(
+        state = state,
+        onBack = onBack,
+        onGoToDate = { date -> selected = date.toString() },
+        onOpenMaps = { uri -> launcher.open(uri) },
+        onOpenDocument = { id -> navController.navigate(Routes.document(id)) },
+        onOpenPlanB = { id -> navController.navigate(Routes.planB(id)) },
+        onOpenTransport = { id -> navController.navigate(Routes.transport(id)) },
+        onOpenStay = { id -> navController.navigate(Routes.stay(id)) },
+        onOpenTimelineItem = { kind, id ->
+            when (kind) {
+                "transport" -> navController.navigate(Routes.transport(id))
+                "accommodation" -> navController.navigate(Routes.stay(id))
+                else -> Unit
+            }
+        },
     )
 }
 

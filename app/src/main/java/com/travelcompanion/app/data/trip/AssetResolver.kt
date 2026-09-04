@@ -11,6 +11,12 @@ package com.travelcompanion.app.data.trip
 class AssetResolver(
     assets: List<Asset>,
     private val exists: (String) -> Boolean = { true },
+    /**
+     * Bytes a packaged file occupies, or null when this build cannot say.
+     * Screen 19 states what is saved on the device and how much room it takes;
+     * nothing else asks.
+     */
+    private val sizeOf: (String) -> Long? = { null },
 ) {
     private val byId: Map<String, Asset> = assets.associateBy(Asset::id)
 
@@ -45,6 +51,9 @@ class AssetResolver(
         packagedPathIfPresent(assetId)?.let { "$MEDIA_ASSET_SCHEME$it" }
 
     fun isAvailableOffline(assetId: String?): Boolean = packagedPathIfPresent(assetId) != null
+
+    /** Size on disk of a packaged file, or null when it is not in this build. */
+    fun sizeInBytes(assetId: String?): Long? = packagedPathIfPresent(assetId)?.let(sizeOf)
 
     companion object {
         const val TRIP_ASSET_ROOT = "trip"

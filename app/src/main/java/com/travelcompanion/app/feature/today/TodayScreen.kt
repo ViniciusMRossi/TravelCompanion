@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -295,7 +296,7 @@ private fun NowCard(
  * rendered as two separate things; the instruction never hides inside prose.
  */
 @Composable
-private fun CriticalCard(
+internal fun CriticalCard(
     critical: CriticalItemUi,
     onOpenMaps: (String) -> Unit,
     onShowDocument: () -> Unit,
@@ -352,7 +353,15 @@ private fun CriticalCard(
                 color = FieldCompanionColors.CriticalBody,
                 modifier = Modifier.padding(bottom = 14.dp),
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Wrapping rather than shrinking, the treatment screen 15's
+            // critical card already carries: at 360dp with the system font at
+            // 1.5 these two labels do not fit side by side, and a plain Row
+            // squeezed "Ver ponto de embarque" to one character per line. Found
+            // when screen 03 reused this card at that size (D072).
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 critical.documentAction?.let { action ->
                     TcPrimaryButton(onClick = onShowDocument) { Text(action.label) }
                 }
@@ -505,11 +514,16 @@ private fun TimelineCard(rows: List<TimelineRowUi>, onOpen: (TimelineRowUi) -> U
 
 /**
  * A timeline line: tabular hour, marker, title and one operational detail.
+ *
+ * Internal rather than private because screen 03 is the same day read end to
+ * end and the sheet asks for "a mesma timeline de Hoje" — the row is reused
+ * where it stands rather than moved, so the screen verified on hardware is
+ * not disturbed.
  * Past items lose opacity *and* colour, so the distinction never rests on
  * hue alone.
  */
 @Composable
-private fun TimelineRow(row: TimelineRowUi, onOpen: (TimelineRowUi) -> Unit) {
+internal fun TimelineRow(row: TimelineRowUi, onOpen: (TimelineRowUi) -> Unit) {
     // Only rows that point at a screen become tappable; the rest read as they
     // always did. Nothing on the timeline gains an affordance that leads
     // nowhere (D065).
@@ -608,14 +622,14 @@ private fun TimelineRow(row: TimelineRowUi, onOpen: (TimelineRowUi) -> Unit) {
 }
 
 /** S5 — a booking status keeps its own tone; criticality is layered separately. */
-private fun BookingStatusUi.tone(): TcChipTone = when (this) {
+internal fun BookingStatusUi.tone(): TcChipTone = when (this) {
     BookingStatusUi.Reserved, BookingStatusUi.Paid -> TcChipTone.Moss
     BookingStatusUi.Verify, BookingStatusUi.Buy -> TcChipTone.Gold
     BookingStatusUi.Included -> TcChipTone.Neutral
 }
 
 @Composable
-private fun ShortcutRow(shortcut: ShortcutUi, onClick: () -> Unit) {
+internal fun ShortcutRow(shortcut: ShortcutUi, onClick: () -> Unit) {
     when (shortcut.kind) {
         ShortcutUi.Kind.Document -> TcShortcutRow(
             icon = TcIcons.Ticket,

@@ -33,7 +33,11 @@ class AssetTripRepository(
 
         return TripContent(
             trip = trip,
-            assets = AssetResolver(trip.assets, exists = ::packagedFileExists),
+            assets = AssetResolver(
+                trip.assets,
+                exists = ::packagedFileExists,
+                sizeOf = ::packagedFileSize,
+            ),
         )
     }
 
@@ -45,6 +49,15 @@ class AssetTripRepository(
         assets.open(path).close()
         true
     }.getOrDefault(false)
+
+    /**
+     * What the file occupies inside the APK, as the asset stream reports it.
+     * Null rather than zero when it cannot be read, so the screen can stay
+     * quiet instead of claiming a size of nothing.
+     */
+    private fun packagedFileSize(path: String): Long? = runCatching {
+        assets.open(path).use { it.available().toLong() }
+    }.getOrNull()
 
     private companion object {
         const val TRIP_ASSET_PATH = "trip/trip.json"
