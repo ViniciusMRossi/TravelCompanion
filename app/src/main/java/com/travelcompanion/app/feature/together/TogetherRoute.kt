@@ -96,9 +96,15 @@ fun TogetherRoute(
     }
 
     if (mediaId == null) {
+        // Arriving here is the ask, and the ask is kept until there is a
+        // listen to join (D045) — so a phone holding no guide is always
+        // waiting on the group, whether the group is still being asked, is
+        // paused, or has not started. One sentence for all three, and it says
+        // what is being waited for rather than telling the traveller to go and
+        // do something (D054).
         PlaceholderScreen(
             title = "Ouvir juntos",
-            message = "Comece um audioguia para ouvir junto.",
+            message = WAITING_FOR_GROUP,
             actionLabel = "Voltar",
             onAction = onBack,
         )
@@ -135,6 +141,17 @@ fun TogetherRoute(
         modifier = modifier,
     )
 }
+
+/**
+ * What screen 09 says while this phone has nothing to listen to yet.
+ *
+ * Written for a state the approved design does not draw, in the register of
+ * the ones it does — a plain statement and then what happens next, no network,
+ * no protocol, no waiting time. The traveller has just asked to listen
+ * together; they are not being asked to do anything else (D054).
+ */
+private const val WAITING_FOR_GROUP =
+    "Esperando o grupo. Assim que alguém começar, você entra junto."
 
 /** ±15 on screen 09's transport, the same movement screen 07 uses (D025). */
 private const val SKIP_MILLIS = 15_000L

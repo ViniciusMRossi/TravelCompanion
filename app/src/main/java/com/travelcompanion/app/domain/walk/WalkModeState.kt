@@ -21,6 +21,15 @@ data class WalkStopState(
     val title: String,
     val instructionToNext: String?,
     val visited: Boolean = false,
+    /**
+     * The guide this story would play, or null when it has none.
+     *
+     * Carried so screen 07 can tell whether the story it arrived at is the one
+     * the player is actually on. Whether that guide is *packaged* is content's
+     * answer, not this state's (D021) — what the screen compares against is
+     * the player itself (D053).
+     */
+    val audioGuideId: String? = null,
 )
 
 /**
@@ -81,6 +90,7 @@ fun prepareWalk(walk: Walk, stories: (String) -> Story?): WalkModeState {
                 storyId = stop.storyId,
                 title = story.title,
                 instructionToNext = stop.instructionToNext,
+                audioGuideId = story.audioGuideId,
             )
         }
     return WalkModeState(

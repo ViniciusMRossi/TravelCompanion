@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.travelcompanion.app.data.sync.ParticipantSync
 import com.travelcompanion.app.design.FieldCompanionColors
@@ -226,13 +227,22 @@ private fun ListenersCard(state: ListenTogetherUiState) {
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     TcAvatar(initial = listener.initial, size = 32.dp)
+                    // The name is measured first and keeps its line; the state
+                    // beside it yields (D055). It used to be the other way
+                    // round — the state took its full width and the name wrapped
+                    // — so at 360dp "Vinícius · você" broke across two lines to
+                    // make room for "Sincronizando novamente". A name has no
+                    // substitute; the word does, because the dot next to it says
+                    // the same thing.
                     Text(
                         text = listener.name,
                         style = TcType.body,
                         color = FieldCompanionColors.Ink,
-                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Row(
+                        modifier = Modifier.weight(1f, fill = false),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(7.dp),
                     ) {
@@ -249,6 +259,10 @@ private fun ListenersCard(state: ListenTogetherUiState) {
                                 ParticipantSync.Synchronized -> FieldCompanionColors.MossInk
                                 ParticipantSync.Reconnecting -> FieldCompanionColors.GoldInk
                             },
+                            // The dot is measured before this and always
+                            // survives: it is the state, said without words.
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }

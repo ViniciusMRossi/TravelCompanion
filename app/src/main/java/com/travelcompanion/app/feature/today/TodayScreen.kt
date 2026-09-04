@@ -151,6 +151,12 @@ private fun TodayHeader(state: TodayUiState) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Both sides share the row, and neither can take it all: the chip used
+        // to keep its own width first, which left this column a few dp at a
+        // large system font and dropped the city into an ellipsis while a
+        // reassurance stayed whole (D055). With the width split, the city is
+        // always readable, the country gives way before it does, and the chip
+        // only gives way when even half the row is not enough.
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -165,20 +171,33 @@ private fun TodayHeader(state: TodayUiState) {
                     tint = FieldCompanionColors.Teal,
                     modifier = Modifier.size(18.dp),
                 )
-                Text(
-                    text = listOfNotNull(state.cityName, state.countryName).joinToString(" · "),
-                    style = TcType.metaStrong,
-                    color = FieldCompanionColors.Ink,
-                    // One line, as the approved header draws it. The chip
-                    // beside it keeps its own width, so on a narrow screen —
-                    // and far worse at a large system font — what is left for
-                    // this line can be a few dp, and a `Text` given a few dp
-                    // does not shrink: it wraps, one character per line, for
-                    // as many lines as the name has letters. Screen 02 was a
-                    // vertical alphabet at 360dp with the font at 1.5 (D051).
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                // One line, as the approved header draws it — and when one
+                // line will not do, the city survives and the country gives
+                // way (D055). Ellipsising the pair as a whole lost the city
+                // first, which is the operational half: where the traveller
+                // is standing. The country is context.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = state.cityName.orEmpty(),
+                        style = TcType.metaStrong,
+                        color = FieldCompanionColors.Ink,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    state.countryName?.let { country ->
+                        Text(
+                            text = " · $country",
+                            style = TcType.metaStrong,
+                            color = FieldCompanionColors.Ink,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            // Yields the width it has to: measured after the
+                            // city, and dropped to nothing before the city
+                            // loses a letter.
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                    }
+                }
             }
             Text(
                 text = state.dayLabel,
@@ -189,7 +208,7 @@ private fun TodayHeader(state: TodayUiState) {
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        TcOfflineChip(state.offlineNote)
+        TcOfflineChip(state.offlineNote, modifier = Modifier.weight(1f, fill = false))
     }
 }
 

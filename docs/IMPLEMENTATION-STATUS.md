@@ -39,14 +39,12 @@ Implemented from the approved prototype, **not yet verified running**.
       across two emulator sizes, for every screen that exists (01, 02, 05, 06,
       07, 08, 09 and the persistent compact player). Two divergences were found
       and corrected (D051); one system-bar defect was found and corrected
-      (D052); four differences went to the design-confirmation stack rather
-      than being invented around. What was compared, what matched and what did
+      (D052); four differences went to the design-confirmation stack, which has
+      since been decided and emptied (D053–D055). What was compared, what matched and what did
       not is under "The first visual pass" below. Fraunces is still absent
       (D005), photography is still the approved striped placeholder, and
       screen 09's hero still has no asset to resolve (D036) — none of those
       were treated as divergences.
-      Structure, geometry, colour and copy were implemented from the prototype
-      source; only a device run can confirm the result.
 
 ## Phase 2 — Local audio
 
@@ -509,32 +507,38 @@ was shaped for.
       `seenAt`, with one shared guide and no per-participant guide, so there is
       nothing for the other phone to read. Widening it is a payload change,
       not a correction, and was not made here (D042).
-- [ ] **"Ouvindo outra história" is copy the approved design does not carry.**
-      The state boards draw four participant states — synchronized,
-      connecting, reconnecting, offline — and none of them is "listening to a
-      different story". The words keep the register of the ones that are drawn
-      and contain no network vocabulary, but they are engineering's and want a
-      design confirmation.
-- [ ] **A phone joining a listen in progress hears the guide while 3–2–1 is
-      still on screen.** Screen 08 is a three-second transition into shared
-      playback, and the joiner is given it so the screen is never blank while
-      the guide loads — but the group is already running, so the audio comes
-      into step at once rather than at zero. The approved design has no state
-      for arriving late; the alternative, three silent seconds, tells the
-      traveller less.
+- [x] **"Ouvindo outra história" is approved.** A fifth participant state
+      beside the four the boards draw, in their register, with no network
+      vocabulary in it (D042).
+- [x] **A phone joining a listen in progress hears the guide while 3–2–1 is
+      still on screen — kept.** Screen 08 is a three-second transition into
+      shared playback, and the joiner is given it so the screen is never blank
+      while the guide loads; the group is already running, so the audio comes
+      into step at once rather than at zero. Three silent seconds would tell
+      the traveller less. Decided, not carried.
 - [ ] **Divergence is still untested in the field.** One playable guide in the
       package means two phones cannot hold two different ones (D043).
-- [ ] **A phone arriving while the group is paused waits, and says nothing
-      while it waits.** The invitation is kept, not spent, and the countdown
-      does not start — a transition into playback must not run at a group that
-      has not begun (D044). What the traveller sees meanwhile is screen 09's
-      "Comece um audioguia para ouvir junto", which is true of this phone but
-      says nothing about the waiting. A state of its own would need copy the
-      approved design does not carry, and one such item is already open
-      ("Ouvindo outra história"), so it was not invented. Loading into a paused
-      player is the other way out and was not built either.
+- [x] **A phone arriving while the group is paused now says what it is
+      waiting for.** The invitation is still kept rather than spent and the
+      countdown still does not start (D044); what changed is that the screen
+      says "Esperando o grupo. Assim que alguém começar, você entra junto."
+      instead of telling the traveller to start an audioguide. The same
+      sentence covers the second or so while the group is being asked (D054).
+      Loading into a paused player is the other way out and was not built.
 - [x] **Re-watched on two devices against the current binary**, including
       everything the one-phone pass had claimed. See "The second device".
+
+### Corrected after the field passes
+
+- [x] **Screen 07's header no longer names a story it is not playing.** Arriving
+      at a story whose audio this build does not carry put "TOCANDO AGORA ·
+      Latin Bridge" above a transport still running Baščaršija. The header names
+      the arrived story only while the player is on that story's guide, and
+      otherwise names the walk, which is what it already did before the first
+      arrival. The walking instruction still follows the arrival: where to walk
+      is true whether or not the story could be narrated (D053). Found on the
+      device, fixed with four unit tests, and re-watched on the emulator at
+      360 dp with the system font at 1.5.
 
 ## The first visual pass — screens against the prototype (2026-09-04)
 
@@ -612,21 +616,48 @@ families match.
 - **rotation** — landscape at 480 dp reflows, scrolls and keeps state; nothing
   overlaps and the bottom navigation is intact.
 
-**Went to the design-confirmation stack, not invented around:**
+**Went to the design-confirmation stack — all four now decided:**
 
-- at 360 dp the screen 02 location line ellipsizes rather than showing the
-  country, and at 1.5 font it elides to "…". The prototype draws one line and
-  does not say what happens when one line does not fit;
-- at 360 dp a listener row on screen 09 wraps "Vinícius · você" onto two
-  lines, because the Portuguese state label is long. The prototype draws name
-  and state on one row and does not say which gives way;
-- the token file carries a full dark palette that nothing implements. Not a
-  divergence from the prototype, which is light; recorded because the tokens
-  promise something the app does not have;
+- the screen 02 location line and the screen 09 listener row were the same
+  question twice, and it is answered once, as a rule: when a line will not
+  fit, the operational identity wins and the qualifier gives way (D055). The
+  city keeps its line and the country ellipsizes; the name keeps its line and
+  the state word ellipsizes beside a dot that always survives. Re-verified at
+  both sizes and at a 1.5 system font;
+- the dark palette in the token file stays and is marked not implemented (see
+  "One palette" below);
 - screen 05's "no packaged audio" state was **not observed**: the runtime
   package's one audioguide is packaged, so the unplayable case cannot be
   reached from the UI. Screen 09's divergent state was not observed either,
-  for the same reason already recorded (D043).
+  for the same reason already recorded (D043). Both remain observations rather
+  than open questions — the behaviour is decided and unit-tested; what is
+  missing is a package that can exercise it.
+
+### One palette
+
+The app implements `lightColorScheme` and nothing else: paper everywhere, with
+ink used as a surface inside screens rather than as a window background.
+`Field-Companion-Design-Tokens-v0.1.json` carries a complete dark palette that
+nothing reads. It **stays in the file and is not in scope** — it is a design
+artefact, and deleting it would lose the information rather than resolve it.
+This is also why D052 pins the system bars to light: with one palette there is
+nothing for a night setting to switch to, and letting it switch the bar icons
+put white on paper.
+
+### No automated net under the way this looks
+
+The `TcHero` defect above was invisible to every one of the unit tests and
+still is: it was a modifier resolving to zero under an infinite constraint,
+which no state assertion can see. A screenshot or Compose UI test would have
+caught it and is not built — that means an instrumented source set, a device or
+Robolectric in CI, and golden images to maintain, which is the speculative
+framework `CLAUDE.md` says not to build for one screen family a human pass
+caught in an afternoon. The guard is that this pass happens and is written
+down. Two cheaper ones are **proposed and not built** (D056): a unit test over
+`TcHero`'s own geometry, asserting the placeholder is measured to the hero's
+size rather than to zero, which would have caught exactly this; and a lint rule
+or review checklist item for `fillMaxSize` inside a hero, which catches the
+class rather than the case.
 
 **Not observed, and would want a real device:** anything about the *display*
 rather than the layout — colour rendering on OLED, the actual legibility of
@@ -715,7 +746,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 160 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 164 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

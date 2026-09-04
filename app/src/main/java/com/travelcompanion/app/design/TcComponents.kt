@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 /* ---------------------------------------------------------------- geometry */
@@ -106,7 +107,17 @@ fun TcChip(
         if (icon != null) {
             Icon(icon, contentDescription = null, tint = tone.ink(), modifier = Modifier.size(14.dp))
         }
-        Text(text, style = TcType.label, color = tone.ink())
+        // A chip is a qualifier: when the line it sits on runs out of room it
+        // gives way to whatever names the thing, rather than pushing that off
+        // the screen (D055). Its icon is measured first and stays, so the chip
+        // never becomes a bare word with no sign of what it is about.
+        Text(
+            text,
+            style = TcType.label,
+            color = tone.ink(),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

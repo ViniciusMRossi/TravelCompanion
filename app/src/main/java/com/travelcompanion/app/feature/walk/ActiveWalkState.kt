@@ -48,10 +48,19 @@ fun buildActiveWalkState(
         LocationQuality.Denied, LocationQuality.Unavailable, LocationQuality.Unknown -> WalkLocationUi.Off
     }
 
-    // The story on screen is whatever the walk last arrived at. Before the
-    // first arrival the walk names itself rather than showing an empty slot,
-    // because a blank hero on an ink field reads as a broken screen.
-    val currentStop = walkState.currentStop
+    // The story on screen is whatever the walk last arrived at — but only
+    // while the player is actually on that story's guide.
+    //
+    // A story whose audio this build does not carry is never played (D021), so
+    // arriving at it left the header announcing "TOCANDO AGORA · Latin Bridge"
+    // over the guide that was still running from the stop before. Screen 07 is
+    // read at a glance with the phone coming out of a pocket; it must not name
+    // something that is not in the traveller's ear. When the two disagree the
+    // walk names itself, which is the same thing this screen already does
+    // before the first arrival — a blank hero on an ink field reads as a
+    // broken screen (D053).
+    val arrivedStop = walkState.currentStop
+    val currentStop = arrivedStop?.takeIf { it.audioGuideId != null && it.audioGuideId == playback.mediaId }
     val storyTitle = currentStop?.title ?: walkState.walkTitle.orEmpty()
     val storyContext = when {
         currentStop == null -> walk?.subtitle ?: walkState.walkTitle
@@ -68,8 +77,10 @@ fun buildActiveWalkState(
         storyTitle = storyTitle,
         storyContext = storyContext,
         // The instruction belongs to the stop just reached: it is what to do
-        // next, so before the first arrival the walk's own route line stands in.
-        instruction = currentStop?.instructionToNext ?: walk?.routeLabel,
+        // next, so before the first arrival the walk's own route line stands
+        // in. This one follows the arrival, not the audio — where to walk is
+        // true whether or not the story could be narrated.
+        instruction = arrivedStop?.instructionToNext ?: walk?.routeLabel,
         nextStopLabel = walkState.nextStop?.title,
         locationState = locationState,
         locationLabel = when (locationState) {
