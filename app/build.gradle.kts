@@ -83,6 +83,12 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    // Encoding only, and only for a package carrying real ticket data. Brief
+    // §18 forbids a placeholder QR, so the generator is gated rather than
+    // trusted (D061). The pure-Java `core` artefact, not the Android one:
+    // nothing here needs a camera, a view or a permission.
+    implementation(libs.zxing.core)
+
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
 

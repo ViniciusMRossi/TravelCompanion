@@ -47,7 +47,10 @@ import com.travelcompanion.app.feature.attraction.AttractionViewModel
 import com.travelcompanion.app.feature.placeholder.PlaceholderScreen
 import com.travelcompanion.app.feature.today.TodayScreen
 import com.travelcompanion.app.feature.today.TodayViewModel
+import com.travelcompanion.app.feature.document.DocumentRoute
 import com.travelcompanion.app.feature.memory.MemoryRoute
+import com.travelcompanion.app.feature.wallet.WalletScreen
+import com.travelcompanion.app.domain.wallet.buildWalletState
 import com.travelcompanion.app.feature.together.TogetherRoute
 import com.travelcompanion.app.feature.walk.WalkRoute
 import com.travelcompanion.app.service.external.ExternalActionLauncher
@@ -55,6 +58,7 @@ import com.travelcompanion.app.service.playback.PlaybackController
 import com.travelcompanion.app.service.memory.MemoryController
 import com.travelcompanion.app.service.sync.GroupSessionController
 import com.travelcompanion.app.service.walk.WalkModeController
+import java.time.LocalDate
 import com.travelcompanion.app.service.playback.PlaybackState
 
 private object Routes {
@@ -143,9 +147,9 @@ fun AppNavigation(
                     )
                 }
                 composable(Routes.WALLET) {
-                    PlaceholderScreen(
-                        title = "Carteira",
-                        message = "Telas 13 Carteira e 14 Documento/QR — fase 6.",
+                    WalletScreen(
+                        state = buildWalletState(content, LocalDate.now()),
+                        onOpenDocument = { id -> navController.navigate(Routes.document(id)) },
                     )
                 }
                 composable(Routes.MORE) {
@@ -177,12 +181,10 @@ fun AppNavigation(
                     )
                 }
                 composable(Routes.DOCUMENT) { entry ->
-                    PlaceholderScreen(
-                        title = "Documento",
-                        message = "Tela 14 Documento/QR — fase 6. " +
-                            "Documento: ${entry.arguments?.getString("documentId").orEmpty()}",
-                        actionLabel = "Voltar",
-                        onAction = navController::popBackStack,
+                    DocumentRoute(
+                        content = content,
+                        documentId = entry.arguments?.getString("documentId"),
+                        onBack = navController::popBackStack,
                     )
                 }
                 composable(Routes.PLAN_B) {

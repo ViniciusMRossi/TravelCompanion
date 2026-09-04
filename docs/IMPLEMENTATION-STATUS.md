@@ -772,6 +772,88 @@ On both emulators (360 × 760 dp with the system font at 1.5, and
       is still not walkable end to end. Screen 12 is reached from the "Gravar
       memória" shortcut on screen 02 (D058).
 
+## The operational half — screens 13 and 14 (2026-09-04)
+
+The editorial half of the app (05, 06, 07, 08, 09, 12) was finished and well
+tested; the operational half did not exist. This is its first block.
+
+**Verified on both emulators** (360 × 760 dp with the system font at 1.5, and
+480 × 1040 dp). No part of it needed the Galaxy S24, and the one thing that
+does need hardware could not be reached — see below.
+
+- [x] Screen 13 Carteira: every document, grouped Hoje / Transporte da viagem /
+      Seguro e documentos, with the count and the "Tudo offline" pill in the
+      header, 48dp rows carrying icon, name, operational detail and the
+      booking status the trip's own transport or stay declares
+- [x] Screen 14 Documento, ficha mode: the ticket drawn as a ticket from trip
+      data — 28px times at both ends, passengers, platform, locator in tabular
+      numerals, price when the package has one — with the dashed perforation
+      and the redundancy line about the driver taking the locator
+- [x] Screen 14 QR mode: white, full screen, 300dp code, locator at 20px, the
+      one-line summary and "Brilho no máximo · tela não apaga"
+- [x] Grouping as a pure function over content and a date, reusing
+      `TripContent.dayFor` rather than growing a second current-day rule
+- [x] `Routes.WALLET` and `Routes.DOCUMENT` filled in; no new destinations
+- [x] Nothing touches the network and no document leaves the phone (§17)
+- [x] The document repository is a resolution step in front of the screens, so
+      encrypted storage and a biometric gate would be a third case behind it
+      without a screen changing (§17)
+
+### Confirmed by observation
+
+- **the header does not lie.** The package's two documents both declare
+  `availableOffline` with no file in the build — the D013/D014 warning that
+  `validate_trip` has printed since Phase 1 — and the wallet renders "2
+  documentos" with **no "Tudo offline" pill**, each row saying "arquivo não
+  está neste aparelho" for itself;
+- **booking status comes from the package**: "Reservado" on the bus ticket
+  (its transport is `reserved`) and "Pago" on the voucher (its stay is `paid`);
+- **screen 14 stays useful without the file**: the amber note names the
+  missing file and the ficha below it still reads 19:30 → 22:00, Vinícius ·
+  Érika, "A confirmar", MOCK-ABC123;
+- **a layout break found and fixed at 360 dp with the font at 1.5**:
+  "PLATAFORMA" wrapped mid-word into "PLATAFOR / MA". The two fields now share
+  the row and the label gives way before the value does, which is D055's rule
+  applied where it had not been yet.
+
+### Found by reasoning, not in the field
+
+- **`embedded` and `generated-from-text` had been collapsed into one string**,
+  so an embedded code would have had its *asset path* encoded into a QR. Found
+  while working out what could be verified, before anything rendered it (D061).
+
+### Not observed, and not claimed
+
+- **No camera has read a QR from this app.** With this package there is no
+  code to read: the only `generated-from-text` document holds `MOCK-ABC123` in
+  a trip marked `isMockContent`, and §18 forbids a placeholder code, so the
+  generator correctly declines. The verification is **blocked by content, not
+  by a device**, and it returns the day real ticket data does (D061);
+- **brightness and keep-awake were not watched on hardware**, for the same
+  reason: QR mode is unreachable while there is no code, so the screen that
+  raises them cannot be opened on a phone. What is proved instead is a test
+  that takes both and gives them back, and that fails when the restoration is
+  removed (D062). That is not the same as watching a real screen brighten;
+- **no PDF was rendered**, because no PDF is packaged. The approved screen 14
+  draws a ficha from trip data, not a page.
+
+### Not implemented, with reasons
+
+- [ ] **PDF rendering.** `PdfRenderer` is in the framework and needs no
+      dependency, but with no packaged PDF in the build there is nothing to
+      render and nothing to verify, and writing an unexercised viewer is the
+      speculative code this repository avoids. The resolution step in front of
+      the screens is where it goes when a file arrives;
+- [ ] **`sensitive` is carried by the schema and does nothing yet.** §17 asks
+      only that the repository not close the door on encrypted storage and
+      biometric gating, and it does not;
+- [ ] **The icon set has no bed and no shield**, so a document that is not a
+      ticket shows the wallet's icon. Deciding what those look like is design
+      work, not this commit's;
+- [ ] **Screens 15, 16, 17 and 18 — Transporte, Hospedagem, Emergência and
+      Plano B — are the second block of the operational half** and are not
+      started. Screen 04 and the chapter list come after them.
+
 ## Later
 
 - [ ] Remaining canonical screens
@@ -850,7 +932,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 186 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 206 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

@@ -19,6 +19,7 @@ espresso = "3.6.1"
 robolectric = "4.16.1"
 room = "2.8.4"
 ksp = "2.3.11"
+zxing = "3.5.3"
 
 [libraries]
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
@@ -43,6 +44,7 @@ robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectr
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 
 [plugins]
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
