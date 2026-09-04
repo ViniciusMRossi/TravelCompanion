@@ -912,6 +912,13 @@ below.
   identical step would have marked the first of them current whichever one was
   reached. It computes the index directly now. No packaged plan repeats a
   step, so nothing on screen was ever wrong.
+- **Screen 17 took the first emergency profile in the package**, not the one
+  for the country the traveller is in — so a trip crossing a border would have
+  printed one country's name beside another country's city and dialled the
+  wrong police. Found by review. The profile is now looked up by the current
+  city's country and the country name comes from the city as well; the test
+  whose name claimed the invariant was passing on a one-profile fixture, and
+  both test files now carry a second country (D070).
 
 ### Not observed, and not claimed
 
@@ -1023,7 +1030,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 240 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 243 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

@@ -28,20 +28,32 @@ data class ShowToSomeoneUi(val localLanguageText: String, val translation: Strin
  * in their own fields. Everything else is trip data and passes the same gate
  * as every other packaged telephone — a number that fails when pressed is
  * worse than a row that says the number is still coming (D064).
+ *
+ * Which country's services those are is decided by where the traveller is, not
+ * by the order the profiles happen to sit in the package (D070).
  */
 fun buildEmergencyState(content: TripContent, date: LocalDate): EmergencyUiState? {
-    val profile = content.trip.emergencyProfiles.firstOrNull() ?: return null
     val mock = content.trip.metadata.isMockContent
     // Where the traveller is, from the day the current-day logic resolves —
     // the same one screens 02 and 13 use, not a second rule.
     val city = content.dayFor(date)
-        ?.let { day -> content.trip.cities.firstOrNull { it.id == day.cityIds.firstOrNull() } }
+        ?.let { day -> content.city(day.cityIds.firstOrNull()) }
         ?: content.trip.cities.firstOrNull()
+
+    // The country is the city's, and the profile is the one for that country.
+    // A package that crosses a border carries a profile per country and the
+    // schema requires the code on both sides; the first profile is a fallback
+    // for a package that is missing one, never the normal path.
+    val profile = city?.countryCode?.let(content::emergencyProfile)
+        ?: content.trip.emergencyProfiles.firstOrNull()
+        ?: return null
 
     val stay = content.trip.accommodations.firstOrNull()
 
     return EmergencyUiState(
-        location = listOfNotNull(city?.name, profile.countryName).joinToString(" · "),
+        // The country name comes from the city as well, so the line cannot
+        // pair one country's city with another country's name.
+        location = listOfNotNull(city?.name, city?.countryName).joinToString(" · "),
         general = phone(
             label = "Ligar ${profile.generalEmergency.phone}",
             number = profile.generalEmergency.phone,

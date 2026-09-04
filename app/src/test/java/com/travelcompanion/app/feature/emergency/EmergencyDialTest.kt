@@ -4,7 +4,10 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.travelcompanion.app.data.trip.EmergencyContact
+import com.travelcompanion.app.data.trip.EmergencyProfile
 import com.travelcompanion.app.data.trip.PackagedTripTest.Companion.packagedContent
+import com.travelcompanion.app.data.trip.TripContent
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -29,10 +32,30 @@ class EmergencyDialTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private val state = buildEmergencyState(
-        packagedContent(exists = { false }),
-        LocalDate.parse("2026-09-21"),
-    )!!
+    /**
+     * Two countries in the package, the wrong one first. What is pressed here
+     * has to be Bosnia's, because that is where the day puts the traveller —
+     * with a single profile in the fixture this test's own name was a claim it
+     * could not make (D070).
+     */
+    private val content = packagedContent(exists = { false }).let { packaged ->
+        val croatia = EmergencyProfile(
+            id = "emergency.hr",
+            countryCode = "HR",
+            countryName = "Croácia",
+            generalEmergency = EmergencyContact(label = "Emergência geral", phone = "112"),
+            police = EmergencyContact(label = "Polícia", phone = "192"),
+            ambulance = EmergencyContact(label = "Ambulância", phone = "194"),
+        )
+        TripContent(
+            packaged.trip.copy(
+                emergencyProfiles = listOf(croatia) + packaged.trip.emergencyProfiles,
+            ),
+            packaged.assets,
+        )
+    }
+
+    private val state = buildEmergencyState(content, LocalDate.parse("2026-09-21"))!!
 
     private val dialled = mutableListOf<String>()
 
