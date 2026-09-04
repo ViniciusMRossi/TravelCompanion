@@ -39,8 +39,15 @@ class PlaybackController(
      *
      * Asking for the guide that is already loaded toggles instead of
      * restarting it — tapping the same action twice should not lose the place.
+     *
+     * [startPositionMs] overrides that resumed position for the one caller
+     * that knows better: joining a shared listen has to begin where the group
+     * is, not where this phone last left the guide. Passing it here rather
+     * than seeking afterwards keeps it a single decision — the preparation
+     * happens off the caller's stack, so a seek issued straight after would
+     * race the load it is meant to correct.
      */
-    fun playAudioGuide(request: AudioGuideRequest) {
+    fun playAudioGuide(request: AudioGuideRequest, startPositionMs: Long? = null) {
         // Policy: a guide whose audio is not packaged is not playable, and it
         // must not disturb audio that *is* playing. Availability is knowable
         // from content before anyone taps, so the screen tells the traveller
@@ -56,7 +63,7 @@ class PlaybackController(
         persistCurrentPosition()
 
         scope.launch {
-            val resumeFrom = positions.load(playable.mediaId)
+            val resumeFrom = startPositionMs ?: positions.load(playable.mediaId)
             _state.value = PlaybackState(
                 mediaId = playable.mediaId,
                 title = playable.title,

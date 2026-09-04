@@ -26,7 +26,11 @@ data class ListenTogetherUiState(
     val isPlaying: Boolean,
     val isBuffering: Boolean,
     val listeners: List<ListenerUi>,
-    val isDegraded: Boolean,
+    /**
+     * The amber note under the listeners, or null when there is nothing to
+     * say. One note, because there is one group.
+     */
+    val groupNote: String?,
     val showTranscript: Boolean,
     val transcript: String?,
 )
@@ -70,7 +74,7 @@ fun buildListenTogetherState(
         isPlaying = playback.isPlaying,
         isBuffering = playback.status == PlaybackState.Status.Buffering,
         listeners = listeners(content, group, localParticipantId),
-        isDegraded = group.isDegraded,
+        groupNote = groupNote(group),
         showTranscript = showTranscript,
         // The story's own body, and only when a story owns this guide. It is
         // deliberately not a second copy of the text: there is one place trip
@@ -80,10 +84,29 @@ fun buildListenTogetherState(
 }
 
 /**
+ * What the group's state is worth saying out loud, in one sentence.
+ *
+ * Divergence comes first because it is the more specific fact: a group that is
+ * on another story is reachable, and saying it could not be synchronized would
+ * send the traveller looking for a signal problem that is not there.
+ */
+private fun groupNote(group: GroupSessionState): String? = when {
+    group.isDiverged -> "O grupo está ouvindo outra história. " +
+        "Seu audioguia continua funcionando normalmente."
+    group.isDegraded -> "Não foi possível sincronizar o grupo agora. " +
+        "Seu audioguia continua funcionando normalmente."
+    else -> null
+}
+
+/**
  * Who is listening, named by the trip rather than by the group.
  *
  * The group knows ids; the names and initials come from `trip.participants`,
  * so a participant the group has not reported yet still has a name.
+ *
+ * This phone listening to a different story is reported on this phone's own
+ * row, and nowhere else: the group's payload carries one shared guide and no
+ * per-participant one, so the other phone cannot be told (D042).
  */
 private fun listeners(
     content: TripContent,
@@ -91,19 +114,40 @@ private fun listeners(
     localParticipantId: String?,
 ): List<ListenerUi> = group.participants.mapNotNull { participant ->
     val person = content.participant(participant.id) ?: return@mapNotNull null
+    val isLocal = person.id == localParticipantId
+    val diverged = isLocal && group.isDiverged
     ListenerUi(
         initial = person.initial,
-        name = if (person.id == localParticipantId) "${person.name} · você" else person.name,
-        sync = participant.sync,
+        name = if (isLocal) "${person.name} · você" else person.name,
+        // Not in step, so not the green dot — but nothing here is reconnecting
+        // and the row must not say so. The state carries the dot; the label
+        // carries what is actually true.
+        sync = if (diverged) ParticipantSync.Reconnecting else participant.sync,
+        label = if (diverged) OTHER_STORY else participant.sync.label(),
     )
 }.ifEmpty {
     // Before the group has said anything, this phone still knows itself.
     val person = content.participant(localParticipantId) ?: return@ifEmpty emptyList()
+    val diverged = group.isDiverged
     listOf(
         ListenerUi(
             initial = person.initial,
             name = "${person.name} · você",
-            sync = ParticipantSync.Synchronized,
+            sync = if (diverged) ParticipantSync.Reconnecting else ParticipantSync.Synchronized,
+            label = if (diverged) OTHER_STORY else ParticipantSync.Synchronized.label(),
         ),
     )
 }
+
+/** The approved words for each state, and nowhere else in the screen. */
+private fun ParticipantSync.label(): String = when (this) {
+    ParticipantSync.Synchronized -> "Sincronizado"
+    ParticipantSync.Reconnecting -> "Sincronizando novamente"
+}
+
+/**
+ * Written for a state the approved design does not draw: both phones on screen
+ * 09 with different guides loaded. It keeps the register of the states that
+ * are drawn — what is true, in the traveller's words, with no network in it.
+ */
+private const val OTHER_STORY = "Ouvindo outra história"

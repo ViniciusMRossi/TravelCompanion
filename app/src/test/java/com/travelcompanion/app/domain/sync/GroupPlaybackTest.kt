@@ -47,6 +47,36 @@ class GroupPlaybackTest {
         assertEquals(42_000L, expectedPosition(g, serverNowMs = 999_000L))
     }
 
+    /**
+     * The countdown is not drift.
+     *
+     * `startTogether` publishes the position playback is at now with an anchor
+     * three seconds out, and the audio does not stop while 3-2-1 is on screen.
+     * Measured against a group that has not started, the gap grows by a second
+     * per second, so most of the window is past the two-second tolerance and
+     * the player gets dragged back to where the shared listen will begin.
+     */
+    @Test
+    fun `nothing moves before the agreed start moment arrives`() {
+        val g = group(positionMs = 300_000L, anchorServerMs = 10_000L)
+
+        // Two and a half seconds into the countdown, with local audio playing on.
+        assertEquals(
+            SyncCorrection.None,
+            syncCorrection(local(positionMs = 302_500L), g, serverNowMs = 7_500L),
+        )
+        // A phone that is paused is not started early either.
+        assertEquals(
+            SyncCorrection.None,
+            syncCorrection(local(positionMs = 300_000L, isPlaying = false), g, serverNowMs = 7_500L),
+        )
+        // And once the moment arrives, the group is followed as before.
+        assertEquals(
+            SyncCorrection.Seek(303_000L),
+            syncCorrection(local(positionMs = 300_000L), g, serverNowMs = 13_000L),
+        )
+    }
+
     @Test
     fun `a start agreed for the future has not begun yet`() {
         // The 3-2-1 window on screen 08: the anchor is server time plus a short

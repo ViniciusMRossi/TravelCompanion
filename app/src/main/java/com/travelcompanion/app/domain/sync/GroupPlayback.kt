@@ -95,6 +95,19 @@ fun syncCorrection(
         return if (local.isPlaying) SyncCorrection.Pause else SyncCorrection.None
     }
 
+    // A start agreed for a moment that has not arrived yet moves nobody.
+    //
+    // During the 3–2–1 the group's position is where playback *will* begin,
+    // not a claim about where anyone is now — and the audio does not stop
+    // while the countdown runs. Measuring the two against each other makes the
+    // gap widen by a second per second, so two of the three seconds are past
+    // the tolerance and every snapshot inside the window drags the player back
+    // to the anchor position. Loading is deliberately decided above this:
+    // a phone that has to preload the guide should do so before the moment
+    // arrives (brief §5), and only the moving of a player already in place is
+    // held back.
+    if (serverNowMs < group.anchorServerMs) return SyncCorrection.None
+
     // The group is asking for a point this guide does not have.
     //
     // Nothing publishes a stop when a guide simply ends, so a shared listen

@@ -13,6 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.travelcompanion.app.data.trip.TripContent
 import com.travelcompanion.app.feature.placeholder.PlaceholderScreen
 import com.travelcompanion.app.service.playback.PlaybackController
+import com.travelcompanion.app.service.playback.audioGuideRequest
 import com.travelcompanion.app.service.sync.GroupSessionController
 import com.travelcompanion.app.service.walk.WalkModeController
 import kotlinx.coroutines.delay
@@ -47,15 +48,22 @@ fun TogetherRoute(
 
     DisposableEffect(participantId) {
         groupSessionController.join()
+        // Arriving here is the traveller asking to listen with the group —
+        // the prototype has one way in, the "Ouvir juntos" button under screen
+        // 07's transport, and it is the same button on both phones. What the
+        // ask means depends on what the group is already doing, so the
+        // controller decides once the group answers rather than the screen
+        // assuming it is the one starting (D042).
+        groupSessionController.listenTogether { id ->
+            audioGuideRequest(
+                content,
+                id,
+                subtitle = content.trip.stories.firstOrNull { it.audioGuideId == id }?.title,
+            )
+        }
         // Leaving is deliberate and local-only: it stops following the group,
         // never the audio.
         onDispose { groupSessionController.leave() }
-    }
-
-    // Proposing the shared start once, when the traveller arrives here.
-    LaunchedEffect(mediaId) {
-        val id = mediaId ?: return@LaunchedEffect
-        groupSessionController.startTogether(id, playback.positionMs)
     }
 
     // 3 → 2 → 1, one second apart, matching the anchor published to the group.
@@ -66,19 +74,14 @@ fun TogetherRoute(
         }
     }
 
-    if (mediaId == null) {
-        PlaceholderScreen(
-            title = "Ouvir juntos",
-            message = "Comece um audioguia para ouvir junto.",
-            actionLabel = "Voltar",
-            onAction = onBack,
-        )
-        return
-    }
-
+    // Screen 08 comes first: a phone joining a listen already in progress has
+    // nothing loaded yet, and the guide it is about to hear is the group's.
     if (group.isStarting) {
+        val startingId = mediaId ?: group.sharedMediaId
+        val startingStory = content.trip.stories.firstOrNull { it.audioGuideId == startingId }
         SyncingScreen(
-            storyTitle = story?.title ?: content.audioGuide(mediaId)?.title.orEmpty(),
+            storyTitle = startingStory?.title
+                ?: content.audioGuide(startingId)?.title.orEmpty(),
             participants = content.info.participants.map { person ->
                 SyncingParticipantUi(
                     initial = person.initial,
@@ -88,6 +91,16 @@ fun TogetherRoute(
             },
             countdown = group.countdown,
             modifier = modifier,
+        )
+        return
+    }
+
+    if (mediaId == null) {
+        PlaceholderScreen(
+            title = "Ouvir juntos",
+            message = "Comece um audioguia para ouvir junto.",
+            actionLabel = "Voltar",
+            onAction = onBack,
         )
         return
     }

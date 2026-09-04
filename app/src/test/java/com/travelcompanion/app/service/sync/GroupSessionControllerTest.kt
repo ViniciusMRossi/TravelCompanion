@@ -7,6 +7,7 @@ import com.travelcompanion.app.data.sync.ParticipantSync
 import com.travelcompanion.app.data.trip.PackagedTripTest.Companion.packagedContent
 import com.travelcompanion.app.domain.sync.GroupPlayback
 import com.travelcompanion.app.domain.sync.ServerClock
+import com.travelcompanion.app.service.playback.AudioGuideRequest
 import com.travelcompanion.app.service.playback.FakeAudioEngine
 import com.travelcompanion.app.service.playback.InMemoryPlaybackPositionStore
 import com.travelcompanion.app.service.playback.PlaybackController
@@ -205,6 +206,51 @@ class GroupSessionControllerTest {
 
     // -- the shared start -------------------------------------------------
 
+    /**
+     * Derived by reasoning about the arithmetic rather than seen on the
+     * device: `startTogether` publishes an anchor three seconds out with the
+     * position playback is at *now*, and the audio does not stop while the
+     * countdown runs. `expectedPosition` holds the group at its published
+     * position until the anchor arrives, so the gap between it and the local
+     * player widens by a second per second — and two of the three seconds are
+     * past the drift tolerance.
+     */
+    @Test
+    fun `the countdown of a shared start does not drag the player backwards`() {
+        playLocally()
+        engine.advanceTo(300_000L)
+        playback.refreshProgress()
+        controller.join()
+        // Device and server agree at first, so the arithmetic reads plainly.
+        sync.emit(GroupSyncState(GroupSyncState.Status.Synchronized))
+
+        controller.startTogether(guide, positionMs = playback.state.value.positionMs)
+        val published = sync.published.single()
+
+        val commandsBefore = engine.commands.size
+
+        // The three seconds of 3–2–1. Server time moves; the device clock is
+        // held still so only the offset changes, which is also what makes each
+        // snapshot a distinct value the flow will deliver.
+        listOf(500L, 1_500L, 2_500L).forEach { elapsed ->
+            engine.advanceTo(300_000L + elapsed)
+            playback.refreshProgress()
+            sync.emit(
+                GroupSyncState(
+                    status = GroupSyncState.Status.Synchronized,
+                    playback = published,
+                    clock = ServerClock(offsetMs = elapsed),
+                ),
+            )
+        }
+
+        assertEquals(
+            "nothing may move the player before the agreed start moment arrives",
+            commandsBefore,
+            engine.commands.size,
+        )
+    }
+
     @Test
     fun `starting together anchors on server time, not the device clock`() {
         // Device is two minutes behind the server.
@@ -238,6 +284,167 @@ class GroupSessionControllerTest {
         controller.tickCountdown()
         assertNull(controller.state.value.countdown)
         assertTrue(!controller.state.value.isStarting)
+    }
+
+    // -- arriving on screens 08 and 09 ------------------------------------
+
+    /**
+     * The other phone, as a value.
+     *
+     * Every test below is two participants: this one, driven through a real
+     * [PlaybackController], and Érika's, present only as what she wrote to the
+     * group. No second device is needed to make the disagreements happen — the
+     * whole point of deciding them in `domain/sync` is that they are values.
+     */
+    private fun erikaIsListeningTo(
+        mediaId: String,
+        positionMs: Long,
+        serverNowMs: Long,
+        isPlaying: Boolean = true,
+    ) = GroupSyncState(
+        status = GroupSyncState.Status.Synchronized,
+        participants = listOf(GroupParticipant("erika", ParticipantSync.Synchronized)),
+        playback = GroupPlayback(mediaId, positionMs, isPlaying, anchorServerMs = 0L, updatedBy = "erika"),
+        clock = ServerClock.fromObservation(serverMs = serverNowMs, deviceMs = nowMs),
+    )
+
+    /** What screens 08 and 09 hand the controller: the packaged trip, resolved. */
+    private fun guides(): (String) -> AudioGuideRequest? = { audioGuideRequest(content, it) }
+
+    /**
+     * The failure this whole section exists for.
+     *
+     * Érika starts a shared listen; the other traveller opens screen 09 with
+     * nothing playing. Before, the correction came back as `Load`, the
+     * controller did nothing with it, and screen 09 answered "Comece um
+     * audioguia para ouvir junto" while Érika's phone counted down to a guide
+     * this one never heard.
+     */
+    @Test
+    fun `a phone with nothing playing joins a listen already in progress`() {
+        controller.join()
+        controller.listenTogether(guides())
+
+        sync.emit(erikaIsListeningTo("ag.latin-bridge", positionMs = 60_000L, serverNowMs = 30_000L))
+
+        assertEquals("ag.latin-bridge", playback.state.value.mediaId)
+        // Where the group is now, not where this phone last left the guide.
+        assertEquals(90_000L, engine.preparedStartPositionMs)
+        assertTrue("the joining phone must actually be playing", playback.state.value.isPlaying)
+    }
+
+    /**
+     * D037, with the half that was missing added: the group may not replace
+     * what this phone is listening to, and this phone may not replace the
+     * group's either. Both were true before; what was missing is that neither
+     * screen said so, and both read "Sincronizado".
+     */
+    @Test
+    fun `a phone playing another guide keeps it and is not reported as synchronized`() {
+        playLocally()
+        val prepareCountBefore = engine.prepareCount
+        controller.join()
+        controller.listenTogether(guides())
+
+        sync.emit(erikaIsListeningTo("ag.latin-bridge", positionMs = 60_000L, serverNowMs = 30_000L))
+
+        assertEquals("the guide must not be swapped", guide, playback.state.value.mediaId)
+        assertEquals(prepareCountBefore, engine.prepareCount)
+        // And the group is not dragged onto this phone's guide either.
+        assertTrue("arriving must not publish over a listen in progress", sync.published.isEmpty())
+        assertTrue("the screen has to say the two are apart", controller.state.value.isDiverged)
+    }
+
+    /** Once this phone is on the group's guide, there is nothing to report. */
+    @Test
+    fun `agreeing with the group is not a divergence`() {
+        playLocally()
+        controller.join()
+        controller.listenTogether(guides())
+
+        sync.emit(erikaIsListeningTo(guide, positionMs = 0L, serverNowMs = 0L))
+
+        assertTrue(!controller.state.value.isDiverged)
+    }
+
+    /**
+     * Screen 09 → 07 → 09, which is one back-press and one tap.
+     *
+     * Every arrival used to publish a fresh anchor carrying this phone's own
+     * position, so the traveller who last opened the screen pulled everyone
+     * else to where they were — as often as they liked.
+     */
+    @Test
+    fun `re-entering the screen on the guide the group is playing re-anchors nobody`() {
+        playLocally()
+        engine.advanceTo(240_000L)
+        playback.refreshProgress()
+
+        controller.join()
+        controller.listenTogether(guides())
+        sync.emit(erikaIsListeningTo(guide, positionMs = 0L, serverNowMs = 10_000L))
+        controller.leave()
+
+        // Back to screen 07, then in again.
+        controller.join()
+        controller.listenTogether(guides())
+        sync.emit(erikaIsListeningTo(guide, positionMs = 0L, serverNowMs = 20_000L))
+
+        assertTrue(
+            "joining a listen that is already running is following, not starting",
+            sync.published.isEmpty(),
+        )
+    }
+
+    /** With nothing to join, arriving is still what proposes the shared start. */
+    @Test
+    fun `arriving first proposes the shared start`() {
+        playLocally()
+        engine.advanceTo(120_000L)
+        playback.refreshProgress()
+        controller.join()
+        controller.listenTogether(guides())
+
+        sync.emit(
+            GroupSyncState(
+                status = GroupSyncState.Status.Synchronized,
+                participants = listOf(GroupParticipant("erika", ParticipantSync.Synchronized)),
+            ),
+        )
+
+        val published = sync.published.single()
+        assertEquals(guide, published.mediaId)
+        assertEquals(120_000L, published.positionMs)
+        assertEquals(3, controller.state.value.countdown)
+    }
+
+    /**
+     * An unreachable group must not leave the traveller on a screen that never
+     * does anything: proposing offline is what raises the amber note, and the
+     * audio is unaffected either way (brief §3.3).
+     */
+    @Test
+    fun `arriving with the group unreachable still proposes, and says so`() {
+        playLocally()
+        controller.join()
+        controller.listenTogether(guides())
+
+        sync.emit(GroupSyncState(GroupSyncState.Status.Offline))
+
+        assertEquals(guide, sync.published.single().mediaId)
+        assertTrue(controller.state.value.isDegraded)
+        assertTrue(playback.state.value.isPlaying)
+    }
+
+    /** The group still cannot load a guide nobody asked it to. */
+    @Test
+    fun `a guide the group loads is not taken up without the traveller asking`() {
+        controller.join()
+        // No listenTogether: this is the group talking, not the traveller.
+        sync.emit(erikaIsListeningTo("ag.latin-bridge", positionMs = 0L, serverNowMs = 0L))
+
+        assertEquals(0, engine.prepareCount)
+        assertNull(playback.state.value.mediaId)
     }
 
     // -- silence is not failure, and silence is not health -----------------

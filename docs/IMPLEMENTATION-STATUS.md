@@ -347,6 +347,72 @@ device and is not claimed as such.
 committed: the no-configuration case is already handled by the Firebase
 repository reporting `Disabled` (D034), so nothing ever constructed it.
 
+### Corrections after review — the second participant
+
+Three synchronization defects and one process defect were found in review of
+933e4a6 / 68ceda6. All three sync defects are invisible with one phone, which
+is how they survived the device pass above. They are now covered by unit tests
+that carry the other phone as a value — a `GroupPlayback` written by another
+`updatedBy`, delivered as a sequence of snapshots — which is what `domain/sync`
+was shaped for.
+
+- [x] **A phone with nothing playing can now join a listen already running.**
+      Nothing anywhere loaded `group.playback.mediaId`: the `Load` branch was
+      `Unit`, and screen 09 answered "Comece um audioguia para ouvir junto"
+      while the other phone counted down. Arriving on screens 08/09 is now the
+      traveller's ask, and it is the only thing that can put the group's guide
+      on this player (D042).
+- [x] **A phone playing another guide keeps it, and the screen says the two
+      are apart.** Two travellers on different stories both read
+      "Sincronizado", with nothing anywhere reporting the disagreement. The
+      guide is still never swapped (D037); the phone that is out of step now
+      shows the amber dot with "Ouvindo outra história" and the note under the
+      list (D042).
+- [x] **Opening screen 09 no longer re-anchors the group.** Every arrival
+      published a fresh anchor carrying this phone's position, so 09 → 07 → 09
+      dragged the other traveller to wherever this one was. Proposing a start
+      is now only for when there is nothing to join (D042).
+- [x] **The countdown no longer drags the player backwards.** Found by
+      arithmetic, not by watching: inside the three-second window the group's
+      expected position stands still while the local one advances, so the
+      drift rule fires and seeks back. Reproduced by a failing test before it
+      was fixed — three snapshots inside one countdown produced one `seekTo`
+      that should not exist — and now `None` until the agreed moment arrives
+      (D041).
+- [x] **Trip prose written outside the authoring pipeline is reverted.**
+      `story.latin-bridge` went back to what it was before Phase 4 in both the
+      runtime and sample packages, which stay byte-identical to each other
+      (D043).
+
+**Not implemented, with reasons:**
+
+- [ ] **The other phone is not told that this one diverged.** Divergence is
+      reported only on the phone that is out of step. The group payload is
+      `{mediaId, positionMs, isPlaying, anchorServerMs, updatedBy}` plus
+      `seenAt`, with one shared guide and no per-participant guide, so there is
+      nothing for the other phone to read. Widening it is a payload change,
+      not a correction, and was not made here (D042).
+- [ ] **"Ouvindo outra história" is copy the approved design does not carry.**
+      The state boards draw four participant states — synchronized,
+      connecting, reconnecting, offline — and none of them is "listening to a
+      different story". The words keep the register of the ones that are drawn
+      and contain no network vocabulary, but they are engineering's and want a
+      design confirmation.
+- [ ] **A phone joining late hears the guide while 3–2–1 is still on
+      screen.** Screen 08 is a three-second transition into shared playback,
+      and the joiner is given it so the screen is never blank and never says
+      "Comece um audioguia" about a listen it is joining — but the group is
+      already running, so the audio comes into step at once rather than at
+      zero. The approved design has no state for arriving late; the
+      alternative, three silent seconds, tells the traveller less.
+- [ ] **A phone arriving while the group is paused waits rather than
+      preloading.** The invitation is kept, not spent, so joining happens when
+      the group starts again. Loading into a paused player is the tidier
+      behaviour and was not built.
+- [ ] **Still no second physical device.** The device pass below/above stands
+      as written. F1 and F2 above are covered by tests, not by field
+      observation, and nothing in this round was watched on hardware.
+
 ## Phase 5
 - [ ] Voice memories
 
@@ -427,7 +493,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 135 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 145 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

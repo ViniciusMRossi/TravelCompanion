@@ -43,7 +43,10 @@ import com.travelcompanion.app.design.TcType
 data class ListenerUi(
     val initial: String,
     val name: String,
+    /** Which dot: green for in step, amber for not. */
     val sync: ParticipantSync,
+    /** What the row says. Built with the state, so the two cannot disagree. */
+    val label: String,
 )
 
 /**
@@ -240,10 +243,7 @@ private fun ListenersCard(state: ListenTogetherUiState) {
                             },
                         )
                         Text(
-                            text = when (listener.sync) {
-                                ParticipantSync.Synchronized -> "Sincronizado"
-                                ParticipantSync.Reconnecting -> "Sincronizando novamente"
-                            },
+                            text = listener.label,
                             style = TcType.meta,
                             color = when (listener.sync) {
                                 ParticipantSync.Synchronized -> FieldCompanionColors.MossInk
@@ -255,12 +255,11 @@ private fun ListenersCard(state: ListenTogetherUiState) {
             }
         }
 
-        if (state.isDegraded) {
-            // The approved sentence, and the whole point of §3.3 said in the
-            // traveller's language: the group is what failed, not the audio.
+        if (state.groupNote != null) {
+            // The whole point of §3.3 said in the traveller's language: the
+            // group is what failed, not the audio.
             Text(
-                text = "Não foi possível sincronizar o grupo agora. " +
-                    "Seu audioguia continua funcionando normalmente.",
+                text = state.groupNote,
                 style = TcType.meta,
                 color = FieldCompanionColors.GoldBody,
                 modifier = Modifier
