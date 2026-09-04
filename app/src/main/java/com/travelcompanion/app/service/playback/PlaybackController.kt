@@ -104,11 +104,24 @@ class PlaybackController(
 
     fun play() {
         if (!_state.value.isActive) return
+        // What was asked for, recorded before the engine is asked — the same
+        // shape [seekTo] already has, and for the same reason: a caller that
+        // acts on this state in the next statement must not depend on when a
+        // listener answers. Screen 09 telling the group what its transport did
+        // is such a caller, and it publishes `isPlaying` (D050).
+        //
+        // Never over a terminal state: Ended and Failed say something more
+        // specific, which is the rule [EngineEvents.onPlayingChanged] already
+        // keeps. A synchronous callback arriving inside `engine.play()` — a
+        // buffering report, say — lands after this and wins, because what the
+        // engine reports is truer than what was asked for.
+        _state.update { if (it.isTerminal) it else it.copy(status = PlaybackState.Status.Playing) }
         engine.play()
     }
 
     fun pause() {
         if (!_state.value.isActive) return
+        _state.update { if (it.isTerminal) it else it.copy(status = PlaybackState.Status.Paused) }
         engine.pause()
         persistCurrentPosition()
     }

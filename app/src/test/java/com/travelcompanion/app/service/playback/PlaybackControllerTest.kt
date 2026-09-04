@@ -43,6 +43,45 @@ class PlaybackControllerTest {
         assertEquals("ag.bascarsija", controller.state.value.mediaId)
     }
 
+    /**
+     * The transport's state is what was asked for, not what has been confirmed.
+     *
+     * `seekTo` always worked this way; `play` and `pause` did not, and left
+     * every reader depending on when the engine's listener answers. Media3's
+     * `MediaController` happens to answer from inside the call, so this held by
+     * accident — and screen 09 publishing `isPlaying` to the group is a reader
+     * that acts in the very next statement (D050).
+     */
+    @Test
+    fun pauseAndPlayReportThemselvesWithoutWaitingForTheEngine() {
+        controller.playAudioGuide(playableRequest())
+        engine.becomeReady(durationMs = 720_000L)
+        assertTrue(controller.state.value.isPlaying)
+
+        engine.notifiesSynchronously = false
+
+        controller.togglePlayPause()
+        assertFalse("a pause has to be visible at once", controller.state.value.isPlaying)
+
+        controller.togglePlayPause()
+        assertTrue("and so does resuming", controller.state.value.isPlaying)
+    }
+
+    /** A guide that ended still says so: the intent never overwrites it. */
+    @Test
+    fun askingAFinishedGuideToPauseDoesNotHideThatItEnded() {
+        controller.playAudioGuide(playableRequest())
+        engine.becomeReady(durationMs = 720_000L)
+        engine.advanceTo(720_000L)
+        engine.finish()
+        assertEquals(PlaybackState.Status.Ended, controller.state.value.status)
+
+        engine.notifiesSynchronously = false
+        controller.pause()
+
+        assertEquals(PlaybackState.Status.Ended, controller.state.value.status)
+    }
+
     @Test
     fun audioIsNeverStreamed() {
         val request = playableRequest() as AudioGuideRequest.Playable

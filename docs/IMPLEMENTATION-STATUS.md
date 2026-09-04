@@ -80,7 +80,10 @@ error appeared in any run.
   `PARTIAL_WAKE_LOCK 'ExoPlayer:WakeLockManager'`;
 - notification and lock-screen transport, showing the guide title and its
   context and never a media id;
-- headset media buttons, from a Bluetooth headset's own button
+- headset media buttons, from a Bluetooth headset's own button — outside a
+  shared listen. Inside one the group wins and a pause from the headset, the
+  notification or the lock screen is undone within about five seconds; only
+  screen 09's own transport speaks for the group (D047, D049);
   (`MediaKeyEvt pkg=com.android.bluetooth`), pause and play both ways;
 - pausing instead of switching to the speaker when the headphones go away
   (`AS.AudioDeviceBroker: broadcast ACTION_AUDIO_BECOMING_NOISY`);
@@ -394,7 +397,13 @@ the packaged trip, both signed in by nobody. Positions below are
 - **drift closing with nobody writing anything.** A pause dispatched to the
   emulator's media session — deliberately bypassing screen 09, so nothing was
   published — was undone by the beat and the phone brought back into step
-  (D046). Before this commit it stayed paused indefinitely;
+  (D046). Before this commit it stayed paused indefinitely. The same
+  observation, read as the traveller would meet it: inside a shared listen a
+  pause from the headset, the notification or the lock screen comes back on
+  its own within about five seconds, because the group is still playing and
+  only screen 09's transport speaks for the group. Recorded as a decision in
+  D049 rather than left as a side effect, with the alternative flagged for
+  confirmation rather than implemented;
 - **ninety seconds idle staying green.** Nobody touching either phone: both
   read "Sincronizado", no note, and afterwards 409514 against 410056, still in
   step;
@@ -600,7 +609,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 157 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 160 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

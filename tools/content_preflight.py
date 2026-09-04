@@ -21,15 +21,31 @@ from validate_trip import known_timezones, schema_errors, timezone_problem
 # Word-shaped markers need boundaries. As a bare substring "TODO" matches
 # "todos" and "método" in Portuguese copy, and real editorial content would
 # fill the warning list with noise until nobody read it.
-WORD_MARKERS = ("PLACEHOLDER", "TODO", "TBD", "A CONFIRMAR")
+WORD_MARKERS = ("PLACEHOLDER", "TBD", "A CONFIRMAR")
+
+# "TODO" is the one marker whose letters spell an ordinary Portuguese word.
+# Boundaries fixed "todos", "toda", "todas" and "método", but not the bare
+# "todo" of "todo o percurso", "em todo caso", "todo mundo" — which matched
+# because the value was upper-cased before the search. A marker is written in
+# capitals and the Portuguese word is not, so this one is matched with the
+# case it was authored in. The cost is a sentence-initial "Todo" that is really
+# a marker, which nobody writes; the gain is that the warning list stays worth
+# reading.
+CASE_SENSITIVE_WORD_MARKERS = ("TODO",)
 
 # Punctuated markers are distinctive on their own, and must keep matching
 # inside a longer run: "+000000" is how "+000000000" gives itself away.
 LITERAL_MARKERS = ("MOCK-", "+000000")
 
+# Searched against the upper-cased value, so these are case-insensitive.
 MARKER_PATTERNS = tuple(
     re.compile(rf"(?<!\w){re.escape(m)}(?!\w)") for m in WORD_MARKERS
 ) + tuple(re.compile(re.escape(m)) for m in LITERAL_MARKERS)
+
+# Searched against the value as authored.
+CASED_MARKER_PATTERNS = tuple(
+    re.compile(rf"(?<!\w){re.escape(m)}(?!\w)") for m in CASE_SENSITIVE_WORD_MARKERS
+)
 
 REQUIRED_AUTHORING_FILES = (
     "trip.json",
@@ -125,7 +141,10 @@ def main() -> int:
 
         for path, value in walk_strings(trip):
             upper = value.upper()
-            if any(pattern.search(upper) for pattern in MARKER_PATTERNS):
+            hit = any(pattern.search(upper) for pattern in MARKER_PATTERNS) or any(
+                pattern.search(value) for pattern in CASED_MARKER_PATTERNS
+            )
+            if hit:
                 warnings.append(f"Possible unresolved placeholder at {path}: {value!r}")
 
         # Unconditional: a package declaring no zone at all is the case schema

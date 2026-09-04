@@ -30,6 +30,16 @@ class FakeAudioEngine : AudioEngine {
 
     private var listener: AudioEngine.Listener? = null
 
+    /**
+     * Whether `play`/`pause` report back from inside the call.
+     *
+     * Media3's `MediaController` happens to, which is what made the
+     * transport-publishes-what-it-did path look correct by construction. A
+     * test that wants to prove the controller's own state is right turns this
+     * off (D050).
+     */
+    var notifiesSynchronously: Boolean = true
+
     override var positionMs: Long = 0L
     override var durationMs: Long = 0L
     override var isPlaying: Boolean = false
@@ -60,13 +70,13 @@ class FakeAudioEngine : AudioEngine {
     override fun play() {
         isPlaying = true
         commands += "play"
-        listener?.onPlayingChanged(true)
+        if (notifiesSynchronously) listener?.onPlayingChanged(true)
     }
 
     override fun pause() {
         isPlaying = false
         commands += "pause"
-        listener?.onPlayingChanged(false)
+        if (notifiesSynchronously) listener?.onPlayingChanged(false)
     }
 
     override fun seekTo(positionMs: Long) {

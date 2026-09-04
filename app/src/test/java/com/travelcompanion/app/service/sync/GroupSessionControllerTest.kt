@@ -674,6 +674,31 @@ class GroupSessionControllerTest {
         assertEquals("vinicius", published.updatedBy)
     }
 
+    /**
+     * Through the transport's own entry point, with the engine kept quiet.
+     *
+     * The earlier test called `pause()` directly, and the fake reported back
+     * from inside the call, so production's ordering — `togglePlayPause()`
+     * then read the state — was never exercised. If the state had not caught
+     * up, a pause would be published as `isPlaying = true` and the group would
+     * ask everybody to resume: a silent failure (D050).
+     */
+    @Test
+    fun `pausing through the transport publishes a pause`() {
+        playLocally()
+        controller.join()
+        controller.listenTogether(guides())
+        sync.emit(erikaIsListeningTo(guide, positionMs = 0L, serverNowMs = 0L))
+        sync.published.clear()
+
+        engine.notifiesSynchronously = false
+        playback.togglePlayPause()
+        controller.shareLocalPlayback()
+
+        val published = sync.published.single()
+        assertTrue("a pause must not reach the group as a resume", !published.isPlaying)
+    }
+
     /** A phone on its own guide still does not get to move the group. */
     @Test
     fun `a phone outside the shared listen publishes nothing from its transport`() {
