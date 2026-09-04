@@ -278,7 +278,15 @@ private fun NowCard(
                 )
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // The third place this pair does not fit side by side at 360dp with
+        // the system font at 1.5: "Abrir no Maps" came out 77dp wide and 85dp
+        // tall, one word per line, beside a "Ver atração" that kept its line.
+        // Same answer as the critical card and screen 15 — a button keeps its
+        // whole label and takes the next line (D066, D072, D085).
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             now.attractionId?.let { id ->
                 TcOnInkPrimaryButton(onClick = { onOpenAttraction(id) }) { Text("Ver atração") }
             }

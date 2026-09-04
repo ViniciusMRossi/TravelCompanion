@@ -220,7 +220,14 @@ private fun HeroBlock(state: AttractionUiState) {
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(20.dp),
+                    // The top inset is the placeholder caption's band. This
+                    // hero takes its height from its own content above a 200dp
+                    // floor, and at 360dp with the font at 1.5 the city line
+                    // grew to two lines and rose straight into the caption —
+                    // both unreadable. Reserving the band makes the hero grow
+                    // instead of overlapping; it costs nothing once a real
+                    // photograph arrives and the caption goes (D085).
+                    .padding(start = 20.dp, end = 20.dp, bottom = 20.dp, top = 56.dp),
             ) {
                 Text(
                     text = state.cityLine.uppercase(),

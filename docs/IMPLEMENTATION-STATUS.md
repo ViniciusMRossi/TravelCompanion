@@ -1272,6 +1272,127 @@ emulator cannot close.
 - [ ] **No share icon of our own.** The approved sprite has none; `tc-near-me`
       stands in, as the handoff proposes, and the note for design stands.
 
+## The field pass - nineteen screens, end to end (2026-09-04)
+
+The first time the product was walked rather than the code tested. The first
+visual pass covered eight screens; eleven had never been compared with the
+prototype, and the canonical flow had never been walked whole because it had
+never been whole.
+
+**On the Galaxy S24, with Bluetooth headphones**, for what only hardware
+answers. **On both emulators** (360 x 760 dp with the system font at 1.5, and
+480 x 1040 dp) for layout and for colour - see D086 for why colour cannot be
+sampled on the phone.
+
+### Reachability map - what actually opens, with this package
+
+| # | Screen | Reached | How, or what is missing |
+| --- | --- | --- | --- |
+| 01 | Quem é você | yes | 19 -> "Trocar quem é você" |
+| 02 | Hoje | yes | root tab |
+| 03 | Dia completo | yes | "Viagem" tab, and 02 -> "Ver dia completo" |
+| 04 | Cidade | yes | "Explorar" tab |
+| 05 | Atração | yes | 02 -> "Ver atração" |
+| 06 | Iniciar passeio | yes | 05 -> "Iniciar passeio" |
+| 07 | Passeio ativo | yes | 06 -> "Começar passeio" |
+| 08 | Participantes sincronizados | **no** | a three-second transition that only happens when a *shared* listen starts: needs a second phone in the group and a reachable backend. Verified with two devices in Phase 4; not this session |
+| 09 | Ouvir juntos | partly | 07 -> "Ouvir juntos" opens it, and it reads "Esperando o grupo". Sincronizado, âmbar and divergente need a peer |
+| 10 | História por localização | **no**, in the running app | every packaged story declares `autoPlayInWalk` and the walk declares `automaticStoriesDefault`, so a real arrival always plays and the *offered* case never happens. Seen through the debug scaffold, which turns automatic stories off and arrives through the real `onLocation` (D031, D078). **Content:** one story with `trigger.autoPlayInWalk: false`, or `walk.automaticStoriesDefault: false` |
+| 11 | Fim do passeio | yes | 07 -> "Encerrar passeio" |
+| 12 | Gravar memória | yes | 11 -> "Gravar memória", and 02's shortcut |
+| 13 | Carteira | yes | root tab |
+| 14 | Documento, ficha | yes | 13 -> a row |
+| 14 | Documento, **QR** | **no** | the only `generated-from-text` document holds `MOCK-ABC123` in a package marked `isMockContent`, and §18 forbids a placeholder code (D061, D063). **Content:** real ticket data and `contentStatus: production` |
+| 15 | Transporte | yes | 03 -> "Ver transporte", and 02's timeline row |
+| 16 | Hospedagem | yes | 03 -> "Ver hospedagem" |
+| 17 | Emergência | yes | 19 -> "Emergência" |
+| 18 | Plano B | yes | 02's shortcut, 19's list, 15's footer |
+| 19 | Mais | yes | root tab |
+
+**Nothing is unreachable for want of code.** Seventeen of the nineteen open
+in the running app; the two that do not are waiting on content, and one more
+(09's live states) is waiting on a second phone.
+
+Three more states are blocked by content rather than by code:
+
+- **13's "Tudo offline" pill** cannot appear: both documents declare
+  `availableOffline` with no packaged file, which is the D013/D014 warning the
+  validator has printed since Phase 1. **Content:** the two PDFs;
+- **11's "Histórias ouvidas" can only ever read 0 de 2**: one story of the
+  packaged walk has no guide at all and the other's audio file is not in the
+  build. **Content:** `audio.latin-bridge`;
+- **07's location states** other than *active* were not exercised; the phone
+  had the permission and a fix.
+
+### Confirmed by observation - Galaxy S24, with headphones
+
+- **"Fones conectados"** on screen 06 - the first time that check has had real
+  hardware to report on; every previous run said "Nenhum" on an emulator;
+- **the audioguide plays to the Bluetooth headset with the screen off**:
+  `AudioTrack ... state:started`, `usage=USAGE_MEDIA`,
+  `content=CONTENT_TYPE_SPEECH`, `deviceIds:[50285]` - the headset, not the
+  speaker. That is Walk Mode's whole promise, observed;
+- **the compact player survives navigation between root tabs**, and moved from
+  "capítulo 1" to "capítulo 2" by itself while the traveller was on another
+  screen;
+- **Walk Mode's foreground service** runs with `types=0x00000008` (location)
+  and an `ONGOING|NO_CLEAR|SILENT` notification, `category=navigation`;
+- **screen 10 rises over screen 07 dimmed**, with the walk's own progress line
+  above it and the guide still playing underneath;
+- **a whole loop in airplane mode**: the walk finished, a memory was recorded,
+  played back through the headset and deleted, and screen 17 opened the
+  dialer - all with the radios off. §3.3 held: nothing local stopped;
+- **the dialer opened with 112 filled in, in airplane mode, and was left
+  there.** No call was completed, to 112 or to anything else, at any point;
+- **the traveller's own memory was not touched**: only the two recordings made
+  during this pass were deleted, and `files/memories/` still holds theirs.
+
+### Confirmed by observation - emulators
+
+- **screen 19's emergency row measures 68dp**, screen 07's transport measures
+  56 / 76 / 56dp, and screen 12's record button measures 82dp - the numbers
+  the sheets declare, measured rather than eyeballed;
+- **colour is exact on the emulator**: `#7A2E2E` and `#F5F1E8` sample as the
+  tokens themselves;
+- **two layout defects at 360dp with the font at 1.5, both fixed** (D085):
+  screen 02's "Abrir no Maps" squeezed to 77 x 85dp beside a button that kept
+  its line, and screen 05's placeholder caption printed on top of the city
+  line. Both re-checked after the fix;
+- **the release build still carries no scaffold**: `Protótipo` appears twice
+  in the debug DEX and zero times across all four release DEX files - the
+  positive control the D031 check needs, re-run now that the scaffold has a
+  second entry.
+
+### Found by reasoning, not in the field
+
+- **A device screenshot cannot be compared to a hex token on this phone.** The
+  S24 is on Samsung's automatic screen mode, which transforms the frame before
+  `screencap` sees it: the emergency row samples `#713331` there and `#7A2E2E`
+  on the emulator. Nothing is wrong with the app; the method splits (D086).
+
+### Not observed, and not claimed
+
+- **Screens 08 and 09's live states**, for want of a second phone in the group
+  this session. They were verified on two devices in Phase 4 and nothing in
+  this cycle touched synchronization;
+- **screen 17's contrast in strong daylight.** It was seen on the real OLED
+  panel indoors, and it is legible there. Daylight is the question that
+  decides that screen and it is still open;
+- **story triggering from a real GPS fix.** Every arrival came through the
+  debug scaffold feeding the story's own packaged coordinates into the real
+  decision. Standing in Baščaršija is what would prove the rest;
+- **07's Searching and Denied location states**, and **09's amber and
+  diverged notes**;
+- **no chapter was heard on screen 04**, and **no QR was scanned**, for the
+  content reasons in the map above.
+
+### Not implemented, with reasons
+
+- [ ] **The prototype answers nothing new that this pass had to ask.** No item
+      went to the design confirmation stack: both defects had an established
+      remedy in this repository already (D066, D072), and nothing else
+      diverged from a sheet that draws it.
+
 ## Later
 
 - [x] **All nineteen canonical screens exist.**
@@ -1279,7 +1400,12 @@ emulator cannot close.
 - [ ] Notifications
 - [ ] Real Balkans package
 - [ ] Full Trip Validator
-- [ ] Real-device QA
+- [x] **Real-device QA** *(Closed for this build: the nineteen screens were
+      walked on a Galaxy S24 with headphones, including a full loop in
+      airplane mode - see the field pass above. What remains is named there
+      and is not device work: two screens waiting on content, screens 08/09's
+      live states waiting on a second phone, and screen 17's contrast in
+      daylight.)*
 
 ## What runs today
 
