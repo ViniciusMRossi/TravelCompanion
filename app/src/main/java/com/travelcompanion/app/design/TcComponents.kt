@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -466,6 +467,14 @@ fun TcNumberedNotes(
 /* ------------------------------------------------------------------ heroes */
 
 /**
+ * The hero's backdrop layer — the photograph, or the striped placeholder.
+ *
+ * Named so a test can assert the one thing about it that nothing else can see:
+ * that it covers the hero rather than measuring to nothing (D056).
+ */
+const val TcHeroBackdropTag: String = "tc-hero-backdrop"
+
+/**
  * Editorial hero.
  *
  * Renders packaged photography when the binary is present, and otherwise the
@@ -490,15 +499,24 @@ fun TcHero(
         // infinite and `fillMaxSize` quietly resolves to nothing. Screen 05's
         // stripes were therefore never drawn at all: the card's surface showed
         // through and the white title on top of it was invisible (D051).
+        //
+        // Both layers carry [TcHeroBackdropTag] so that invariant is something
+        // a test can ask about, rather than something only a person looking at
+        // the screen can notice (D056).
         if (bitmap != null) {
             Image(
                 bitmap = bitmap,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.matchParentSize(),
+                modifier = Modifier.matchParentSize().testTag(TcHeroBackdropTag),
             )
         } else {
-            Box(modifier = Modifier.matchParentSize().background(stripes(cool)))
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .testTag(TcHeroBackdropTag)
+                    .background(stripes(cool)),
+            )
             if (placeholderCaption != null) {
                 Text(
                     text = placeholderCaption,

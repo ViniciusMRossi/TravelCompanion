@@ -78,6 +78,88 @@ if stale:
         print(f"- {p}")
     raise SystemExit(1)
 
+# A hero's backdrop must cover the hero, not decide how big it is.
+#
+# `fillMaxSize` resolves to zero when the incoming maximum is unbounded, and a
+# hero whose height comes from its own content sits inside a scrolling column,
+# where it is. Screen 05 therefore drew no hero at all for a whole phase: the
+# card's surface showed through and the white title on top of it was invisible.
+# Every unit test passed (D051, D056).
+#
+# `TcHeroGeometryTest` catches this for `TcHero` by measuring it. This catches
+# the class before it is written: the tokens already name `TcCityHero` and
+# `TcAttractionHero` as components still to come, and each will have the same
+# backdrop-under-content shape. Inside any composable whose name ends in
+# "Hero", a layer is sized with `matchParentSize`, never `fillMaxSize`.
+def hero_bodies(text):
+    """Yields (name, body) for every `fun ...Hero(` in a Kotlin source."""
+    marker = "fun "
+    at = 0
+    while True:
+        at = text.find(marker, at)
+        if at < 0:
+            return
+        after = at + len(marker)
+        end_of_name = after
+        while end_of_name < len(text) and (text[end_of_name].isalnum() or text[end_of_name] == "_"):
+            end_of_name += 1
+        name = text[after:end_of_name]
+        at = end_of_name
+        if not name.endswith("Hero"):
+            continue
+        # Past the parameter list first: a default argument is often `= {}`,
+        # and taking the first brace after the name would match that instead of
+        # the body — which is how this check silently passed when it was first
+        # written.
+        paren = text.find("(", end_of_name)
+        if paren < 0:
+            continue
+        depth = 0
+        close = -1
+        for i in range(paren, len(text)):
+            if text[i] == "(":
+                depth += 1
+            elif text[i] == ")":
+                depth -= 1
+                if depth == 0:
+                    close = i
+                    break
+        if close < 0:
+            continue
+        opening = text.find("{", close)
+        if opening < 0:
+            continue
+        depth = 0
+        for i in range(opening, len(text)):
+            if text[i] == "{":
+                depth += 1
+            elif text[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    yield name, text[opening:i]
+                    break
+
+
+offenders = []
+for source in sorted((ROOT / "app/src/main/java").rglob("*.kt")):
+    text = source.read_text(encoding="utf-8")
+    if "Hero" not in text:
+        continue
+    for name, body in hero_bodies(text):
+        # Comments explain the rule; only code breaks it.
+        code = "\n".join(
+            line for line in body.splitlines() if not line.strip().startswith(("//", "*", "/*"))
+        )
+        if "fillMaxSize" in code:
+            offenders.append(f"{source.relative_to(ROOT).as_posix()}: {name}")
+
+if offenders:
+    print("FAIL: a hero sizes a layer with fillMaxSize, which is zero when the")
+    print("      parent is unbounded. Use matchParentSize (D051, D056):")
+    for o in offenders:
+        print(f"- {o}")
+    raise SystemExit(1)
+
 print("PASS: repository skeleton is structurally complete")
 print(f"Schema version: {expected_version}")
 print("Participants:", ", ".join(p.get("name", "?") for p in participants))

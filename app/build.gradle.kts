@@ -35,6 +35,16 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    testOptions {
+        unitTests {
+            // Compose layout assertions need Android resources on the JVM
+            // classpath. This is what lets the one geometry guard run in
+            // `testDebugUnitTest` with everything else, rather than needing a
+            // device (D056).
+            isIncludeAndroidResources = true
+        }
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -82,6 +92,12 @@ dependencies {
     implementation(libs.google.play.services.location)
 
     testImplementation(libs.junit)
+    // One guard, not a UI-test suite: `TcHero`'s backdrop covering the hero is
+    // a layout fact no state assertion can see, and it is the defect this
+    // repository actually shipped (D056).
+    testImplementation(libs.robolectric)
+    testImplementation(composeBom)
+    testImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")

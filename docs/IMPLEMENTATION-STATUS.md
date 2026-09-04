@@ -644,20 +644,35 @@ This is also why D052 pins the system bars to light: with one palette there is
 nothing for a night setting to switch to, and letting it switch the bar icons
 put white on paper.
 
-### No automated net under the way this looks
+### Two guards under the way this looks
 
-The `TcHero` defect above was invisible to every one of the unit tests and
-still is: it was a modifier resolving to zero under an infinite constraint,
-which no state assertion can see. A screenshot or Compose UI test would have
-caught it and is not built — that means an instrumented source set, a device or
-Robolectric in CI, and golden images to maintain, which is the speculative
-framework `CLAUDE.md` says not to build for one screen family a human pass
-caught in an afternoon. The guard is that this pass happens and is written
-down. Two cheaper ones are **proposed and not built** (D056): a unit test over
-`TcHero`'s own geometry, asserting the placeholder is measured to the hero's
-size rather than to zero, which would have caught exactly this; and a lint rule
-or review checklist item for `fillMaxSize` inside a hero, which catches the
-class rather than the case.
+The `TcHero` defect above was invisible to every one of the unit tests: a
+modifier resolving to zero under an infinite constraint, which no state
+assertion can see. Both cheap guards proposed for it are now built (D056), and
+both were proved by reintroducing the defect and watching them fail.
+
+- [x] **`TcHeroGeometryTest`** composes the hero in the shape that broke —
+      content-driven height inside a vertical scroll — and asserts the backdrop
+      covers it. With `fillMaxSize` restored it fails with *"Actual height is
+      0.0.dp, expected at least 200.0.dp"*, while its fixed-height case keeps
+      passing, which is the real signature: screens 01 and 09 were never
+      affected, screen 05 was. Runs on the JVM under Robolectric, inside
+      `testDebugUnitTest` — no device, no extra command.
+- [x] **A source rule in `tools/check_repo.py`** fails the build if any
+      composable whose name ends in "Hero" sizes a layer with `fillMaxSize`.
+      It catches the class before it is written: the token file already names
+      `TcCityHero` and `TcAttractionHero` as components still to come. Its
+      first version passed when it should not have — it matched a default
+      argument's `= {}` instead of the function body — which is why both
+      guards were made to fail before being kept.
+- [ ] **A screenshot suite is still not built**, and remains the right call:
+      golden images to maintain and a rendering backend to produce them, for
+      screens a human pass reads in an afternoon. The visual pass is the net
+      for everything these two do not cover.
+
+The cost of the two is one unit-test dependency (Robolectric) and
+`unitTests.isIncludeAndroidResources`. No new module, no instrumented source
+set, no second command.
 
 **Not observed, and would want a real device:** anything about the *display*
 rather than the layout — colour rendering on OLED, the actual legibility of
@@ -746,7 +761,7 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 164 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 166 passing. Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is
