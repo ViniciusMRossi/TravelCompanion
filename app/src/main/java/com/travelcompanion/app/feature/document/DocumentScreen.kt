@@ -41,6 +41,7 @@ import com.travelcompanion.app.design.TcHeroShape
 import com.travelcompanion.app.design.TcIcons
 import com.travelcompanion.app.design.TcPillShape
 import com.travelcompanion.app.design.TcPrimaryButton
+import com.travelcompanion.app.design.TcSecondaryButton
 import com.travelcompanion.app.design.TcType
 import com.travelcompanion.app.design.rememberPackagedImage
 import com.travelcompanion.app.service.documents.QrMatrix
@@ -58,6 +59,12 @@ fun DocumentScreen(
     state: DocumentUiState,
     onBack: () -> Unit,
     onOpenQr: (() -> Unit)?,
+    /**
+     * Hands the packaged file to a viewer on the phone. Null when there is no
+     * file in this build, which is the only reason the control is ever absent
+     * (D091).
+     */
+    onOpenFile: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -167,6 +174,14 @@ fun DocumentScreen(
                     if (onOpenQr != null) {
                         TcPrimaryButton(onClick = onOpenQr, modifier = Modifier.fillMaxWidth()) {
                             Text("Abrir código")
+                        }
+                    }
+                    // Secondary to the code: at a counter the code is what is
+                    // scanned, and the file is what is asked for when it is
+                    // not. Both, or whichever of the two this document has.
+                    if (onOpenFile != null) {
+                        TcSecondaryButton(onClick = onOpenFile, modifier = Modifier.fillMaxWidth()) {
+                            Text("Abrir arquivo")
                         }
                     }
                     state.locatorNote?.let {

@@ -61,6 +61,21 @@ data class DocumentUiState(
     val locatorNote: String?,
     val isPackaged: Boolean,
     val notPackagedNote: String?,
+    /**
+     * The packaged file, when there is one: where it sits in the assets, what
+     * it is, and what a viewer should call it. Null is the whole of
+     * `NotPackaged` — a control that opens nothing is worse than no control
+     * (D091).
+     */
+    val file: PackagedFileUi?,
+)
+
+/** A document's own file, ready to be handed to whatever app reads it. */
+data class PackagedFileUi(
+    val assetPath: String,
+    val mimeType: String?,
+    /** What the viewer's title bar reads. Never the asset's build path. */
+    val displayName: String,
 )
 
 /** The two ends of a leg, drawn as a ticket draws them. */
@@ -123,6 +138,13 @@ fun buildDocumentState(
             "O arquivo deste documento não está neste aparelho. " +
                 "Os dados abaixo estão salvos e funcionam offline."
         },
+        file = (access as? DocumentAccess.Packaged)?.let {
+            PackagedFileUi(
+                assetPath = it.assetPath,
+                mimeType = it.mimeType,
+                displayName = fileNameOf(document.title, it.assetPath),
+            )
+        },
     )
 }
 
@@ -172,3 +194,19 @@ private fun clock(dateTime: String): String =
     runCatching { LocalDateTime.parse(dateTime).format(CLOCK) }.getOrDefault(dateTime)
 
 private val CLOCK: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+
+/**
+ * The document's own title as a file name, keeping the packaged extension.
+ *
+ * The same substitution `MemoryFileProvider` makes for a memory, and for the
+ * same reason: what the traveller sees named should be the thing they asked
+ * for, not the build's path for it (D082).
+ */
+private fun fileNameOf(title: String, assetPath: String): String {
+    val extension = assetPath.substringAfterLast('.', "").takeIf { it.isNotBlank() }
+    val stem = title.map { if (it.isLetterOrDigit() || it in " -_") it else ' ' }
+        .joinToString("")
+        .trim()
+        .ifBlank { "documento" }
+    return if (extension == null) stem else "$stem.$extension"
+}

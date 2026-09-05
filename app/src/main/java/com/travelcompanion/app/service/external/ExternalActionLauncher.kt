@@ -93,6 +93,33 @@ class ExternalActionLauncher(private val context: Context) {
     }
 
     /**
+     * Hands a packaged document to whatever app on the phone reads it.
+     *
+     * `ACTION_VIEW` with a read grant that expires with the Intent, the same
+     * narrow door `shareAudio` opens in the other direction (D082). This app
+     * renders no PDF: a viewer is a specialist app and stays external, like
+     * the maps and the dialer above.
+     *
+     * False when the file is not in this build or the phone has nothing that
+     * opens it — a caller can then say so instead of a dead end at a counter.
+     */
+    fun openDocument(file: File, mimeType: String?): Boolean = try {
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.memories", file)
+        val view = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, mimeType ?: DOCUMENT_MIME)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(view)
+        true
+    } catch (_: ActivityNotFoundException) {
+        false
+    } catch (_: IllegalArgumentException) {
+        // Outside the paths the provider exposes: the provider doing its job.
+        false
+    }
+
+    /**
      * Listens once for which destination the chooser handed the file to.
      *
      * One receiver at a time: a chooser the traveller backs out of never
@@ -165,3 +192,6 @@ class ExternalActionLauncher(private val context: Context) {
 
 /** m4a, which is what `MediaAudioRecorder` writes (brief §22). */
 private const val AUDIO_MIME = "audio/mp4"
+
+/** What a packaged document is, when the manifest does not say. */
+private const val DOCUMENT_MIME = "application/pdf"

@@ -52,6 +52,32 @@ class DocumentStateTest {
         assertNull(state.notPackagedNote)
     }
 
+    /**
+     * The file the "Abrir arquivo" control hands to a viewer (D091).
+     *
+     * The control exists only when the file does, which is the same rule the
+     * QR control follows: one that opens nothing is worse than none. The name
+     * is the document's own, because that is what the viewer's title bar reads
+     * — never the asset's build path.
+     */
+    @Test
+    fun `a packaged document offers its file, named as the document is`() {
+        val state = buildDocumentState(whole, "ticket.sarajevo-mostar")!!
+
+        val file = state.file
+        assertNotNull(file)
+        assertEquals("trip/documents/tickets/sarajevo-mostar.pdf", file!!.assetPath)
+        assertTrue(
+            "the viewer must not be handed a build path as a title",
+            file.displayName.endsWith(".pdf") && !file.displayName.contains('/'),
+        )
+    }
+
+    @Test
+    fun `a document with no file in this build offers none`() {
+        assertNull(buildDocumentState(asShipped, "ticket.sarajevo-mostar")!!.file)
+    }
+
     // -- the QR gate ------------------------------------------------------
 
     /**

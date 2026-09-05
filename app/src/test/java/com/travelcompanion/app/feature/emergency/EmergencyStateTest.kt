@@ -99,6 +99,50 @@ class EmergencyStateTest {
      * first one — better than a screen with no emergency number at all — and
      * the location line still says where the traveller actually is (D070).
      */
+    /**
+     * Found by opening screen 17 on day 3 of the real package (D090).
+     *
+     * A day that crosses a border lists every city it touches, and this screen
+     * took the first — the one left that morning. On 15 September that is
+     * Amsterdam: the screen said "Amsterdã · Países Baixos" and offered the
+     * Dutch consulate to a traveller sleeping in Ksamil, directly above a row
+     * reading "Guesthouse em Ksamil · Onde estão as malas". Albania's own
+     * ambulance and the Tirana duty phone were not on the screen at all.
+     *
+     * Where the traveller is, is where the day says they sleep, which is what
+     * screens 02 and 03 already read. Unreachable with a package whose days
+     * touch one city each.
+     */
+    @Test
+    fun `on a day that crosses a border the country is where the night is spent`() {
+        val crossing = crossingTheBorder("BA").let { base ->
+            val day = base.trip.days.first()
+            TripContent(
+                base.trip.copy(
+                    days = listOf(
+                        day.copy(
+                            // left Croatia in the morning, sleeps in Bosnia
+                            cityIds = listOf("zagreb-fixture") + day.cityIds,
+                            baseCityId = "sarajevo",
+                        ),
+                    ),
+                    cities = base.trip.cities + base.trip.cities.first().copy(
+                        id = "zagreb-fixture",
+                        name = "Zagreb",
+                        countryCode = "HR",
+                        countryName = "Croácia",
+                    ),
+                ),
+                base.assets,
+            )
+        }
+
+        val state = buildEmergencyState(crossing, date)!!
+
+        assertEquals("Sarajevo · Bósnia e Herzegovina", state.location)
+        assertEquals("122", state.police!!.number)
+    }
+
     @Test
     fun `with no profile for this country the first one is the fallback`() {
         val state = buildEmergencyState(

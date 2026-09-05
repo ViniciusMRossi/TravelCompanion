@@ -66,9 +66,19 @@ class FullDayUseCase(private val content: TripContent) {
     private val today = TodayUseCase(content)
     private val days: List<TripDay> = content.days.sortedBy { it.date }
 
-    operator fun invoke(date: LocalDate, time: LocalTime): FullDayUiState? {
+    operator fun invoke(
+        date: LocalDate,
+        time: LocalTime,
+        /** The date the traveller is living, which [date] usually is not. */
+        currentDate: LocalDate = date,
+    ): FullDayUiState? {
         val day = content.dayFor(date) ?: return null
-        val state = today(participantId = null, date = date, time = time) ?: return null
+        val state = today(
+            participantId = null,
+            date = date,
+            time = time,
+            today = currentDate,
+        ) ?: return null
         val index = days.indexOfFirst { it.id == day.id }
 
         return FullDayUiState(

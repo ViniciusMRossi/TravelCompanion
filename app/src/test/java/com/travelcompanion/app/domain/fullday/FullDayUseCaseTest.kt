@@ -45,6 +45,42 @@ class FullDayUseCaseTest {
      * There is no day 8 to step back to and no day 10 to step forward to, so
      * both arrows are dead ends rather than clamping onto the same day again.
      */
+    /**
+     * Found by browsing the real package on a device (D089).
+     *
+     * Screen 03 reads a *browsed* day, and it asked [TodayUseCase] for it with
+     * the browsed date in the argument the "now" guard compares against — so
+     * the guard compared the day to itself, always agreed, and marked whatever
+     * item the wall clock happened to fall on. Standing on 5 September and
+     * paging to the 15th said the 07:15 flight to Corfu was happening.
+     *
+     * Unreachable with the one-day sample package, where both arrows are null
+     * and there is nowhere to browse to. Twenty days is what exposed it.
+     */
+    @Test
+    fun `a browsed day never claims something is happening on it`() {
+        val browsed = useCase(date, LocalTime.parse("10:00"), currentDate = LocalDate.parse("2026-09-05"))!!
+
+        val rows = browsed.sections.flatMap { it.rows }
+        assertTrue("the package day must have rows to get this wrong with", rows.isNotEmpty())
+        assertTrue(
+            "no row on a day that is not today may wear the Agora pill",
+            rows.none { it.showsNowPill },
+        )
+    }
+
+    /** The same day, lived rather than browsed, still marks what is under way. */
+    @Test
+    fun `the day being lived still marks what is under way`() {
+        val lived = useCase(date, LocalTime.parse("10:00"), currentDate = date)!!
+
+        val rows = lived.sections.flatMap { it.rows }
+        assertTrue(
+            "on the real current date the pill is the whole point",
+            rows.any { it.showsNowPill },
+        )
+    }
+
     @Test
     fun `a single packaged day has nowhere to step to`() {
         val state = useCase(date, noon)!!

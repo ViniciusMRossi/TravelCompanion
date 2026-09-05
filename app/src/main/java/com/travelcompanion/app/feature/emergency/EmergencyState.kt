@@ -47,14 +47,26 @@ private const val EUROPEAN_EMERGENCY_NUMBER = "112"
  * worse than a row that says the number is still coming (D064).
  *
  * Which country's services those are is decided by where the traveller is, not
- * by the order the profiles happen to sit in the package (D070).
+ * by the order the profiles happen to sit in the package (D070), and *where
+ * the traveller is* on a day that crosses a border is the city the day
+ * declares as its base — not the first one in its list, which is the city
+ * they left that morning (D090).
  */
 fun buildEmergencyState(content: TripContent, date: LocalDate): EmergencyUiState? {
     val mock = content.trip.metadata.isMockContent
-    // Where the traveller is, from the day the current-day logic resolves —
-    // the same one screens 02 and 13 use, not a second rule.
+    // Where the traveller is, resolved exactly as screens 02 and 03 resolve
+    // it: the day's declared base, and only then the first city it lists.
+    // Anything else lets this screen and the timeline name different places
+    // on the same day (D090).
     val city = content.dayFor(date)
-        ?.let { day -> content.city(day.cityIds.firstOrNull()) }
+        ?.let { day ->
+            content.city(
+                day.baseCityId
+                    // fallback: a day that declares no base still has to name
+                    // somewhere, and its first city is where it begins.
+                    ?: day.cityIds.firstOrNull(),
+            )
+        }
         // fallback: a package with no days at all still has to name a country
         // for the emergency numbers below.
         ?: content.trip.cities.firstOrNull()

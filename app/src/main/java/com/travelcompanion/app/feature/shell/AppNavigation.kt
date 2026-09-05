@@ -213,6 +213,7 @@ fun AppNavigation(
                     DocumentRoute(
                         content = content,
                         documentId = entry.arguments?.getString("documentId"),
+                        launcher = launcher,
                         onBack = navController::popBackStack,
                     )
                 }
@@ -489,7 +490,7 @@ private fun FullDayRoute(
 ) {
     val useCase = remember(content) { FullDayUseCase(content) }
     var selected by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
-    val state = useCase(LocalDate.parse(selected), LocalTime.now())
+    val state = useCase(LocalDate.parse(selected), LocalTime.now(), currentDate = LocalDate.now())
 
     if (state == null) {
         PlaceholderScreen(

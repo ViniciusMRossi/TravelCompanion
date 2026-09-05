@@ -5,7 +5,12 @@
     Only `files/memories/`, never `filesDir` itself: sharing is the first thing
     in this app that leaves the phone, and the door it opens should be exactly
     the width of the one file the traveller chose to send (D082).
+
+    `cache/documents/` is the same door at the same width, for the other
+    direction: a packaged document copied out of the APK so a viewer can open
+    it, one file at a time and never the cache itself (D091).
 -->
 <paths>
     <files-path name="memories" path="memories/" />
+    <cache-path name="documents" path="documents/" />
 </paths>

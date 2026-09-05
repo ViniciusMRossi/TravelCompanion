@@ -15,6 +15,8 @@ import androidx.compose.ui.platform.LocalContext
 import com.travelcompanion.app.data.trip.TripContent
 import com.travelcompanion.app.feature.placeholder.PlaceholderScreen
 import com.travelcompanion.app.service.documents.encodeQr
+import com.travelcompanion.app.service.external.ExternalActionLauncher
+import com.travelcompanion.app.service.external.PackagedDocumentFile
 
 /**
  * Screen 14 as a route: the ficha, and the code held up over it.
@@ -28,6 +30,7 @@ import com.travelcompanion.app.service.documents.encodeQr
 fun DocumentRoute(
     content: TripContent,
     documentId: String?,
+    launcher: ExternalActionLauncher,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -67,12 +70,25 @@ fun DocumentRoute(
         return
     }
 
+    val context = LocalContext.current
+    val documents = remember(context) { PackagedDocumentFile(context) }
+
     DocumentScreen(
         state = state,
         onBack = onBack,
         // Offered only when there is a code to show. A control that opens an
         // empty white screen is worse than no control.
         onOpenQr = if (ready != null) ({ showingQr = true }) else null,
+        // Same rule for the file: offered only when the file is in this build.
+        // The copy out of the APK happens on the press rather than on the way
+        // in, so opening a ficha costs nothing (D091).
+        onOpenFile = state.file?.let { file ->
+            {
+                documents.materialise(file.assetPath, file.displayName)
+                    ?.let { launcher.openDocument(it, file.mimeType) }
+                Unit
+            }
+        },
         modifier = modifier,
     )
 }

@@ -26,10 +26,16 @@ class TodayUseCase(
         participantId: String?,
         date: LocalDate,
         time: LocalTime,
+        /**
+         * The date the traveller is actually living, which is only the same as
+         * [date] on screen 02. Screen 03 renders a browsed day and must not
+         * claim anything on it is under way (D089).
+         */
+        today: LocalDate = date,
     ): TodayUiState? {
         val day = content.dayFor(date) ?: return null
         val timeline = day.timeline.sortedBy { it.startTime }
-        val activeIndex = activeIndexOf(timeline, date, day, time)
+        val activeIndex = activeIndexOf(timeline, today, day, time)
         val city = content.city(day.baseCityId ?: day.cityIds.firstOrNull())
 
         return TodayUiState(
@@ -39,7 +45,7 @@ class TodayUseCase(
             dayLabel = "Dia ${day.dayNumber} de ${content.totalDays}",
             dateLabel = formatDate(day.date),
             title = day.title ?: city?.name ?: content.info.title,
-            now = nowBlock(day, timeline, activeIndex, focusIndexOf(timeline, date, day, time, activeIndex)),
+            now = nowBlock(day, timeline, activeIndex, focusIndexOf(timeline, today, day, time, activeIndex)),
             criticalItems = criticalItems(day),
             weather = weather(day.weatherFallback),
             outfit = day.outfit,
@@ -53,15 +59,19 @@ class TodayUseCase(
      * Index of the item currently under way: the last one that has started.
      *
      * Days other than the real current date have no "now" — reading tomorrow
-     * must not claim something is happening.
+     * must not claim something is happening. The comparison is against the
+     * date the traveller is living, never against the date being rendered:
+     * those are the same thing on screen 02 and are not on screen 03, where
+     * comparing a browsed day to itself always agrees and the guard would
+     * stop guarding (D089).
      */
     private fun activeIndexOf(
         timeline: List<TimelineItem>,
-        date: LocalDate,
+        today: LocalDate,
         day: TripDay,
         time: LocalTime,
     ): Int? {
-        if (day.date != date.toString()) return null
+        if (day.date != today.toString()) return null
         val index = timeline.indexOfLast { parseTime(it.startTime)?.let { start -> !start.isAfter(time) } == true }
         if (index < 0) return null
         val item = timeline[index]
@@ -80,14 +90,14 @@ class TodayUseCase(
      */
     private fun focusIndexOf(
         timeline: List<TimelineItem>,
-        date: LocalDate,
+        today: LocalDate,
         day: TripDay,
         time: LocalTime,
         activeIndex: Int?,
     ): Int? {
         if (activeIndex != null) return activeIndex
         if (timeline.isEmpty()) return null
-        if (day.date != date.toString()) return 0
+        if (day.date != today.toString()) return 0
         val upcoming = timeline.indexOfFirst {
             parseTime(it.startTime)?.isAfter(time) == true
         }

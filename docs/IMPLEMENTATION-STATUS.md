@@ -1313,14 +1313,18 @@ sampled on the phone.
 in the running app; the two that do not are waiting on content, and one more
 (09's live states) is waiting on a second phone.
 
-Two more states are blocked by content rather than by code:
+One more state is blocked by content rather than by code:
 
-- **13's "Tudo offline" pill** cannot appear: both documents declare
-  `availableOffline` with no packaged file, which is the D013/D014 warning the
-  validator has printed since Phase 1. **Content:** the two PDFs;
 - **11's "Histórias ouvidas" can only ever read 0 de 2**: one story of the
   packaged walk has no guide at all and the other's audio file is not in the
   build. **Content:** `audio.latin-bridge`.
+
+**13's "Tudo offline" pill is no longer blocked.** It was, for as long as the
+app read only the sample package, whose two documents declare `availableOffline`
+over files that are not in the build. With the real package installed the
+Wallet header reads **"27 documentos"** and the pill appears — observed on the
+S24 this session. The sample package still cannot show it, and still should
+not: D013 is the reason it does not.
 
 **Correction — 07's location states were in that list and do not belong there.**
 `Denied` is not blocked by content and never was: it is reached by refusing the
@@ -1400,6 +1404,92 @@ arriving — and it is short by design rather than blocked by anything.
       went to the design confirmation stack: both defects had an established
       remedy in this repository already (D066, D072), and nothing else
       diverged from a sheet that draws it.
+
+## Phase 7 — The real trip inside the app
+
+**Verified on hardware, 2026-09-05.** Samsung SM-S921B (Galaxy S24, Android 16)
+with the real package installed, plus a Pixel emulator for the days the phone's
+clock cannot reach. Eight days before departure.
+
+### What was installed
+
+`trip-package/generated/` → `trip-package/production/` →
+`app/src/main/assets/trip-production/`: **`trip.json` and the 27 documents it
+declares, and nothing else.** The authoring reports, the asset manifest and
+`research/SOURCES.md` stayed out of the APK — the runtime resolves 27 asset
+paths and every one of them is a document. Both destinations are ignored by
+Git, confirmed with `git check-ignore` and with `git status --short` showing no
+new file. `contentStatus` stays `draft`, which nothing in the app reads.
+
+The debug APK is 32.6 MB and the release 27.4 MB, each carrying 28 files under
+`assets/trip-production/` and the sample's 3 under `assets/trip/`.
+
+### Found by running it with real content
+
+**Three defects, all fixed in this commit, none of them reachable with the
+sample package.** That is the point worth keeping: each needed a *shape* the
+one-day, one-city, no-files sample does not have.
+
+- **Screen 03 marked a browsed day "Agora".** Paging to 15 September on
+  5 September said the 07:15 flight to Corfu was under way. The guard existed
+  and compared a browsed day against itself (D089). Needed a second day to
+  browse to;
+- **screen 17 named the wrong country on a day that crosses a border.** Day 3
+  read "Amsterdã · Países Baixos" and offered the Dutch consulate to someone
+  sleeping in Ksamil, above a row saying "Guesthouse em Ksamil" (D090). Needed
+  a day that touches more than one city;
+- **no packaged document could be opened.** `isPackaged` was computed and no
+  screen read it; the Wallet said "Tudo offline" over files with nowhere to go.
+  Asked, and built on the answer: "Abrir arquivo" hands the file to a viewer
+  through the provider (D091). Needed the files to exist.
+
+### Confirmed by observation — Galaxy S24 unless noted
+
+- **the six time zones read at their own clock.** Day 3: 04:30 and 07:15
+  Amsterdam, 11:40 and 14:00 Athens, 16:00 Tirane. Nothing converted;
+- **the seven emergency profiles switch by country**, checked on five days in
+  five countries — Brazil on day 1 (S24), then Albania, Montenegro, Bosnia and
+  Croatia on the emulator, whose clock can be moved and the phone's cannot:
+  190/SAMU with **no 112 note**, then 112 + 127, 112 + 122/124, 112 + 122/124,
+  112 + 192/194, each with its own consulate. Belgrade answers for Montenegro,
+  which is what the Itamaraty page says;
+- **the Wallet holds 27 documents and the "Tudo offline" pill appears**,
+  grouped by urgency with the LATAM ticket and the parking under HOJE;
+- **a real PDF opened**: "Abrir arquivo" on the LATAM ticket materialised
+  62 694 bytes into `cache/documents/` and Samsung's reader rendered it at six
+  pages. First time in this project;
+- **the stay is the day's**: day 17 shows "Estúdio em Čilipi · Check-in a
+  partir de 15:00", the value read from that Airbnb voucher;
+- **the two stays with no voucher declare themselves**: screen 16 for the
+  Bastasi camp draws `00:00` in both cards *and* the host-instructions block
+  saying "00:00 é um marcador, não um horário";
+- **a whole loop in airplane mode** with both radios down
+  (`mVoiceRegState=POWER_OFF`, Wi-Fi disabled): screens 02, 13, 14 and 17, and
+  the dialer opened on 190. No crash anywhere in the session's logcat.
+
+### Not observed, and not claimed
+
+- **screens 08 and 09's live states**, for want of a second phone;
+- **screen 07's location states**. Untouched this session;
+- **the other fifteen days of screen 17**, and the Greek profile: the S24 will
+  not let `adb` move its clock (`Operation not permitted`) and the emulator
+  images are production builds with no root, so each day cost a pass through
+  the Settings date picker. Five countries were sampled rather than all seven;
+  **the Netherlands and Greece were not opened on a screen**;
+- **the QR mode**, still unreachable and still by decision: all 27 documents
+  declare `qr: {mode: none}` because the codes live as images inside the PDFs.
+  The files now open, so the printed code is reachable through the reader;
+- **colour**, deliberately. D086's split: the S24's screen mode transforms the
+  frame before `screencap` sees it.
+
+### Went to the design confirmation stack
+
+- **What screen 17 says about a contact that has no number.** With the sample
+  package "O número chega com os dados reais da viagem." was true. With the
+  real one it is false: the data arrived and three Airbnb hosts simply publish
+  no telephone, so the sentence appears under Sarajevo, Dubrovnik and Čilipi
+  promising something that is not coming. Distinguishing "mock package" from
+  "real content, no number" is new copy, and the prototype draws neither.
 
 ## Later
 
