@@ -8,16 +8,18 @@ promising offline access actually has its file packaged, that a day numbered
 tz database has heard of. Those are exactly the mistakes that only show up on
 the road, so they are checked here.
 
-An unknown time zone always fails, no matter how finished the package is.
-Every other finding is a warning while `metadata.contentStatus` is
-prototype/draft, and an error once the package claims to be production
-content.
+An unknown time zone always fails, no matter how finished the package is, and
+so does a declared audio duration that the packaged file contradicts. Every
+other finding is a warning while `metadata.contentStatus` is prototype/draft,
+and an error once the package claims to be production content.
 """
 from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
 import sys
+import struct
+import wave
 from datetime import date
 from zoneinfo import available_timezones
 
@@ -108,6 +110,220 @@ def timezone_problems(trip: dict, timezones: set[str]) -> list[str]:
             tz(item.get("timeZone"), f"{where} timeline '{item['id']}'")
 
     return problems
+
+
+# How far a declared `durationSeconds` may sit from the file it describes.
+#
+# Two seconds, and the two are not the same second. One is rounding: the
+# declared number is whole seconds and the file's is not, so a 719.6s recording
+# is honestly written as either 719 or 720. The other is the encoder: AAC codes
+# in 1024-sample frames and pads the last one, so a re-encode of the same
+# narration moves the end by a fraction of a second, and an `edts` this parser
+# does not read can move it again.
+#
+# Nothing real lives above that. The defect this check exists for is a number
+# typed from the wrong take, measured before the last edit, or carried over from
+# another guide, and those are wrong by tens of seconds or by minutes. A
+# tolerance loose enough to swallow a thirty-second error would swallow the only
+# error there is.
+AUDIO_DURATION_TOLERANCE_SECONDS = 2.0
+
+# `mvhd` marks an unknown duration with an all-ones field. Fragmented MP4 does
+# that and keeps the real length in the fragments, which this parser does not
+# walk - an unknown duration is no duration, not a duration of 2^32 timescale
+# units.
+_MVHD_UNKNOWN = {0: 0xFFFFFFFF, 1: 0xFFFFFFFFFFFFFFFF}
+
+
+def _mp4_atoms(handle, start: int, end: int):
+    """Yield `(fourcc, payload_start, atom_end)` for the atoms spanning start..end.
+
+    MP4 is a tree of length-prefixed boxes, so walking it needs no library:
+    four bytes of size, four of name, then either the payload or more boxes.
+    A size of 1 means the real 64-bit size follows the name; a size of 0 means
+    the box runs to the end of its parent.
+    """
+    offset = start
+    while offset + 8 <= end:
+        handle.seek(offset)
+        header = handle.read(8)
+        if len(header) < 8:
+            return
+        size = struct.unpack(">I", header[:4])[0]
+        name = header[4:8]
+        payload = offset + 8
+        if size == 1:
+            extended = handle.read(8)
+            if len(extended) < 8:
+                return
+            size = struct.unpack(">Q", extended)[0]
+            payload = offset + 16
+        elif size == 0:
+            size = end - offset
+        # A size that does not cover its own header, or that runs past the
+        # parent, means this is not the file it claims to be. Stop rather than
+        # seek somewhere arbitrary.
+        if size < payload - offset or offset + size > end:
+            return
+        yield name, payload, offset + size
+        offset += size
+
+
+def _mp4_duration_seconds(path: Path) -> float | None:
+    """Seconds from the `mvhd` atom of an MP4/m4a file, or None if unreadable.
+
+    This is the format the real audio guides will be in - `targetAudioPath` ends
+    in `.m4a` - and the movie header carries the length as a timescale and a
+    duration in those units. Pure stdlib on purpose: a validator that needs
+    ffmpeg installed is a validator that stops being run.
+    """
+    try:
+        size = path.stat().st_size
+        with path.open("rb") as handle:
+            for name, start, end in _mp4_atoms(handle, 0, size):
+                if name != b"moov":
+                    continue
+                for child, child_start, child_end in _mp4_atoms(handle, start, end):
+                    if child != b"mvhd":
+                        continue
+                    handle.seek(child_start)
+                    body = handle.read(child_end - child_start)
+                    if not body:
+                        return None
+                    version = body[0]
+                    if version == 0 and len(body) >= 20:
+                        timescale, duration = struct.unpack(">II", body[12:20])
+                    elif version == 1 and len(body) >= 32:
+                        timescale, duration = struct.unpack(">IQ", body[20:32])
+                    else:
+                        return None
+                    if timescale <= 0 or duration in (0, _MVHD_UNKNOWN.get(version)):
+                        return None
+                    return duration / timescale
+    except OSError:
+        return None
+    return None
+
+
+def _wav_duration_seconds(path: Path) -> float | None:
+    """Seconds from a RIFF/WAVE header, or None if `wave` cannot read it."""
+    try:
+        with wave.open(str(path), "rb") as handle:
+            rate = handle.getframerate()
+            frames = handle.getnframes()
+    except (wave.Error, OSError, EOFError):
+        return None
+    if rate <= 0 or frames <= 0:
+        return None
+    return frames / rate
+
+
+# Extensions this script can time. Anything else - `.mp3` above all, which needs
+# its frames counted - is reported as a check that did not happen.
+AUDIO_DURATION_READERS = {
+    ".wav": _wav_duration_seconds,
+    ".m4a": _mp4_duration_seconds,
+    ".m4b": _mp4_duration_seconds,
+    ".mp4": _mp4_duration_seconds,
+}
+
+
+def audio_duration_seconds(path: Path) -> float | None:
+    """The file's real length in seconds, or None if it cannot be read here."""
+    reader = AUDIO_DURATION_READERS.get(path.suffix.lower())
+    return reader(path) if reader else None
+
+
+def audio_duration_problems(trip: dict, assets_root: Path):
+    """Declared audio lengths and chapter marks against the packaged files.
+
+    `durationSeconds` - not the file - drives the progress bar and the duration
+    label on screen, so a number that disagrees with the recording produces a
+    bar that fills early and then sits at the end while the narration continues,
+    or one that never arrives. Nothing else in the pipeline compares the two.
+
+    Always an error, prototype/draft included, on the same reasoning as the time
+    zone check and not the offline-document one: those findings are about
+    content that is *not there yet* and will be, while this one fires only when
+    both facts are already present and contradict each other. A progress bar
+    that lies is a defect at every stage, and no later step resolves it.
+
+    Returns `(problems, checked, skipped)`, where `skipped` names each guide
+    whose file could not be timed and why. A format this script cannot read is
+    an absent check, never a failure - it must say so rather than reject a file
+    for being an `.mp3`.
+    """
+    assets = {a["id"]: a for a in trip.get("assets", [])}
+    problems: list[str] = []
+    checked: list[str] = []
+    skipped: list[tuple[str, str]] = []
+
+    for guide in trip.get("audioGuides", []):
+        where = f"audioGuide '{guide['id']}'"
+        declared = guide.get("durationSeconds")
+        chapters = guide.get("chapters") or []
+
+        # Ordering needs no file: a chapter list that goes backwards is a
+        # contradiction inside the JSON, and the sheet is drawn in list order.
+        previous = None
+        for index, chapter in enumerate(chapters, start=1):
+            start = chapter.get("startSeconds")
+            if start is None:
+                continue
+            if previous is not None and start <= previous:
+                problems.append(
+                    f"{where}: chapter {index} starts at {start}s, at or before the "
+                    f"chapter before it at {previous}s"
+                )
+            previous = start
+
+        asset = assets.get(guide.get("audioAssetId"))
+        actual = None
+        if asset is None:
+            # The unresolved reference is already reported by content_checks.
+            skipped.append((guide["id"], "no audio asset to measure"))
+        else:
+            path = assets_root / asset["path"]
+            if not path.is_file():
+                skipped.append((guide["id"], f"file not packaged: {asset['path']}"))
+            elif path.suffix.lower() not in AUDIO_DURATION_READERS:
+                skipped.append(
+                    (guide["id"], f"no duration reader for '{path.suffix}': {asset['path']}")
+                )
+            else:
+                actual = audio_duration_seconds(path)
+                if actual is None:
+                    skipped.append(
+                        (guide["id"], f"could not read a duration from {asset['path']}")
+                    )
+                else:
+                    checked.append(guide["id"])
+                    if (
+                        declared is not None
+                        and abs(declared - actual) > AUDIO_DURATION_TOLERANCE_SECONDS
+                    ):
+                        problems.append(
+                            f"{where}: declares durationSeconds {declared} but "
+                            f"{asset['path']} is {actual:.1f}s (off by "
+                            f"{abs(declared - actual):.1f}s, tolerance "
+                            f"{AUDIO_DURATION_TOLERANCE_SECONDS:g}s)"
+                        )
+
+        # A chapter at or past the end is a button that leads nowhere. Measured
+        # against the file when it can be read and against the declared length
+        # otherwise, so the mark is still checked before the audio is produced.
+        end = actual if actual is not None else declared
+        source = "the file" if actual is not None else "the declared duration"
+        if end is not None:
+            for index, chapter in enumerate(chapters, start=1):
+                start = chapter.get("startSeconds")
+                if start is not None and start >= end:
+                    problems.append(
+                        f"{where}: chapter {index} starts at {start}s, at or past the "
+                        f"end of {source} ({end:.1f}s)"
+                    )
+
+    return problems, checked, skipped
 
 
 def schema_errors(trip: dict, schema: dict) -> list[str]:
@@ -270,6 +486,15 @@ def main() -> int:
         return 1
 
     assets_root = Path(args.assets_root) if args.assets_root else trip_path.parent
+
+    # Always an error, for the reason written on `audio_duration_problems`.
+    audio_problems, audio_checked, audio_skipped = audio_duration_problems(trip, assets_root)
+    if audio_problems:
+        print(f"FAIL: {len(audio_problems)} audio duration/chapter error(s) in {args.trip}")
+        for problem in audio_problems:
+            print(f"- {problem}")
+        return 1
+
     problems = content_checks(trip, assets_root)
 
     # Production content must be complete; prototype/draft content is still
@@ -283,6 +508,13 @@ def main() -> int:
         return 1
 
     print(f"PASS: {args.trip} validates against {args.schema}")
+    if audio_checked or audio_skipped:
+        print(
+            f"Audio: {len(audio_checked)} guide(s) timed against a packaged file, "
+            f"{len(audio_skipped)} not timed"
+        )
+        for guide_id, why in audio_skipped:
+            print(f"- no duration check for '{guide_id}': {why}")
     if problems:
         print(f"WARNING: {len(problems)} content issue(s) (contentStatus is not 'production')")
         for problem in problems:

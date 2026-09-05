@@ -125,6 +125,32 @@ internal object Routes {
     fun walk(id: String) = "walk/$id"
 }
 
+/**
+ * Where a timeline row leads, or null when the row is not a door.
+ *
+ * D065 made a row tappable only when it points at a screen, and that rule was
+ * written in two places: a set of openable kinds beside screen 02's row, and a
+ * `when` over the same kinds in each route that answers the tap. Both lists
+ * said transport and accommodation, and `walk` was in neither — so the packaged
+ * 11:00 line on day 9 read as ordinary text, and the only way into screen 06
+ * was Explorar -> Cidade -> card, which is not where anyone stands at eleven in
+ * the morning. One function is the whole rule now: the affordance and the
+ * destination are the same answer, and a kind added to one cannot go missing
+ * from the other (D065, D092, D096).
+ *
+ * `attraction` stays out on purpose. Screen 05 is reached from Today's "now"
+ * block, which carries "Ver atracao" for the attraction actually under way, so
+ * that row is not the dead line the walk was; giving it a second door is a
+ * design change and is not one this asked for.
+ */
+internal fun timelineDestination(kind: String, refId: String?): String? = when {
+    refId == null -> null
+    kind == "transport" -> Routes.transport(refId)
+    kind == "accommodation" -> Routes.stay(refId)
+    kind == "walk" -> Routes.walk(refId)
+    else -> null
+}
+
 private data class RootDestination(
     val route: String,
     val label: String,
@@ -587,11 +613,7 @@ private fun FullDayRoute(
         onOpenTransport = { id -> navController.navigate(Routes.transport(id)) },
         onOpenStay = { id -> navController.navigate(Routes.stay(id)) },
         onOpenTimelineItem = { kind, id ->
-            when (kind) {
-                "transport" -> navController.navigate(Routes.transport(id))
-                "accommodation" -> navController.navigate(Routes.stay(id))
-                else -> Unit
-            }
+            timelineDestination(kind, id)?.let(navController::navigate)
         },
     )
 }
@@ -630,13 +652,7 @@ private fun TodayRoute(
         onOpenMaps = { uri -> launcher.open(uri) },
         onOpenFullDay = { navController.navigate(Routes.FULL_DAY) },
         onOpenTimelineItem = { row ->
-            val id = row.item.refId
-            when {
-                id == null -> Unit
-                row.item.kind == "transport" -> navController.navigate(Routes.transport(id))
-                row.item.kind == "accommodation" -> navController.navigate(Routes.stay(id))
-                else -> Unit
-            }
+            timelineDestination(row.item.kind, row.item.refId)?.let(navController::navigate)
         },
         onOpenShortcut = { shortcut ->
             when (shortcut.kind) {

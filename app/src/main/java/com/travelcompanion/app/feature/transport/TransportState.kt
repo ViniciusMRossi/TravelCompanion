@@ -49,6 +49,9 @@ fun buildTransportState(
 ): TransportUiState? {
     val transport = content.trip.transports.firstOrNull { it.id == transportId } ?: return null
     val critical = transport.criticalItems.firstOrNull()
+    // fallback: the schema declares no primary document for a leg and the
+    // screen has room for one ticket, so this is the order the package was
+    // written in. A leg carrying two documents shows whichever came first.
     val document = transport.documentIds.firstOrNull()
 
     val people = content.trip.documents

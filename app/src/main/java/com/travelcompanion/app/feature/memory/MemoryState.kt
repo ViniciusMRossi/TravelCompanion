@@ -79,6 +79,8 @@ fun buildMemoryState(
     val city = content
         // `LocalDate.ofInstant` is API 34; this is the same answer at 26.
         .dayFor(Instant.ofEpochMilli(nowEpochMs).atZone(zone).toLocalDate())
+        // fallback: a day that declares no base still has to name somewhere,
+        // and its first city is where it begins.
         ?.let { day -> content.city(day.baseCityId ?: day.cityIds.firstOrNull()) }
         ?.name
     val participant = content.participant(localParticipantId)
@@ -128,6 +130,8 @@ fun buildAttribution(
         participantId = participant.id,
         participantName = participant.name,
         cityName = content.dayFor(date)
+            // fallback: a day that declares no base still has to name
+            // somewhere, and its first city is where it begins.
             ?.let { day -> content.city(day.baseCityId ?: day.cityIds.firstOrNull()) }
             ?.name,
         placeName = placeName(walkState),

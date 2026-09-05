@@ -54,6 +54,7 @@ import com.travelcompanion.app.domain.today.TimelineRowUi
 import com.travelcompanion.app.domain.today.TimelineState
 import com.travelcompanion.app.domain.today.TodayUiState
 import com.travelcompanion.app.domain.today.WeatherUi
+import com.travelcompanion.app.feature.shell.timelineDestination
 
 /**
  * Screen 02 — Hoje.
@@ -534,8 +535,10 @@ private fun TimelineCard(rows: List<TimelineRowUi>, onOpen: (TimelineRowUi) -> U
 internal fun TimelineRow(row: TimelineRowUi, onOpen: (TimelineRowUi) -> Unit) {
     // Only rows that point at a screen become tappable; the rest read as they
     // always did. Nothing on the timeline gains an affordance that leads
-    // nowhere (D065).
-    val opens = row.item.kind in OPENABLE_TIMELINE_KINDS && row.item.refId != null
+    // nowhere (D065). The navigation graph is asked rather than a second list
+    // of kinds kept here: the two disagreed about `walk`, and the row that
+    // named a packaged walk read as ordinary text (D096).
+    val opens = timelineDestination(row.item.kind, row.item.refId) != null
     val markerColor = when {
         row.isCritical -> FieldCompanionColors.Oxblood
         row.state == TimelineState.Active -> FieldCompanionColors.Teal
@@ -670,6 +673,3 @@ private fun documentShortcutFor(critical: CriticalItemUi): ShortcutUi = Shortcut
     label = critical.documentAction?.label ?: "Documento",
     kind = ShortcutUi.Kind.Document,
 )
-
-/** Timeline kinds that have a screen of their own to open. */
-private val OPENABLE_TIMELINE_KINDS = setOf("transport", "accommodation")

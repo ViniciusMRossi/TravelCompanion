@@ -180,7 +180,17 @@ if offenders:
 # packaged collection's first element with no predicate has to say why. The
 # marker is `// fallback:` on the line or immediately above it, which is the
 # same discipline the decisions already ask for, moved to where the reader is.
+#
+# D090 was the fourth, and the rule as first written could not have caught it.
+# It matched `content.trip.<collection>.firstOrNull()`, the shape the first
+# three took, and the fourth arrived as `day.cityIds.firstOrNull()` - a list
+# scoped to the day, with no `.trip.` on the line to recognise it by. So the
+# `Ids` lists are matched too: `cityIds`, `accommodationIds`, `documentIds`,
+# `transportIds`. Those are precisely the lists where a declared answer exists
+# next to them - `baseCityId` - and reading the first element is a choice
+# somebody made rather than the only thing available (D097).
 FIRST_ELEMENT = re.compile(r"\.(?:first|firstOrNull)\(\s*\)")
+ID_LIST_FIRST = re.compile(r"\.\w+Ids\??\.(?:first|firstOrNull)\(\s*\)")
 FALLBACK_MARKER = "// fallback:"
 
 
@@ -217,7 +227,9 @@ for source in sorted((ROOT / "app/src/main/java").rglob("*.kt")):
     lines = source.read_text(encoding="utf-8").splitlines()
     for number, line in enumerate(lines, start=1):
         code = line.split("//", 1)[0]
-        if ".trip." not in code or not FIRST_ELEMENT.search(code):
+        if not FIRST_ELEMENT.search(code):
+            continue
+        if ".trip." not in code and not ID_LIST_FIRST.search(code):
             continue
         if marked_as_fallback(lines, number):
             continue
@@ -226,7 +238,7 @@ for source in sorted((ROOT / "app/src/main/java").rglob("*.kt")):
 if offenders:
     print("FAIL: a packaged collection's first element is read with no predicate")
     print("      and no reason. Resolve it for the day, or mark the line")
-    print("      `// fallback: <why>` (D070, D077, D080):")
+    print("      `// fallback: <why>` (D070, D077, D080, D090, D097):")
     for o in offenders:
         print(f"- {o}")
     raise SystemExit(1)

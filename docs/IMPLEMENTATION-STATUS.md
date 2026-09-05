@@ -1574,6 +1574,82 @@ the two files hash identically.
   hour, and whether it is nightly or only after a walk is copy no sheet draws
   (D094).
 
+## The row that led nowhere, and two checks nobody was running (2026-09-05)
+
+Three defects of different sizes, none of them a new screen: a timeline row
+that named a walk and answered nothing, a declared audio duration that no tool
+compared against its file, and a guard that could not see the shape of the
+fourth defect it was written for.
+
+**Screen 02's 11:00 line opens the walk (D096).** D065 made a timeline row
+tappable only when it points at a screen, and then said so in three places - a
+set of openable kinds beside the row, and a `when` in each of `TodayRoute` and
+`FullDayRoute`. All three listed transport and accommodation; `walk` was in
+none of them. Day 9's packaged 11:00 item is `kind: "walk"` with `refId:
+"walk.sarajevo.historical"`, so it drew its hour and its marker and did nothing,
+while `Routes.WALK` and screen 06 had been there since Phase 3. During the day
+the traveller opens **Hoje**, not Explorar - and Explorar -> Cidade -> card was
+the only way in. `timelineDestination(kind, refId)` is now the single rule the
+row and both routes ask, so the affordance and the destination cannot fall out
+of step again. `attraction` deliberately stays out: screen 02's "now" block
+already carries "Ver atracao" for the attraction under way.
+
+**The declared audio duration is checked against the file (D095).**
+`AudioGuideRequest.Playable.declaredDurationMs` is `durationSeconds * 1000`,
+and that number - not the recording - draws the progress bar and writes the
+duration label. Nothing compared the two, and nothing looked at chapters at
+all: `grep chapter tools/validate_trip.py` returned nothing. The validator now
+reads the real length out of the packaged file and checks the declared duration
+against it, that no `chapters[].startSeconds` sits at or past the end, and that
+the chapter marks increase. Two formats, pure stdlib, no new dependency: the
+`mvhd` atom of MP4/m4a, which is what the real guides will be, and WAV, which
+is what this repository already carries. **It is an error at every stage**, like
+the IANA zone check and unlike the offline-document check - see D095 for the
+argument. A format that cannot be timed, or a file not packaged yet, is an
+absent check and is reported by name rather than failed.
+
+**The first-element rule reaches lists scoped to a day (D097).** The guard
+written after D090 matched `content.trip.<collection>.firstOrNull()` and could
+not have caught D090 itself, which arrived as `day.cityIds.firstOrNull()` - a
+list already scoped to the day, with no `.trip.` on the line. It now also
+accuses `.first()`/`.firstOrNull()` on any property ending in `Ids`. Five
+correct sites became offenders and all five were marked rather than rewritten.
+`AppNavigation.kt:512` is a sixth of the same shape and is knowingly out of
+scope: the scan covers `domain/` plus `*State.kt` and `*UseCase.kt`, and the
+navigation graph is none of those.
+
+### Confirmed by observation - Pixel emulator, sample package, clock at 21/09
+
+The build under test was assembled from a clean worktree, so it carries the
+sample package and not the promoted one.
+
+- **before the change**, the 11:00 "Caminhada Historica de Sarajevo" row on
+  screen 02 answered a tap with nothing at all - not a wrong screen, no screen.
+  The 19:30 transport row in the same card opened screen 15 on the same run,
+  which is what makes the first observation a defect rather than a missed tap;
+- **after**, the same row opens screen 06 with the walk's own header, its route
+  and "Comecar passeio";
+- **screen 03's copy of the row does the same thing**, from the "Viagem" tab on
+  the same day. It reuses `TimelineRow`, so it had inherited both halves of the
+  defect and inherits the fix.
+
+### Found by reasoning, not in the field
+
+- **Two more first-element sites than the survey expected.** Widening the rule
+  accused `StayState.kt` and `TransportState.kt` reading `documentIds
+  .firstOrNull()` for the one voucher and the one ticket each screen has room
+  for. Both are correct and both are now marked: the schema declares no primary
+  document, so a stay or a leg carrying two shows whichever the author listed
+  first. Nobody had written that down anywhere.
+
+### Not implemented, with reasons
+
+- **Walk stop ordering is still unchecked.** §27 asks for it and a walk's
+  `stops[].order` is read nowhere by the validator. It is the check nearest to
+  this commit and it is not in it.
+- **Coordinates, weather and the two design-stack questions** are unchanged and
+  were out of scope by instruction.
+
 ## Later
 
 - [x] **All nineteen canonical screens exist.**
@@ -1587,7 +1663,7 @@ the two files hash identically.
       (D094); Stories and Walk are unchanged from Phase 3.
 - [x] **Real Balkans package** *(installed in Phase 7: `trip.json` and 27
       documents under `assets/trip-production/`.)*
-- [ ] Full Trip Validator
+- [ ] Full Trip Validator *(of §27's eleven checks, seven are built and two are partial; coordinates and walk stop ordering are not built at all — see the table under "Content validation".)*
 - [x] **Real-device QA** *(Closed for this build: the nineteen screens were
       walked on a Galaxy S24 with headphones, including a full loop in
       airplane mode - see the field pass above. What remains is named there
@@ -1652,9 +1728,41 @@ through `validate_trip.py` itself (`schema_errors`, `timezone_problem`), so it
 cannot pass a package that `validate_trip.py` would reject, and a package
 declaring no zone at all is an error rather than a quiet pass.
 
+Declared audio lengths are checked the same way the zones are — always, at any
+stage (D095). `durationSeconds` drives the progress bar and the duration label,
+so it is compared against the packaged file, chapter marks are compared against
+the end of that file, and the marks must increase. MP4/m4a is read from its
+`mvhd` atom and WAV from its header, both in stdlib; a format that cannot be
+timed and a file not packaged yet are reported by name as checks that did not
+run, never as failures.
+
 Currently reported for the packaged trip: the two ticket/voucher PDFs are
 declared offline but their files are not packaged yet. The UI reflects this —
-it does not badge them "Offline" (D013).
+it does not badge them "Offline" (D013). One audio guide of three is timed
+against a real file — `ag.bascarsija`, 720 declared over a 720.0s prototype
+WAV — and the other two are named as untimed, their `.mp3` files not being in
+the package.
+
+Against §27's list of eleven checks the Trip Validator "must check at minimum",
+after this commit:
+
+| §27 check | State |
+| --- | --- |
+| JSON Schema validation | done |
+| duplicate IDs | done |
+| missing refs | done |
+| missing assets | partly — offline documents only; an audio guide with no packaged file is named, not failed |
+| invalid coordinates | **not built** |
+| missing offline documents | done |
+| audio duration/chapter inconsistencies | **done this commit** — both halves: the duration against the file, and the chapters against it |
+| invalid date ranges | done |
+| bad timeline refs | done |
+| bad walk ordering | **not built** |
+| unresolved mock data in production mode | partly — `content_preflight.py` flags markers and refuses `isMockContent` in production |
+
+**What is left nearest to here is walk stop ordering**: `stops[].order` is
+declared by the schema and read by nothing in the validator, so a walk whose
+stops are numbered 1, 3, 2 passes today.
 
 ## Verification
 
@@ -1664,7 +1772,8 @@ it does not badge them "Offline" (D013).
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 312 passing. Lint: 0 errors, and no lint baseline is used. The
+Unit tests: 341 passing (Kotlin), plus 15 in `tools/test_validate_trip.py`.
+Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves
 with what has been published upstream since the last run, so no number is

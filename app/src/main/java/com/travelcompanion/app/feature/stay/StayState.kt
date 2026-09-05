@@ -62,6 +62,9 @@ fun buildStayState(
             )
         },
         actions = stay.actions.filterNot { it.kind == "phone" },
+        // fallback: the schema declares no primary document for a stay and the
+        // screen has room for one voucher, so this is the order the package was
+        // written in. A stay carrying two documents shows whichever came first.
         voucherId = stay.documentIds.firstOrNull(),
         instructions = stay.instructions,
     )

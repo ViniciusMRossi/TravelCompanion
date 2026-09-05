@@ -36,6 +36,8 @@ class TodayUseCase(
         val day = content.dayFor(date) ?: return null
         val timeline = day.timeline.sortedBy { it.startTime }
         val activeIndex = activeIndexOf(timeline, today, day, time)
+        // fallback: a day that declares no base still has to name somewhere,
+        // and its first city is where it begins.
         val city = content.city(day.baseCityId ?: day.cityIds.firstOrNull())
 
         return TodayUiState(
