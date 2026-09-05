@@ -1801,18 +1801,24 @@ pair from the story side.
   the guard found it on its first run (below). Promoted to `production`, it is
   an error and `rc=1`.
 
-### The guard's first run found one in the tracked packages
+### The guard's first run found one in the tracked packages, and it was the source
 
 `app/src/main/assets/trip/trip.json` and `trip-package/sample/sample-trip.json`
-both declare `story.latin-bridge` and `ag.latin-bridge` with the title **"Latin
-Bridge"**. It is the real defect D102 describes, in the package this repository
-ships, and it was there before the three Sarajevo guides repeated it.
+both declared `story.latin-bridge` and `ag.latin-bridge` with the title **"Latin
+Bridge"** - the real defect D102 describes, in the package this repository
+ships, and there since the bootstrap. The three Sarajevo guides did not
+introduce the pattern; they copied it from the example, which is the artefact
+this repository uses to teach how content is written. The guard caught the
+source, not only the copies.
 
-Both files are `prototype`, so this is a **warning and `rc` stays 0** - the two
-tracked packages now report three content issues where they reported two. It is
-not fixed here because both files are byte-locked by instruction and content is
-not this commit's scope. **The fix is one string**: give the guide a title that
-names the place, the way the real package's three now do.
+Both files are `prototype`, so it was a **warning and `rc` stayed 0**: the two
+tracked packages reported three content issues where they had reported two. It
+was left standing for one commit because both files were byte-locked by
+instruction, and **fixed in the commit that followed** - `ag.latin-bridge` is now
+"Audioguia da Ponte Latina", which is the convention its two sibling guides
+already followed, and the two packages are back to two content issues. Only the
+guide's title moved: `story.latin-bridge` keeps its own, which
+`StoryTriggerStateTest.kt:44` asserts against the packaged content.
 
 ### Found by writing the test, not by planning it
 
