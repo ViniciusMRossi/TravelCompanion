@@ -1644,11 +1644,112 @@ sample package and not the promoted one.
 
 ### Not implemented, with reasons
 
-- **Walk stop ordering is still unchecked.** §27 asks for it and a walk's
-  `stops[].order` is read nowhere by the validator. It is the check nearest to
-  this commit and it is not in it.
+- **Walk stop ordering is still unchecked.** §27 asks for it and no tool
+  confers a walk's `stops[].order`. It is the check nearest to this commit and
+  it is not in it. *(Corrected on 2026-09-05: this bullet first said `order` was
+  "read nowhere by the validator", which was true, and then let that stand as if
+  nothing read it at all. `WalkModeState.kt:105` sorts the stops by it - see
+  D099, which is why the check confers the numbering rather than applying it.)*
 - **Coordinates, weather and the two design-stack questions** are unchanged and
   were out of scope by instruction.
+
+## The coordinate that agrees with nothing, and the stop numbered twice (2026-09-05)
+
+The last two of §27's eleven checks. Neither is a screen, and one of them
+turned out not to be the check the brief's wording suggested.
+
+**A coordinate is measured against the rest of its own city (D098).** "Invalid
+coordinates" had an obvious reading that was already built: the schema bounds
+latitude to -90..90 and longitude to -180..180, and schema validation runs
+first. The errors that get through are the ones that stay inside the range.
+The Latin Bridge is 43.8576 / 18.4289; transposed it is Saudi Arabia, and it
+satisfies every rule the schema has. A flipped sign is the South Atlantic. A
+transposed integer digit is another country. `city` carries no `geo`, so the
+anchor comes from the points themselves, grouped by the `cityId` that
+attraction, walk, story and accommodation all declare, and each point is
+measured against the **nearest** other point in its city. Over 100 km it is a
+finding; when swapping the two values lands within 5 km of that neighbour, the
+finding says the values look transposed, which is the difference between an
+accusation and an instruction.
+
+**A walk's stop numbering is checked, in two severities (D099).** The status
+line here previously said `stops[].order` was read by nothing. That was wrong,
+and the correction changes the target: `WalkModeState.kt:105` sorts by it, so a
+walk numbered 1, 3, 2 is silently reordered to 1, 2, 3 and runs correctly.
+What was missing was the conference. A **duplicate** is an error at every
+stage - two stops numbered 2 leave the walking order decided by `sortedBy`
+being stable, which is correct by accident. A **gap**, or a first stop that is
+not 1, is a warning until `production` - 1, 2, 4 sorts into the right sequence
+and runs, and the missing 3 is content that has not arrived yet.
+
+### Proved by failing, on the sample package
+
+Each check was proved by adulterating `trip-package/sample/sample-trip.json`,
+reading the accusation, and restoring:
+
+- **transposed coordinate** - `story.latin-bridge`'s trigger with its two
+  values swapped: *"story 'story.latin-bridge': trigger.geo (18.4289, 43.8578)
+  is 3690.7 km from the nearest other point in city 'sarajevo' (attraction
+  'latin-bridge' at 43.8578, 18.4289). Swapping latitude and longitude puts it
+  0.0 km from that point - the two values look transposed."* `rc=1`.
+- **duplicate stop order** - both stops numbered 1: *"walk
+  'walk.sarajevo.historical': 2 stops both declare order 1, so which one the
+  traveller walks first depends on the sort being stable"*. `rc=1`.
+- **gap in the stop order** - stops numbered 1, 3: reported as a warning with
+  `rc=0` while `contentStatus` is prototype, and as an error with `rc=1` with
+  the same package promoted to `production`. The severity split is the proof.
+- **the coincident pair** - a second point placed exactly on an existing one:
+  silent, `rc=0`. That is the regression somebody will cause the day zero
+  metres looks suspicious, and it is now a test as well.
+
+### What the packaged trips actually exercise
+
+- `app/src/main/assets/trip/trip.json` and `trip-package/sample/sample-trip.json`
+  each hold **four** coordinates, all in `sarajevo`: two attraction locations
+  and two story triggers. One cluster is checked and nothing is left
+  unanchored - the bus to Mostar declares `location` with only a `name` and a
+  `mapsQuery` on both ends, so there is no endpoint coordinate to skip.
+- `trip-package/starter/trip.json` has **no coordinates at all**, so the check
+  prints nothing for it. That is not a missing output.
+- The real package carries no coordinate yet either, and 18 transport
+  endpoints and 10 accommodations without one. The check was built before the
+  content it guards, on the same reasoning as D095: the same check written next
+  month guards a number that has already been wrong for a month.
+
+### Found by reasoning, not in the field
+
+- **The swap test is symmetric, and cannot name the culprit on its own.**
+  Transposing either half of a transposed pair lands on the other half, by
+  construction, so a city holding exactly two coordinates gives no signal for
+  which of them was typed wrong. With three or more the wrong one is the one
+  standing alone and is named; with exactly two the finding names both and says
+  there is no third point to break the tie. Reporting one finding per *pair*
+  rather than per point is the other half of that: a two-point city would
+  otherwise accuse the correct point as loudly as the wrong one.
+
+### Not implemented, with reasons
+
+- **A transport endpoint's coordinate is not anchored**, and is printed by name
+  when one exists. `transportEndpoint` declares no city and both ways to infer
+  one are worse than nothing (D098).
+- **A city holding one coordinate is not checked**, and is printed by name. The
+  only cure is a bounding box per `countryCode`, which is invented data inside
+  a validator.
+- **A transposed decimal is out of reach**: 43.8576 typed as 43.5878 moves the
+  point 30 km and passes. Recorded with its number, the way `.mp3` is recorded
+  as a format the duration check cannot time.
+- **Weather and the two design-stack copy questions** are unchanged and were
+  out of scope by instruction.
+
+### Worth writing down, and not a defect
+
+- **`transport.ams-corfu.u2` in the real package carries two `documentIds`** -
+  one easyJet ticket per traveller, since the content session separated them.
+  Screen 15 shows the first, which is exactly what the marker at
+  `TransportState.kt:52` says it does: the approved sheet draws one ticket
+  action, and both documents are in the Wallet. Until now that only existed in
+  a code comment, and somebody opening screen 15 on 15 September would have no
+  way to know a second ticket is one screen away.
 
 ## Later
 
@@ -1663,7 +1764,7 @@ sample package and not the promoted one.
       (D094); Stories and Walk are unchanged from Phase 3.
 - [x] **Real Balkans package** *(installed in Phase 7: `trip.json` and 27
       documents under `assets/trip-production/`.)*
-- [ ] Full Trip Validator *(of §27's eleven checks, seven are built and two are partial; coordinates and walk stop ordering are not built at all — see the table under "Content validation".)*
+- [x] **Full Trip Validator** *(§27's eleven checks are all built as of 2026-09-05; two of them remain deliberately partial and say so — see the table under "Content validation".)*
 - [x] **Real-device QA** *(Closed for this build: the nineteen screens were
       walked on a Galaxy S24 with headphones, including a full loop in
       airplane mode - see the field pass above. What remains is named there
@@ -1736,6 +1837,20 @@ the end of that file, and the marks must increase. MP4/m4a is read from its
 timed and a file not packaged yet are reported by name as checks that did not
 run, never as failures.
 
+Coordinates are checked the same way, and for the same reason (D098). The
+schema already bounds the range, so what is checked is agreement: each point
+against the nearest other point in the city it declares, over 100 km being a
+finding, and the transposition named when swapping the two values lands within
+5 km of that neighbour. A transport endpoint declares no city and is printed as
+unanchored; a city holding one coordinate is printed as unchecked; a pair of
+coincident points is correct content and is silent.
+
+Walk stop numbering is checked in two severities (D099). A duplicate `order` is
+an error at every stage, because which stop the traveller walks first then
+depends on `sortedBy` being stable. A gap, or a first stop that is not 1, is a
+warning until `contentStatus` is `production`, because the missing stop may
+still be on its way.
+
 Currently reported for the packaged trip: the two ticket/voucher PDFs are
 declared offline but their files are not packaged yet. The UI reflects this —
 it does not badge them "Offline" (D013). One audio guide of three is timed
@@ -1752,17 +1867,21 @@ after this commit:
 | duplicate IDs | done |
 | missing refs | done |
 | missing assets | partly — offline documents only; an audio guide with no packaged file is named, not failed |
-| invalid coordinates | **not built** |
+| invalid coordinates | **done** — not the range, which the schema already bounds: each point against the nearest other point in its own city, with the transposition named when the swap resolves (D098) |
 | missing offline documents | done |
 | audio duration/chapter inconsistencies | **done this commit** — both halves: the duration against the file, and the chapters against it |
 | invalid date ranges | done |
 | bad timeline refs | done |
-| bad walk ordering | **not built** |
+| bad walk ordering | **done** — duplicates are an error at every stage, gaps and a first stop that is not 1 are warnings until production (D099) |
 | unresolved mock data in production mode | partly — `content_preflight.py` flags markers and refuses `isMockContent` in production |
 
-**What is left nearest to here is walk stop ordering**: `stops[].order` is
-declared by the schema and read by nothing in the validator, so a walk whose
-stops are numbered 1, 3, 2 passes today.
+**With these two, the table closes.** Every one of §27's eleven checks is
+built. Two of them stay deliberately partial and say so in the row itself:
+"missing assets" fails only for a document that promises offline access, and
+names an unpackaged audio file rather than rejecting it, and "unresolved mock
+data" lives in `content_preflight.py`. Nothing on the list is unstarted, and
+what each check cannot see is printed by name when it runs - an endpoint with
+no city, a city with one coordinate, an audio format that cannot be timed.
 
 ## Verification
 
@@ -1772,7 +1891,7 @@ stops are numbered 1, 3, 2 passes today.
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 341 passing (Kotlin), plus 15 in `tools/test_validate_trip.py`.
+Unit tests: 341 passing (Kotlin), plus 28 in `tools/test_validate_trip.py`.
 Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves

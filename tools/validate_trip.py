@@ -20,7 +20,9 @@ from pathlib import Path
 import sys
 import struct
 import wave
+from collections import Counter, defaultdict
 from datetime import date
+from math import asin, cos, radians, sin, sqrt
 from zoneinfo import available_timezones
 
 try:
@@ -326,6 +328,312 @@ def audio_duration_problems(trip: dict, assets_root: Path):
     return problems, checked, skipped
 
 
+# How far a coordinate may sit from the nearest other coordinate in the same
+# city before it is called wrong.
+#
+# The schema's `$defs/geoPoint` already rejects a latitude outside -90..90 and a
+# longitude outside -180..180, and schema validation runs first, so a range
+# check here would add nothing. What passes today are the errors that stay
+# inside the range: latitude and longitude transposed, a flipped sign, a
+# transposed digit. Nothing catches any of them, and each costs a story that
+# never fires or one that fires where nobody is standing.
+#
+# A hundred kilometres, measured against the *nearest* sibling rather than a
+# centroid: with two points and one of them wrong the centroid sits between them
+# and blames both equally, while the distance between the pair is the signal.
+# The number is two orders of magnitude above what correct content produces -
+# the four packaged Sarajevo points span 428 m - and an order of magnitude below
+# the smallest of the three defects, which are 1000 km (a transposed integer
+# digit), 3691 km (a transposition) and 9754 km (a flipped sign). Twenty-five
+# kilometres would also catch a transposed decimal, and would sit inside the
+# legitimate spread of a large sparse city: days 1 and 20 of this trip are Sao
+# Paulo, whose car park is in Guarulhos, ~25 km from the centre. A guard that
+# shouts at correct content is a guard people switch off.
+#
+# Out of reach, on purpose: a transposed decimal - 43.8576 written as 43.5878 -
+# moves the point 30 km and passes. That error needs a map, not a validator, and
+# it is recorded here the way `.mp3` is recorded as a format this script cannot
+# time.
+COORDINATE_CLUSTER_LIMIT_METERS = 100_000.0
+
+# How close swapping latitude and longitude must bring a flagged point to that
+# same neighbour before the message says so. Five kilometres: a transposition
+# that resolves to within a city is a diagnosis, not a coincidence, and naming
+# it turns an accusation into an instruction.
+COORDINATE_SWAP_MATCH_METERS = 5_000.0
+
+EARTH_RADIUS_METERS = 6_371_000.0
+
+
+def distance_meters(a: tuple[float, float], b: tuple[float, float]) -> float:
+    """Great-circle distance in metres between two (latitude, longitude) pairs.
+
+    The same haversine `domain/walk/WalkGeo.kt` uses to decide a story trigger,
+    written again here rather than taking a geo dependency for six lines.
+    """
+    lat1, lat2 = radians(a[0]), radians(b[0])
+    d_lat = lat2 - lat1
+    d_lon = radians(b[1] - a[1])
+    h = sin(d_lat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(d_lon / 2) ** 2
+    return 2 * EARTH_RADIUS_METERS * asin(min(1.0, sqrt(h)))
+
+
+def _point(geo) -> tuple[float, float] | None:
+    if not isinstance(geo, dict):
+        return None
+    latitude, longitude = geo.get("latitude"), geo.get("longitude")
+    if latitude is None or longitude is None:
+        return None
+    return (float(latitude), float(longitude))
+
+
+def geo_points(trip: dict):
+    """Every packaged coordinate, split by whether it declares a city.
+
+    Returns `(anchored, unanchored)`. An anchored entry is
+    `(cityId, label, field, point)`; an unanchored one is `(label, field)`.
+
+    `city` carries no `geo`, so the anchor has to come from the points
+    themselves, grouped by the city they belong to. Four of the five places a
+    coordinate can appear declare a required `cityId` - attraction, walk, story
+    and accommodation. `transportEndpoint` declares none, and there is no honest
+    way to infer one: a leg's two endpoints are legitimately in different
+    countries, `days[].cityIds` puts Amsterdam, Corfu, Sarande and Ksamil on one
+    day, and a time zone is a political boundary that spans 60 degrees of
+    longitude in China. So an endpoint's coordinate is reported as a check that
+    did not run, never as a pass it did not earn.
+    """
+    anchored: list[tuple[str, str, str, tuple[float, float]]] = []
+    unanchored: list[tuple[str, str]] = []
+
+    for attraction in trip.get("attractions", []):
+        point = _point((attraction.get("location") or {}).get("geo"))
+        if point:
+            anchored.append(
+                (
+                    attraction.get("cityId"),
+                    f"attraction '{attraction['id']}'",
+                    "location.geo",
+                    point,
+                )
+            )
+    for walk in trip.get("walks", []):
+        point = _point((walk.get("startLocation") or {}).get("geo"))
+        if point:
+            anchored.append(
+                (walk.get("cityId"), f"walk '{walk['id']}'", "startLocation.geo", point)
+            )
+    for story in trip.get("stories", []):
+        point = _point((story.get("trigger") or {}).get("geo"))
+        if point:
+            anchored.append(
+                (story.get("cityId"), f"story '{story['id']}'", "trigger.geo", point)
+            )
+    for stay in trip.get("accommodations", []):
+        point = _point((stay.get("location") or {}).get("geo"))
+        if point:
+            anchored.append(
+                (stay.get("cityId"), f"accommodation '{stay['id']}'", "location.geo", point)
+            )
+    for transport in trip.get("transports", []):
+        for end in ("origin", "destination"):
+            point = _point(((transport.get(end) or {}).get("location") or {}).get("geo"))
+            if point:
+                unanchored.append((f"transport '{transport['id']}' {end}", "location.geo"))
+
+    return anchored, unanchored
+
+
+def _swap_gap(point: tuple[float, float], anchor: tuple[float, float]) -> float | None:
+    """Distance from `point` with its two values transposed to `anchor`.
+
+    None when the transposition is not itself a valid latitude - the schema
+    rejects those before this script sees them, so there is nothing to diagnose.
+    """
+    if abs(point[1]) > 90:
+        return None
+    return distance_meters((point[1], point[0]), anchor)
+
+
+def coordinate_problems(trip: dict):
+    """Coordinates that contradict the rest of their own city.
+
+    Returns `(problems, checked, skipped)`, where `skipped` names each city and
+    each transport endpoint whose coordinate could not be anchored, and why - a
+    city with one packaged point has nothing to compare it with, and saying so
+    out loud is the difference between an absent check and a hole.
+
+    Always an error, prototype/draft included, for the reason argued on
+    `audio_duration_problems`: the point and its siblings are all already in the
+    package and contradict each other, and no later step of the pipeline
+    resolves it.
+
+    Coincident points are correct content, not a finding. A walk that starts at
+    its first stop repeats that stop's trigger, and a story that narrates one
+    attraction sits on top of it; both happen in the packaged trips. A nearest
+    neighbour at zero metres is the strongest agreement there is, so nothing is
+    reported for it.
+
+    One finding per pair, and the subject of it depends on how much city there
+    is to compare against. With three or more coordinates the wrong one is the
+    one standing alone and the finding names it. With exactly two there is no
+    cluster, both are equally far from everything, and the finding names both
+    and says so - the swap test cannot break that tie, because transposing
+    either half of a transposed pair lands on the other half by construction.
+    """
+    anchored, unanchored = geo_points(trip)
+    problems: list[str] = []
+    checked: list[str] = []
+    skipped: list[tuple[str, str]] = []
+
+    by_city: dict[str, list[tuple[str, str, tuple[float, float]]]] = defaultdict(list)
+    for city_id, label, field, point in anchored:
+        by_city[city_id].append((label, field, point))
+
+    for city_id in sorted(by_city, key=lambda value: (value is None, value)):
+        points = by_city[city_id]
+        if len(points) < 2:
+            label, field, _ = points[0]
+            skipped.append(
+                (
+                    f"city '{city_id}'",
+                    f"only one packaged coordinate ({label} {field}), so there is nothing "
+                    "in its own city to compare it with",
+                )
+            )
+            continue
+        checked.append(f"city '{city_id}' ({len(points)} coordinates)")
+
+        # One finding per *pair*, not per point. A city holding exactly two
+        # coordinates, one of them wrong, makes each of them the other's
+        # nearest neighbour, and reporting that twice accuses the correct one
+        # as loudly as the wrong one.
+        far: dict[int, tuple[int, float]] = {}
+        for index, (_, _, point) in enumerate(points):
+            near_index, near = min(
+                ((other, points[other]) for other in range(len(points)) if other != index),
+                key=lambda candidate: distance_meters(point, candidate[1][2]),
+            )
+            gap = distance_meters(point, near[2])
+            if gap > COORDINATE_CLUSTER_LIMIT_METERS:
+                far[index] = (near_index, gap)
+
+        pairs: dict[frozenset[int], float] = {}
+        for index, (near_index, gap) in far.items():
+            pairs.setdefault(frozenset((index, near_index)), gap)
+
+        for key in sorted(pairs, key=sorted):
+            gap = pairs[key]
+            first, second = sorted(key)
+            subjects = [index for index in (first, second) if index in far]
+
+            if len(subjects) == 1:
+                # The city has a cluster and this point is not in it, so the
+                # cluster is the anchor and the point is the accusation.
+                index = subjects[0]
+                near_index = first if index == second else second
+                label, field, point = points[index]
+                near_label, _, near_point = points[near_index]
+                message = (
+                    f"{label}: {field} ({point[0]}, {point[1]}) is {gap / 1000:.1f} km from "
+                    f"the nearest other point in city '{city_id}' ({near_label} at "
+                    f"{near_point[0]}, {near_point[1]})."
+                )
+                swapped_gap = _swap_gap(point, near_point)
+                if swapped_gap is not None and swapped_gap <= COORDINATE_SWAP_MATCH_METERS:
+                    # A transposition that resolves is not a suspicious
+                    # distance, it is an answer, and saying so saves opening a
+                    # map.
+                    message += (
+                        f" Swapping latitude and longitude puts it "
+                        f"{swapped_gap / 1000:.1f} km from that point - the two values look "
+                        "transposed."
+                    )
+                problems.append(message)
+                continue
+
+            # Both members are far from everything, which is what a city with
+            # exactly two coordinates looks like when one of them is wrong.
+            # The swap test cannot break the tie: transposing either one of a
+            # transposed pair lands on the other, by construction. So the
+            # finding names both and refuses to pick, rather than accusing the
+            # correct one half the time.
+            label, field, point = points[first]
+            other_label, other_field, other_point = points[second]
+            message = (
+                f"city '{city_id}': {label} {field} ({point[0]}, {point[1]}) and "
+                f"{other_label} {other_field} ({other_point[0]}, {other_point[1]}) are "
+                f"{gap / 1000:.1f} km apart, with no third coordinate in the city to say "
+                "which of them belongs there."
+            )
+            swapped_gap = _swap_gap(point, other_point)
+            if swapped_gap is not None and swapped_gap <= COORDINATE_SWAP_MATCH_METERS:
+                message += (
+                    f" Swapping either one's latitude and longitude puts them "
+                    f"{swapped_gap / 1000:.1f} km apart - one of the two has its values "
+                    "transposed."
+                )
+            problems.append(message)
+
+    for label, field in unanchored:
+        skipped.append((label, f"{field} declares no city, so there is no cluster to anchor it to"))
+
+    return problems, checked, skipped
+
+
+def walk_order_problems(trip: dict):
+    """Walk stop numbering that contradicts itself.
+
+    Returns `(errors, warnings)`, and the split is D095's argument applied
+    twice. `WalkModeState.kt` sorts the stops by `order` before showing them, so
+    nothing here is about a list being read in the sequence it was typed in - it
+    is about a numbering that cannot produce one.
+
+    A duplicate is an error at every stage. Two stops both numbered 2 leave
+    their on-screen order decided by `sortedBy` being stable, which is correct
+    by accident; both facts are already present, they contradict each other, and
+    no later step resolves it.
+
+    A gap, or a first stop that is not 1, is a warning until production. Stops
+    numbered 1, 2, 4 sort into the right sequence and the walk runs; the missing
+    3 is content that has not arrived yet, and the promotion to production is
+    exactly when it must have.
+
+    `stops[].storyId` is not checked here: `content_checks` already resolves it
+    against the story registry.
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    for walk in trip.get("walks", []):
+        where = f"walk '{walk['id']}'"
+        orders = [stop["order"] for stop in walk.get("stops", []) if stop.get("order") is not None]
+        if not orders:
+            continue
+
+        counts = Counter(orders)
+        for value in sorted(number for number, times in counts.items() if times > 1):
+            errors.append(
+                f"{where}: {counts[value]} stops both declare order {value}, so which one the "
+                "traveller walks first depends on the sort being stable"
+            )
+
+        declared = ", ".join(str(number) for number in orders)
+        lowest, highest = min(counts), max(counts)
+        if lowest != 1:
+            warnings.append(
+                f"{where}: stop order starts at {lowest}, not 1 (stops are numbered {declared})"
+            )
+        missing = [number for number in range(lowest, highest) if number not in counts]
+        if missing:
+            warnings.append(
+                f"{where}: stop order skips {', '.join(str(number) for number in missing)} "
+                f"(stops are numbered {declared})"
+            )
+
+    return errors, warnings
+
+
 def schema_errors(trip: dict, schema: dict) -> list[str]:
     """Schema violations as `path: message`, ordered by where they occur.
 
@@ -495,7 +803,24 @@ def main() -> int:
             print(f"- {problem}")
         return 1
 
-    problems = content_checks(trip, assets_root)
+    # Same reasoning again: a point that contradicts its own city, and two stops
+    # that claim the same position, are contradictions inside a package that is
+    # already complete enough to hold both halves.
+    coordinate_findings, coordinate_checked, coordinate_skipped = coordinate_problems(trip)
+    if coordinate_findings:
+        print(f"FAIL: {len(coordinate_findings)} coordinate error(s) in {args.trip}")
+        for problem in coordinate_findings:
+            print(f"- {problem}")
+        return 1
+
+    order_errors, order_warnings = walk_order_problems(trip)
+    if order_errors:
+        print(f"FAIL: {len(order_errors)} walk stop order error(s) in {args.trip}")
+        for problem in order_errors:
+            print(f"- {problem}")
+        return 1
+
+    problems = content_checks(trip, assets_root) + order_warnings
 
     # Production content must be complete; prototype/draft content is still
     # being produced, so the same findings are reported as warnings.
@@ -515,6 +840,15 @@ def main() -> int:
         )
         for guide_id, why in audio_skipped:
             print(f"- no duration check for '{guide_id}': {why}")
+    if coordinate_checked or coordinate_skipped:
+        print(
+            f"Coordinates: {len(coordinate_checked)} city cluster(s) checked, "
+            f"{len(coordinate_skipped)} point(s) with nothing to anchor them to"
+        )
+        for cluster in coordinate_checked:
+            print(f"- checked {cluster}")
+        for where, why in coordinate_skipped:
+            print(f"- no coordinate check for {where}: {why}")
     if problems:
         print(f"WARNING: {len(problems)} content issue(s) (contentStatus is not 'production')")
         for problem in problems:

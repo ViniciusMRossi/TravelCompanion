@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Practical fixtures for the two checks that always fail, at any stage.
+"""Practical fixtures for the checks that no schema can express.
 
 The IANA time zone check: a real zone name is accepted, a typo'd one is
 rejected. This is the class of defect D026 exists to catch, so it needs a test
@@ -12,6 +12,17 @@ proved against a file anyone can open. The MP4 side is exercised against
 `mvhd` atoms built byte by byte here, both versions, because no `.m4a` is
 committed and one measured by hand would only prove that this parser agrees
 with itself.
+
+The coordinate check: the four packaged Sarajevo points are the positive case,
+and the fixtures use their real values rather than synthetic ones near (0, 0),
+because what is being proved is a distance threshold and not arithmetic. The
+coincident pair has a test of its own - it is correct content in both packaged
+trips, and it is what somebody will "fix" on the day zero metres looks
+suspicious.
+
+The walk ordering check: `stops[].order` is sorted by `WalkModeState.kt`, so
+1, 3, 2 is not a defect and has a test saying so; what is checked is a
+numbering that cannot produce an order at all.
 
 Run with: python -m unittest tools/test_validate_trip.py
 """
@@ -28,10 +39,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from validate_trip import (
     AUDIO_DURATION_TOLERANCE_SECONDS,
+    COORDINATE_CLUSTER_LIMIT_METERS,
     audio_duration_problems,
     audio_duration_seconds,
+    coordinate_problems,
+    distance_meters,
     known_timezones,
     timezone_problems,
+    walk_order_problems,
 )
 
 REPO = Path(__file__).resolve().parent.parent
@@ -249,3 +264,208 @@ class AudioDurationProblemsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# Baščaršija, the Latin Bridge and the point between them, as the packaged trips
+# declare them. Real coordinates on purpose: a fixture invented near (0, 0) would
+# prove the arithmetic and nothing about the distances this check was sized for.
+BASCARSIJA = (43.8595, 18.4310)
+LATIN_BRIDGE = (43.8578, 18.4289)
+MEETING_OF_CULTURES = (43.8590, 18.4257)
+
+
+def _geo_trip(*stories, attractions=(), walks=(), transports=()):
+    """A trip carrying only what the coordinate check reads."""
+    return {
+        "cities": [{"id": "sarajevo"}],
+        "attractions": [
+            {"id": name, "cityId": city, "location": {"geo": {"latitude": lat, "longitude": lon}}}
+            for name, city, (lat, lon) in attractions
+        ],
+        "walks": [
+            {
+                "id": name,
+                "cityId": city,
+                "startLocation": {"geo": {"latitude": lat, "longitude": lon}},
+            }
+            for name, city, (lat, lon) in walks
+        ],
+        "stories": [
+            {
+                "id": name,
+                "cityId": city,
+                "trigger": {"geo": {"latitude": lat, "longitude": lon}, "radiusMeters": 60},
+            }
+            for name, city, (lat, lon) in stories
+        ],
+        "transports": [
+            {
+                "id": name,
+                "origin": {"location": {"geo": {"latitude": lat, "longitude": lon}}},
+                "destination": {"name": "somewhere"},
+            }
+            for name, (lat, lon) in transports
+        ],
+    }
+
+
+class CoordinateProblemsTest(unittest.TestCase):
+    """The three errors that stay inside the schema's own latitude/longitude range."""
+
+    def test_the_packaged_trip_has_no_coordinate_problem(self):
+        trip = json.loads(PACKAGED_TRIP.read_text(encoding="utf-8"))
+        problems, checked, skipped = coordinate_problems(trip)
+        self.assertEqual(problems, [])
+        # Four coordinates, one city, and nothing left unanchored.
+        self.assertEqual(checked, ["city 'sarajevo' (4 coordinates)"])
+        self.assertEqual(skipped, [])
+
+    def test_swapped_latitude_and_longitude_are_reported_and_named(self):
+        """The sample's own shape: four coordinates in the city, one transposed."""
+        swapped = (LATIN_BRIDGE[1], LATIN_BRIDGE[0])
+        trip = _geo_trip(
+            ("story.latin-bridge", "sarajevo", swapped),
+            ("story.meeting-of-cultures", "sarajevo", MEETING_OF_CULTURES),
+            attractions=[
+                ("bascarsija", "sarajevo", BASCARSIJA),
+                ("latin-bridge", "sarajevo", LATIN_BRIDGE),
+            ],
+        )
+        problems, _, _ = coordinate_problems(trip)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("story 'story.latin-bridge': trigger.geo (18.4289, 43.8578)", problems[0])
+        self.assertIn("km from the nearest other point in city 'sarajevo'", problems[0])
+        self.assertIn("attraction 'latin-bridge' at 43.8578, 18.4289", problems[0])
+        # The diagnosis, not just the accusation.
+        self.assertIn("the two values look transposed", problems[0])
+
+    def test_a_flipped_sign_is_reported_without_claiming_a_transposition(self):
+        trip = _geo_trip(
+            ("story.latin-bridge", "sarajevo", (-LATIN_BRIDGE[0], LATIN_BRIDGE[1])),
+            ("story.meeting-of-cultures", "sarajevo", MEETING_OF_CULTURES),
+            attractions=[("bascarsija", "sarajevo", BASCARSIJA)],
+        )
+        problems, _, _ = coordinate_problems(trip)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("story 'story.latin-bridge': trigger.geo (-43.8578, 18.4289)", problems[0])
+        self.assertNotIn("transposed", problems[0])
+
+    def test_two_coordinates_and_no_cluster_accuses_neither_of_them(self):
+        """Butmir's shape, and the one the swap test cannot resolve.
+
+        Transposing either half of a transposed pair lands on the other half, so
+        with only two coordinates in the city there is nothing that says which
+        one was typed wrong. The finding names both rather than being right half
+        the time.
+        """
+        trip = _geo_trip(
+            ("story.latin-bridge", "sarajevo", (LATIN_BRIDGE[1], LATIN_BRIDGE[0])),
+            attractions=[("bascarsija", "sarajevo", BASCARSIJA)],
+        )
+        problems, _, _ = coordinate_problems(trip)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("attraction 'bascarsija' location.geo (43.8595, 18.431)", problems[0])
+        self.assertIn("story 'story.latin-bridge' trigger.geo (18.4289, 43.8578)", problems[0])
+        self.assertIn("no third coordinate in the city", problems[0])
+        self.assertIn("one of the two has its values transposed", problems[0])
+
+    def test_coincident_points_are_correct_content(self):
+        """The regression somebody will cause the day zero metres looks suspicious.
+
+        Both packaged trips contain a pair: the real walk starts at its first
+        stop, so `startLocation` repeats that stop's trigger, and in the sample
+        the Latin Bridge story sits on the Latin Bridge attraction.
+        """
+        trip = _geo_trip(
+            ("story.sebilj", "sarajevo", BASCARSIJA),
+            walks=[("walk.bazar-ao-rio", "sarajevo", BASCARSIJA)],
+        )
+        problems, checked, skipped = coordinate_problems(trip)
+        self.assertEqual(problems, [])
+        self.assertEqual(checked, ["city 'sarajevo' (2 coordinates)"])
+        self.assertEqual(skipped, [])
+
+    def test_a_city_with_one_coordinate_is_named_rather_than_checked(self):
+        trip = _geo_trip(("story.tunnel", "butmir", BASCARSIJA))
+        problems, checked, skipped = coordinate_problems(trip)
+        self.assertEqual(problems, [])
+        self.assertEqual(checked, [])
+        self.assertEqual(len(skipped), 1)
+        self.assertEqual(skipped[0][0], "city 'butmir'")
+        self.assertIn("only one packaged coordinate", skipped[0][1])
+
+    def test_a_transport_endpoint_is_named_rather_than_anchored(self):
+        trip = _geo_trip(
+            ("story.latin-bridge", "sarajevo", LATIN_BRIDGE),
+            attractions=[("bascarsija", "sarajevo", BASCARSIJA)],
+            transports=[("transport.sarajevo-mostar.bus", BASCARSIJA)],
+        )
+        problems, _, skipped = coordinate_problems(trip)
+        self.assertEqual(problems, [])
+        self.assertEqual(len(skipped), 1)
+        self.assertEqual(skipped[0][0], "transport 'transport.sarajevo-mostar.bus' origin")
+        self.assertIn("declares no city", skipped[0][1])
+
+    def test_a_transposed_decimal_is_out_of_reach_and_that_is_recorded(self):
+        """43.8578 typed as 43.5878 moves the point ~30 km and passes.
+
+        Asserted rather than left implicit, so the limit of the check is a fact
+        in the suite and not a surprise on the road: the threshold buys immunity
+        to a large sparse city, and this is what it costs.
+        """
+        trip = _geo_trip(
+            ("story.latin-bridge", "sarajevo", (43.5878, LATIN_BRIDGE[1])),
+            attractions=[("bascarsija", "sarajevo", BASCARSIJA)],
+        )
+        problems, _, _ = coordinate_problems(trip)
+        self.assertEqual(problems, [])
+        gap = distance_meters((43.5878, LATIN_BRIDGE[1]), BASCARSIJA)
+        self.assertLess(gap, COORDINATE_CLUSTER_LIMIT_METERS)
+        self.assertGreater(gap, 25_000.0)
+
+
+def _walk_trip(*orders):
+    return {
+        "walks": [
+            {
+                "id": "walk.sarajevo.historical",
+                "cityId": "sarajevo",
+                "stops": [{"storyId": f"story.{n}", "order": n} for n in orders],
+            }
+        ]
+    }
+
+
+class WalkOrderProblemsTest(unittest.TestCase):
+    """`stops[].order` is sorted by `WalkModeState.kt` and checked by nobody else."""
+
+    def test_the_packaged_walk_is_numbered_1_2(self):
+        trip = json.loads(PACKAGED_TRIP.read_text(encoding="utf-8"))
+        self.assertEqual(walk_order_problems(trip), ([], []))
+
+    def test_a_duplicate_order_is_an_error_at_every_stage(self):
+        errors, warnings = walk_order_problems(_walk_trip(1, 2, 2))
+        self.assertEqual(warnings, [])
+        self.assertEqual(len(errors), 1)
+        self.assertIn("2 stops both declare order 2", errors[0])
+        self.assertIn("depends on the sort being stable", errors[0])
+
+    def test_a_gap_is_a_warning_because_the_missing_stop_may_still_arrive(self):
+        errors, warnings = walk_order_problems(_walk_trip(1, 2, 4))
+        self.assertEqual(errors, [])
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("stop order skips 3", warnings[0])
+
+    def test_a_first_stop_that_is_not_1_is_a_warning(self):
+        errors, warnings = walk_order_problems(_walk_trip(2, 3))
+        self.assertEqual(errors, [])
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("starts at 2, not 1", warnings[0])
+
+    def test_stops_numbered_out_of_sequence_but_complete_are_not_a_finding(self):
+        """1, 3, 2 is the case the brief named, and `sortedBy` handles it.
+
+        The numbering is complete and unambiguous; the walk runs in the order
+        1, 2, 3. Nothing is wrong, so nothing is reported.
+        """
+        self.assertEqual(walk_order_problems(_walk_trip(1, 3, 2)), ([], []))
