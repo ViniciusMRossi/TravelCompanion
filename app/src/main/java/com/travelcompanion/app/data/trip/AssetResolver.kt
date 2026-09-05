@@ -10,6 +10,13 @@ package com.travelcompanion.app.data.trip
  */
 class AssetResolver(
     assets: List<Asset>,
+    /**
+     * Directory this build's content came out of. It is not decided here: it
+     * arrives already resolved from [TripAssetRoot.resolve], so the file that
+     * `trip.json` was read from and the files its assets resolve to are the
+     * same root by construction (D087).
+     */
+    private val root: TripAssetRoot = TripAssetRoot.Sample,
     private val exists: (String) -> Boolean = { true },
     /**
      * Bytes a packaged file occupies, or null when this build cannot say.
@@ -23,10 +30,11 @@ class AssetResolver(
     fun asset(assetId: String?): Asset? = assetId?.let(byId::get)
 
     /**
-     * Packaged path relative to the app assets root, e.g. `trip/images/x.jpg`.
+     * Packaged path relative to the app assets root, e.g. `trip/images/x.jpg`
+     * — or `trip-production/images/x.jpg` on a build carrying the real trip.
      */
     fun packagedPath(assetId: String?): String? =
-        asset(assetId)?.let { "$TRIP_ASSET_ROOT/${it.path.trimStart('/')}" }
+        asset(assetId)?.let { root.pathFor(it.path) }
 
     /**
      * Packaged path, but only when the binary is actually present in this
@@ -56,7 +64,6 @@ class AssetResolver(
     fun sizeInBytes(assetId: String?): Long? = packagedPathIfPresent(assetId)?.let(sizeOf)
 
     companion object {
-        const val TRIP_ASSET_ROOT = "trip"
         const val ANDROID_ASSET_SCHEME = "file:///android_asset/"
         const val MEDIA_ASSET_SCHEME = "asset:///"
     }

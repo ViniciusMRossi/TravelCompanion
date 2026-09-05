@@ -194,7 +194,7 @@ class PackagedTripTest {
             assertTrue("packaged trip.json not found at ${file.absolutePath}", file.exists())
             val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
             val trip = json.decodeFromString<TripPackage>(file.readText())
-            return TripContent(trip, AssetResolver(trip.assets, exists))
+            return TripContent(trip, AssetResolver(trip.assets, exists = exists))
         }
     }
 }

@@ -1313,16 +1313,24 @@ sampled on the phone.
 in the running app; the two that do not are waiting on content, and one more
 (09's live states) is waiting on a second phone.
 
-Three more states are blocked by content rather than by code:
+Two more states are blocked by content rather than by code:
 
 - **13's "Tudo offline" pill** cannot appear: both documents declare
   `availableOffline` with no packaged file, which is the D013/D014 warning the
   validator has printed since Phase 1. **Content:** the two PDFs;
 - **11's "Histórias ouvidas" can only ever read 0 de 2**: one story of the
   packaged walk has no guide at all and the other's audio file is not in the
-  build. **Content:** `audio.latin-bridge`;
-- **07's location states** other than *active* were not exercised; the phone
-  had the permission and a fix.
+  build. **Content:** `audio.latin-bridge`.
+
+**Correction — 07's location states were in that list and do not belong there.**
+`Denied` is not blocked by content and never was: it is reached by refusing the
+location permission, and it *was* reached that way on a device in Phase 3 — "a
+refused location permission leaving the walk and the audio running, with no
+foreground service and no GPS request at all" is that state, observed, and it
+is where D030 and D032 came from. What is true is narrower and belongs in "Not
+observed": no session since has re-exercised it. `Searching` is a third thing
+again — transitory, between the permission being granted and the first fix
+arriving — and it is short by design rather than blocked by anything.
 
 ### Confirmed by observation - Galaxy S24, with headphones
 

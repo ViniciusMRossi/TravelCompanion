@@ -80,7 +80,7 @@ fun EmergencyScreen(
 
             // 88dp, the largest touch target in the app, because it is the one
             // that gets pressed with shaking hands.
-            PrimaryEmergencyButton(state.general, onDial)
+            PrimaryEmergencyButton(state.general, state.generalWorksWithoutCredit, onDial)
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 state.police?.let { BigButton(it, Modifier.weight(1f), onDial) }
@@ -97,7 +97,11 @@ fun EmergencyScreen(
 }
 
 @Composable
-private fun PrimaryEmergencyButton(phone: PhoneUi, onDial: (String) -> Unit) {
+private fun PrimaryEmergencyButton(
+    phone: PhoneUi,
+    worksWithoutCredit: Boolean,
+    onDial: (String) -> Unit,
+) {
     val number = phone.number
     Column(
         modifier = Modifier
@@ -135,12 +139,14 @@ private fun PrimaryEmergencyButton(phone: PhoneUi, onDial: (String) -> Unit) {
                 )
             }
         }
-        Text(
-            text = "Funciona sem crédito e sem chip local.",
-            style = TcType.meta,
-            color = FieldCompanionColors.White,
-            textAlign = TextAlign.Center,
-        )
+        if (worksWithoutCredit) {
+            Text(
+                text = "Funciona sem crédito e sem chip local.",
+                style = TcType.meta,
+                color = FieldCompanionColors.White,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 

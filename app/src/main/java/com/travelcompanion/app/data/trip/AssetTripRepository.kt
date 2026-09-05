@@ -4,6 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import java.io.InputStream
 
 class AssetTripRepository(
     context: Context,
@@ -26,20 +27,10 @@ class AssetTripRepository(
         }
     }
 
-    private fun buildContent(): TripContent {
-        val trip = assets.open(TRIP_ASSET_PATH)
-            .bufferedReader()
-            .use { reader -> json.decodeFromString<TripPackage>(reader.readText()) }
+    private fun buildContent(): TripContent =
+        buildContent(json, ::openPackagedFile, ::packagedFileExists, ::packagedFileSize)
 
-        return TripContent(
-            trip = trip,
-            assets = AssetResolver(
-                trip.assets,
-                exists = ::packagedFileExists,
-                sizeOf = ::packagedFileSize,
-            ),
-        )
-    }
+    private fun openPackagedFile(path: String): InputStream = assets.open(path)
 
     /**
      * Photography and audio are produced after the app; a missing binary must
@@ -58,8 +49,33 @@ class AssetTripRepository(
     private fun packagedFileSize(path: String): Long? = runCatching {
         assets.open(path).use { it.available().toLong() }
     }.getOrNull()
+}
 
-    private companion object {
-        const val TRIP_ASSET_PATH = "trip/trip.json"
-    }
+/**
+ * Reads the packaged trip out of whichever root this build carries.
+ *
+ * Free of [Context] so both roots can be driven in a unit test — the branch it
+ * takes decides where every screen's content and every document's file come
+ * from, and it is not observable from the outside once the app is running.
+ *
+ * The root is resolved **once**, and the same value both names the `trip.json`
+ * to open and goes to the [AssetResolver]. That is the whole point: the
+ * content and its assets cannot come from different directories (D087).
+ */
+internal fun buildContent(
+    json: Json,
+    open: (String) -> InputStream,
+    exists: (String) -> Boolean,
+    sizeOf: (String) -> Long?,
+): TripContent {
+    val root = TripAssetRoot.resolve(exists)
+
+    val trip = open(root.tripJsonPath)
+        .bufferedReader()
+        .use { reader -> json.decodeFromString<TripPackage>(reader.readText()) }
+
+    return TripContent(
+        trip = trip,
+        assets = AssetResolver(trip.assets, root, exists, sizeOf),
+    )
 }

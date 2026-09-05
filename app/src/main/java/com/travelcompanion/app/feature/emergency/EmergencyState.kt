@@ -10,6 +10,17 @@ data class EmergencyUiState(
     /** Where the traveller is, in plain words and nothing else. */
     val location: String,
     val general: PhoneUi,
+    /**
+     * Whether the big button carries "Funciona sem crédito e sem chip local."
+     *
+     * The approved sheet ties that sentence to one number — *"Botão único de
+     * 88dp 'Ligar 112' com a observação de que funciona sem crédito"* — and it
+     * is a property of 112, not of emergency numbers in general. The real
+     * package has a seventh profile whose general number is Brazil's **190**,
+     * which is reached on days 1 and 20, and the note is not true of it
+     * (D088).
+     */
+    val generalWorksWithoutCredit: Boolean,
     val police: PhoneUi?,
     val ambulance: PhoneUi?,
     /** Insurance, the hotel where the bags are, the consulate. */
@@ -19,6 +30,12 @@ data class EmergencyUiState(
 
 /** The ink card held up to a stranger, and what it says underneath. */
 data class ShowToSomeoneUi(val localLanguageText: String, val translation: String)
+
+/**
+ * The one number the approved note is written about. Six of the seven packaged
+ * profiles carry it; Brazil's does not.
+ */
+private const val EUROPEAN_EMERGENCY_NUMBER = "112"
 
 /**
  * Builds screen 17.
@@ -70,6 +87,7 @@ fun buildEmergencyState(content: TripContent, date: LocalDate): EmergencyUiState
             isMockContent = mock,
             publicService = true,
         ),
+        generalWorksWithoutCredit = profile.generalEmergency.phone == EUROPEAN_EMERGENCY_NUMBER,
         police = profile.police?.let {
             phone(
                 label = it.label,

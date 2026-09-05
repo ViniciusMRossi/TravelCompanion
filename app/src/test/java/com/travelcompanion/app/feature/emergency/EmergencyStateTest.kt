@@ -23,6 +23,10 @@ import java.time.LocalDate
  */
 class EmergencyStateTest {
 
+    private companion object {
+        val COUNTRY_NAMES = mapOf("HR" to "Croácia", "BR" to "Brasil")
+    }
+
     private val content = packagedContent(exists = { false })
     private val date = LocalDate.parse("2026-09-21")
 
@@ -41,6 +45,15 @@ class EmergencyStateTest {
         ambulance = EmergencyContact(label = "Ambulância", phone = "194"),
     )
 
+    /** The seventh profile of the real package: no single number, and 190. */
+    private val brazil = EmergencyProfile(
+        id = "emergency.br",
+        countryCode = "BR",
+        countryName = "Brasil",
+        generalEmergency = EmergencyContact(label = "Emergência geral", phone = "190"),
+        ambulance = EmergencyContact(label = "SAMU", phone = "192"),
+    )
+
     /** The packaged trip with [croatia] first in the list, and the day's city
      *  moved to [countryCode] — everything else untouched. */
     private fun crossingTheBorder(
@@ -51,7 +64,7 @@ class EmergencyStateTest {
             if (city.id == "sarajevo") {
                 city.copy(
                     countryCode = countryCode,
-                    countryName = if (countryCode == "HR") "Croácia" else city.countryName,
+                    countryName = COUNTRY_NAMES[countryCode] ?: city.countryName,
                 )
             } else {
                 city
@@ -95,6 +108,30 @@ class EmergencyStateTest {
 
         assertEquals("192", state.police!!.number)
         assertEquals("Sarajevo · Bósnia e Herzegovina", state.location)
+    }
+
+    /**
+     * The note under the 88dp button is written about one number. The approved
+     * sheet says *"Botão único de 88dp 'Ligar 112' com a observação de que
+     * funciona sem crédito"* — it ties the sentence to 112, and the real
+     * package has a seventh profile where the general number is Brazil's 190,
+     * reached on days 1 and 20 (D088).
+     */
+    @Test
+    fun `the note about credit belongs to 112 and to no other number`() {
+        val inBosnia = buildEmergencyState(crossingTheBorder("BA"), date)!!
+        assertEquals("112", inBosnia.general.number)
+        assertTrue(inBosnia.generalWorksWithoutCredit)
+
+        val inBrazil = buildEmergencyState(
+            crossingTheBorder("BR", profiles = listOf(brazil) + content.trip.emergencyProfiles),
+            date,
+        )!!
+        assertEquals("190", inBrazil.general.number)
+        assertFalse(
+            "190 is not free of credit the way 112 is; the sheet's note is about 112",
+            inBrazil.generalWorksWithoutCredit,
+        )
     }
 
     @Test
