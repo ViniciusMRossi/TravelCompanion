@@ -1491,12 +1491,102 @@ one-day, one-city, no-files sample does not have.
   promising something that is not coming. Distinguishing "mock package" from
   "real content, no number" is new copy, and the prototype draws neither.
 
+## Phase 8 — The app stops waiting to be opened
+
+**Verified on hardware, 2026-09-05.** Samsung SM-S921B (Galaxy S24, Android 16)
+with the real package. Eight days before departure.
+
+The brief's §32 lists thirteen things for V1. This was the one that existed in
+no form at all: no `AlarmManager`, no `WorkManager`, and a README naming four
+channels of which two were built. The package carries **twelve deadlines** with
+an `actionByTime` — the gate at 06:45, the bag drop at 04:45, the ticket
+window at 06:50 — and the app knew every one of them and announced none.
+
+### The shape
+
+The decision is a pure function, `domain/alerts/criticalAlerts`, and
+`AlarmManager` is handed a list already decided (D092). That is where the risk
+is: this is the first thing in the app that **computes** with `day.timeZone`
+instead of printing it, and an hour out is invisible on every screen and only
+wrong at the gate.
+
+### The twelve, resolved
+
+Run against the real package, each in the zone the content wrote it in:
+
+| Deadline | Local | Zone | UTC |
+| --- | --- | --- | --- |
+| `ci.anne-frank` | 14/09 15:25 | `Europe/Amsterdam` | 13:25Z |
+| `ci.gate-corfu` | 15/09 06:45 | `Europe/Amsterdam` | 04:45Z |
+| `ci.checkin-ksamil` | 15/09 15:30 | **`Europe/Tirane`** | 13:30Z |
+| `ci.nightbus-ksamil` | 16/09 19:15 | `Europe/Tirane` | 17:15Z |
+| `ci.checkin-kotor` | 17/09 20:00 | `Europe/Podgorica` | 18:00Z |
+| `ci.bus-zabljak` | 20/09 06:40 | `Europe/Podgorica` | 04:40Z |
+| `ci.canyoning` | 22/09 10:15 | `Europe/Podgorica` | 08:15Z |
+| `ci.train-mostar` | 26/09 06:50 | `Europe/Sarajevo` | 04:50Z |
+| `ci.tour-herzegovina` | 27/09 09:20 | `Europe/Sarajevo` | 07:20Z |
+| `ci.bus-dubrovnik` | 28/09 06:30 | `Europe/Sarajevo` | 04:30Z |
+| `ci.caiaque` | 28/09 12:45 | **`Europe/Zagreb`** | 10:45Z |
+| `ci.bagdrop-dubrovnik` | 30/09 04:45 | `Europe/Zagreb` | 02:45Z |
+
+Two things this table proves. **`ci.checkin-ksamil` is read in Tirane, not in
+the day's Amsterdam** — day 3's timeline item declares the override and the
+critical item inherits it. And **`ci.checkin-kotor` appears once**, on the
+night of arrival, though the package declares it on three days of the stay.
+
+The honest caveat: every zone in this trip except Athens and São Paulo is
++02:00 in September, so those overrides change no instant *in this package*.
+The rule is demonstrably applied — the zone column is asserted, not the
+instant alone — and the cases where offsets differ are unit tests: Athens
+(+03:00) inside an Amsterdam day, and the day-20 crossing to São Paulo, which
+is five hours and which the real package has no deadline on.
+
+### Confirmed by observation — Galaxy S24
+
+- **the permission is asked after "Quem é você?", not at launch** — the same
+  timing Phase 3 used for location and Phase 5 for the microphone;
+- **the first build registered every alarm with a one-hour window.**
+  `SCHEDULE_EXACT_ALARM` starts denied on Android 13+, exactly as the decision
+  predicted. The app now opens Android's own settings screen for it once, and
+  granting it upgraded all thirteen alarms to `window=0` **with no relaunch**,
+  through the permission-changed broadcast (D093);
+- **an alarm fired at the minute it was set for**, 15:22:08 for 15:22, on
+  channel `operational`, `category=reminder`, `BigTextStyle`;
+- **the text is the package's**: title "Prova de campo — balcão fecha às
+  04:45", body "Esteja no balcão da companhia até 04:45. Saia de Čilipi às
+  04:00." Nothing composed;
+- **the tap opened screen 15**, the transport the deadline belongs to, with
+  the critical card at the top — not the generic Today;
+- **the twelve came back after a reboot**, exact, **without the app being
+  launched**: `BOOT_COMPLETED` → `BootRescheduleReceiver`, about 85 seconds
+  after `sys.boot_completed`.
+
+Deadlines in the future cannot be waited for, and `adb` moves neither the
+S24's clock nor the emulator's, so the firing was proven by temporarily
+injecting a deadline two minutes out into the installed copy of the package.
+The copy was restored from `trip-package/production/trip.json` afterwards and
+the two files hash identically.
+
+### Went to the design confirmation stack
+
+- **The evening memory prompt.** The channel is created so it can be switched
+  off before it ever speaks, and it posts nothing: what it would say, at what
+  hour, and whether it is nightly or only after a walk is copy no sheet draws
+  (D094).
+
 ## Later
 
 - [x] **All nineteen canonical screens exist.**
 - [ ] Weather (live/cached states; only the trip fallback exists today)
-- [ ] Notifications
-- [ ] Real Balkans package
+- [x] **Notifications — operational.** §32's "critical notifications are
+      scheduled locally" is true: the twelve packaged deadlines are registered
+      with `AlarmManager`, exact where the permission allows, rescheduled
+      after boot and after any content or traveller change, opening the screen
+      the deadline belongs to. **What is not done and is not claimed:** the
+      Memory channel exists and posts nothing, pending the copy question
+      (D094); Stories and Walk are unchanged from Phase 3.
+- [x] **Real Balkans package** *(installed in Phase 7: `trip.json` and 27
+      documents under `assets/trip-production/`.)*
 - [ ] Full Trip Validator
 - [x] **Real-device QA** *(Closed for this build: the nineteen screens were
       walked on a Galaxy S24 with headphones, including a full loop in

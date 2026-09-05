@@ -8,4 +8,8 @@
     <string name="walk_channel_description">Mantém o passeio ativo com a tela apagada.</string>
     <string name="stories_channel_name">Histórias pelo caminho</string>
     <string name="stories_channel_description">Avisa quando você chega perto de um lugar com história.</string>
+    <string name="operational_channel_name">Prazos da viagem</string>
+    <string name="operational_channel_description">Avisa antes da hora de sair, embarcar ou fazer check-in.</string>
+    <string name="memory_channel_name">Memórias</string>
+    <string name="memory_channel_description">Lembra de gravar como foi o dia.</string>
 </resources>

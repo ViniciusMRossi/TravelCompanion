@@ -1,5 +1,16 @@
 package com.travelcompanion.app.feature.shell
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
+import androidx.core.content.ContextCompat
+import com.travelcompanion.app.service.notification.CriticalAlertScheduler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -81,7 +92,14 @@ import java.time.LocalDate
 import java.time.LocalTime
 import com.travelcompanion.app.service.playback.PlaybackState
 
-private object Routes {
+/**
+ * The navigation graph's own names for its destinations.
+ *
+ * Internal rather than private so a notification can name the screen its
+ * deadline belongs to without a second copy of these strings: two places that
+ * must agree about "stay/{stayId}" is the defect, not the coupling (D092).
+ */
+internal object Routes {
     const val TODAY = "today"
     const val TRIP = "trip"
     const val EXPLORE = "explore"
@@ -129,6 +147,9 @@ fun AppNavigation(
     walkModeController: WalkModeController,
     groupSessionController: GroupSessionController,
     memoryController: MemoryController,
+    criticalAlertScheduler: CriticalAlertScheduler,
+    requestedRoute: String?,
+    onRouteHandled: () -> Unit,
     onResetParticipant: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -138,6 +159,60 @@ fun AppNavigation(
 
     val context = LocalContext.current
     val launcher = remember(context) { ExternalActionLauncher(context) }
+
+    // Android's own screen for exact alarms, opened once and never again.
+    // A deadline delivered in the next maintenance window is the defect the
+    // warning exists to prevent, and there is no other way to be exact: Play
+    // policy reserves USE_EXACT_ALARM for alarm clocks. No screen is drawn
+    // here — this is the system's, like the dialer and the share sheet — and
+    // a refusal is respected for good (D093).
+    val askForExactAlarms = {
+        if (criticalAlertScheduler.shouldAskForExact()) {
+            criticalAlertScheduler.markExactAsked()
+            runCatching {
+                context.startActivity(
+                    Intent(
+                        Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                        Uri.fromParts("package", context.packageName, null),
+                    ),
+                )
+            }
+        }
+        Unit
+    }
+
+    // Asked once the traveller has said who they are, which is the first
+    // moment the app has a deadline to announce — never at launch, the same
+    // timing Phase 3 used for location and Phase 5 for the microphone.
+    val notifications = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) {
+        // Whatever the answer. The two asks are sequential on purpose: opening
+        // the settings screen while the permission dialog was still up put a
+        // full-screen Activity over a question the traveller had not answered.
+        askForExactAlarms()
+    }
+
+    // The set is replaced whenever the content or the traveller changes: a
+    // deadline that moved must not keep its old alarm as well as its new one.
+    LaunchedEffect(content, participantId) {
+        criticalAlertScheduler.reschedule()
+
+        val needsAsking = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        if (needsAsking) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+        else askForExactAlarms()
+    }
+
+    // A notification names the screen its deadline belongs to — 15 for a
+    // transport, 16 for a stay. Consumed once, so returning to the app later
+    // does not jump back there.
+    LaunchedEffect(requestedRoute) {
+        val target = requestedRoute ?: return@LaunchedEffect
+        runCatching { navController.navigate(target) }
+        onRouteHandled()
+    }
 
     Column(
         modifier = Modifier

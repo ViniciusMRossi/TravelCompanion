@@ -24,6 +24,7 @@ import com.travelcompanion.app.service.memory.MediaMemoryPlayer
 import com.travelcompanion.app.service.memory.MemoryController
 import com.travelcompanion.app.service.walk.AndroidWalkPresence
 import com.travelcompanion.app.service.sync.GroupSessionController
+import com.travelcompanion.app.service.notification.CriticalAlertScheduler
 import com.travelcompanion.app.service.walk.WalkModeController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -143,6 +144,15 @@ class AppContainer(context: Context) {
         presence = AndroidWalkPresence(appContext),
         scope = playbackScope,
     )
+
+    /**
+     * The packaged deadlines, registered with `AlarmManager`.
+     *
+     * Application-scoped for the same reason playback is: an alarm outlives
+     * the screen that caused it to be scheduled, and a reboot receiver needs
+     * it without an Activity existing at all.
+     */
+    val criticalAlertScheduler = CriticalAlertScheduler(appContext, tripRepository)
 }
 
 class TravelCompanionApp : Application() {

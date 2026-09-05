@@ -19,6 +19,22 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
+    <!--
+        Twelve packaged deadlines, each announced at the minute the content
+        says to act. `USE_EXACT_ALARM` is the one that needs no asking, and
+        Play policy reserves it for alarm clocks and calendars, which this is
+        not. So SCHEDULE_EXACT_ALARM, which before Android 13 is granted on
+        install and from 13 starts denied — the app reads its state and falls
+        back to an inexact alarm rather than prompting through a flow no
+        approved sheet draws (D093).
+
+        Declared because it is used, and read before every use. RECEIVE_BOOT_-
+        COMPLETED is here for the same reason: Android drops alarms on
+        restart and a twenty-day trip goes through restarts.
+    -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:name=".TravelCompanionApp"
         android:allowBackup="true"
@@ -77,6 +93,25 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/memory_file_paths" />
         </provider>
+
+        <!--
+            Posts one packaged deadline when its alarm fires. Not exported:
+            nothing outside this app has any business ringing it.
+        -->
+        <receiver
+            android:name=".service.notification.CriticalAlertReceiver"
+            android:exported="false" />
+
+        <!-- Puts the deadlines back after a restart or an update (D092). -->
+        <receiver
+            android:name=".service.notification.BootRescheduleReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 </manifest>
