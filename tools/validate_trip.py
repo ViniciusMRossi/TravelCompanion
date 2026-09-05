@@ -474,12 +474,19 @@ def coordinate_problems(trip: dict):
     neighbour at zero metres is the strongest agreement there is, so nothing is
     reported for it.
 
-    One finding per pair, and the subject of it depends on how much city there
-    is to compare against. With three or more coordinates the wrong one is the
-    one standing alone and the finding names it. With exactly two there is no
-    cluster, both are equally far from everything, and the finding names both
-    and says so - the swap test cannot break that tie, because transposing
-    either half of a transposed pair lands on the other half by construction.
+    One finding per pair, and the subject of it depends on whether the city has
+    a cluster to compare against. Where it does, the wrong point is the one
+    standing alone and the finding names it. Where it does not - two points, or
+    three all far from each other - the finding names both ends and says that
+    neither has an anchor, because the swap test cannot break that tie:
+    transposing either half of a transposed pair lands on the other half by
+    construction.
+
+    Then the city is measured as a whole, by the distance between its two
+    furthest points, and only where the nearest neighbour found nothing. That
+    is the check for the group rewritten in one go, which the nearest neighbour
+    cannot see at all - two coordinates wrong the same way are each other's
+    close neighbour.
     """
     anchored, unanchored = geo_points(trip)
     problems: list[str] = []
@@ -552,19 +559,20 @@ def coordinate_problems(trip: dict):
                 problems.append(message)
                 continue
 
-            # Both members are far from everything, which is what a city with
-            # exactly two coordinates looks like when one of them is wrong.
-            # The swap test cannot break the tie: transposing either one of a
-            # transposed pair lands on the other, by construction. So the
-            # finding names both and refuses to pick, rather than accusing the
-            # correct one half the time.
+            # Neither member has anything close by, so there is no cluster to
+            # call the city and no way to choose between them. The wording is
+            # deliberately about *that* and not about the city holding exactly
+            # two points: the same branch is reached by three or more points
+            # that are all far from each other, and "no third coordinate"
+            # would then be a sentence the check never tested and that the
+            # package contradicts.
             label, field, point = points[first]
             other_label, other_field, other_point = points[second]
             message = (
                 f"city '{city_id}': {label} {field} ({point[0]}, {point[1]}) and "
                 f"{other_label} {other_field} ({other_point[0]}, {other_point[1]}) are "
-                f"{gap / 1000:.1f} km apart, with no third coordinate in the city to say "
-                "which of them belongs there."
+                f"{gap / 1000:.1f} km apart, and neither has a near neighbour in the "
+                "city to anchor it, so nothing here says which of them belongs there."
             )
             swapped_gap = _swap_gap(point, other_point)
             if swapped_gap is not None and swapped_gap <= COORDINATE_SWAP_MATCH_METERS:
@@ -575,10 +583,96 @@ def coordinate_problems(trip: dict):
                 )
             problems.append(message)
 
+        # The nearest neighbour asks "does this point have a friend nearby?",
+        # which is not the same question as "is this city one place?". Two
+        # coordinates wrong the same way become each other's friend and neither
+        # is far from anything: transposing two of the four packaged Sarajevo
+        # points leaves two tight groups 3691 km apart and every single point
+        # with a neighbour at 300 m. That is the shape a script or an agent
+        # produces when it rewrites a group, which is the common one - the
+        # nearest neighbour catches the transposition typed by hand, which is
+        # the rare one.
+        #
+        # So the city is also measured against itself as a whole: the distance
+        # between its two furthest points, against the same 100 km. Correct
+        # content spans 429 m in the sample and 296 m in the real package, and
+        # a large sparse city would span ~25 km, so the same two orders of
+        # magnitude of headroom hold on both sides.
+        #
+        # Only when the nearest neighbour found nothing in this city. One wrong
+        # point stretches the diameter too, and reporting it twice would be two
+        # findings for one defect; where the nearest neighbour can name the
+        # culprit, its message is the better one. The cost is that a city
+        # carrying *both* a lone wrong point and a transposed group reports only
+        # the lone point, and the group surfaces on the next run once that is
+        # fixed - stated here rather than left to be discovered.
+        if not any(index in far for index in range(len(points))):
+            (far_label, far_field, far_point), (near_label_2, near_field_2, near_point_2) = max(
+                ((a, b) for a in points for b in points),
+                key=lambda pair: distance_meters(pair[0][2], pair[1][2]),
+            )
+            span = distance_meters(far_point, near_point_2)
+            if span > COORDINATE_CLUSTER_LIMIT_METERS:
+                message = (
+                    f"city '{city_id}': its coordinates span {span / 1000:.1f} km, from "
+                    f"{far_label} {far_field} ({far_point[0]}, {far_point[1]}) to "
+                    f"{near_label_2} {near_field_2} ({near_point_2[0]}, {near_point_2[1]}). "
+                    "Every point here has a close neighbour, so the city holds more than "
+                    "one group of coordinates and nothing says which group is the city."
+                )
+                swapped_gap = _swap_gap(far_point, near_point_2)
+                if swapped_gap is not None and swapped_gap <= COORDINATE_SWAP_MATCH_METERS:
+                    message += (
+                        f" Swapping either end's latitude and longitude puts the two "
+                        f"{swapped_gap / 1000:.1f} km apart - one group has its values "
+                        "transposed."
+                    )
+                problems.append(message)
+
     for label, field in unanchored:
         skipped.append((label, f"{field} declares no city, so there is no cluster to anchor it to"))
 
     return problems, checked, skipped
+
+
+def story_guide_title_problems(trip: dict) -> list[str]:
+    """A story and its audio guide carrying the same title.
+
+    The player does not choose between the two, it shows both at once:
+    `WalkModeController.kt:231` passes `subtitle = story.title` into
+    `audioGuideRequest`, `AudioGuideRequest.kt:49` sets `title = guide.title`,
+    `AppNavigation.kt:462-463` hands the pair to the compact player, and
+    `Media3AudioEngine.kt:70-73` puts them in the media session as title and
+    artist. Equal titles therefore print the same line twice, in the compact
+    player and on the lock screen - which is Walk Mode with headphones and the
+    screen off, the case the whole feature was drawn for.
+
+    The rule is the pair, so it is read from the story side: a guide nobody
+    points at has nothing to collide with and never enters. Titles are compared
+    stripped and case-insensitively, because a title retyped rather than copied
+    is the same duplicated line on the screen.
+
+    Reported through `content_checks`, so it is a warning until the package
+    declares `production` - see the argument in D102.
+    """
+    guides = {g["id"]: g for g in trip.get("audioGuides", [])}
+    problems: list[str] = []
+
+    for story in trip.get("stories", []):
+        guide = guides.get(story.get("audioGuideId"))
+        if guide is None:
+            continue
+        story_title = (story.get("title") or "").strip()
+        guide_title = (guide.get("title") or "").strip()
+        if not story_title or story_title.casefold() != guide_title.casefold():
+            continue
+        problems.append(
+            f"story '{story['id']}' and audioGuide '{guide['id']}' carry the same title "
+            f"({story_title!r}); the player shows the guide's as the title and the "
+            "story's as the subtitle, so the lock screen prints the line twice"
+        )
+
+    return problems
 
 
 def walk_order_problems(trip: dict):
@@ -651,7 +745,13 @@ def schema_errors(trip: dict, schema: dict) -> list[str]:
 
 def content_checks(trip: dict, assets_root: Path) -> list[str]:
     """Integrity rules that JSON Schema cannot enforce (time zones excepted;
-    see `timezone_problems`)."""
+    see `timezone_problems`).
+
+    Warnings while `metadata.contentStatus` is prototype/draft, errors once the
+    package declares `production` - which is the severity every finding here
+    shares, and the reason `story_guide_title_problems` lives here rather than
+    beside the coordinate check.
+    """
     problems: list[str] = []
 
     assets = {a["id"]: a for a in trip.get("assets", [])}
@@ -701,6 +801,8 @@ def content_checks(trip: dict, assets_root: Path) -> list[str]:
 
     for guide in audio_guides.values():
         ref("asset", assets, guide.get("audioAssetId"), f"audioGuide '{guide['id']}'")
+
+    problems.extend(story_guide_title_problems(trip))
 
     for attraction in attractions.values():
         where = f"attraction '{attraction['id']}'"

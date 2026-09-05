@@ -1751,6 +1751,88 @@ reading the accusation, and restoring:
   a code comment, and somebody opening screen 15 on 15 September would have no
   way to know a second ticket is one screen away.
 
+## The friend that was also wrong, and a line printed twice (2026-09-05)
+
+Two corrections to the coordinate check of the commit before this one, and a
+guard for a defect that reached the APK. All three came from review, none from
+a tool.
+
+**A sentence that could be false (D100).** D098's no-cluster finding said "with
+no third coordinate in the city to say which of them belongs there". The branch
+is reached whenever *neither member of the pair has a near neighbour*, which
+three mutually distant points satisfy as well as two, so a city holding
+Sarajevo, Paris and Sao Paulo printed that sentence twice while carrying three
+coordinates. The behaviour was right and did not change; only the stated reason
+was wrong. One wording, true wherever the branch is reached, replaces the two
+that could drift.
+
+**A group transposed in one go (D101).** The nearest neighbour asks "does this
+point have a friend nearby?" and not "is this city one place?", and **two
+coordinates wrong the same way are each other's friend**. Transposing two of the
+four packaged Sarajevo points leaves two tight groups 3,691 km apart, every
+point with a neighbour at 300 m, and the check reported nothing: `rc=0`, not one
+line. The city is now also measured whole - the distance between its two
+furthest points, against the same 100 km - and only where the nearest neighbour
+found nothing there, so one defect stays one finding.
+
+**A title printed twice (D102).** The three Sarajevo guides were promoted with
+`title` identical to their story's. The player does not choose between the two,
+it shows both: guide as the title, story as the subtitle, in the compact player
+and in the media notification. On the lock screen - Walk Mode with headphones
+and the screen off - that is the same sentence on both lines. Nothing checked
+it; review found it by reading the player chain. Now `content_checks` reads the
+pair from the story side.
+
+### Proved by failing, on the sample package
+
+- **F1** - three of the four sample coordinates moved to Paris, Sao Paulo and
+  Tokyo: three findings, none of them claiming a third coordinate is missing,
+  each saying *"neither has a near neighbour in the city to anchor it"*. `rc=1`.
+- **F2** - two of the four transposed together. **Run against the validator as
+  committed at 778a6e4, the same adulterated file gives `PASS` and `rc=0`.**
+  Against this commit: *"city 'sarajevo': its coordinates span 3691.1 km, from
+  attraction 'bascarsija' location.geo (43.8595, 18.431) to story
+  'story.meeting-of-cultures' trigger.geo (18.4257, 43.859). Every point here
+  has a close neighbour, so the city holds more than one group of coordinates
+  and nothing says which group is the city. Swapping either end's latitude and
+  longitude puts the two 0.6 km apart - one group has its values transposed."*
+  `rc=1`.
+- **F3** - the sample needed no adulteration: it already carries the clash, and
+  the guard found it on its first run (below). Promoted to `production`, it is
+  an error and `rc=1`.
+
+### The guard's first run found one in the tracked packages
+
+`app/src/main/assets/trip/trip.json` and `trip-package/sample/sample-trip.json`
+both declare `story.latin-bridge` and `ag.latin-bridge` with the title **"Latin
+Bridge"**. It is the real defect D102 describes, in the package this repository
+ships, and it was there before the three Sarajevo guides repeated it.
+
+Both files are `prototype`, so this is a **warning and `rc` stays 0** - the two
+tracked packages now report three content issues where they reported two. It is
+not fixed here because both files are byte-locked by instruction and content is
+not this commit's scope. **The fix is one string**: give the guide a title that
+names the place, the way the real package's three now do.
+
+### Found by writing the test, not by planning it
+
+- **The second F3 proof proved the opposite of what it was for.** Retitling
+  `ag.bascarsija` to collide with a story changed nothing, because no story
+  points at it - it belongs to an attraction. What was meant as a second
+  positive case turned into the false-positive guard on real data: a guide
+  nobody points at has nothing to collide with, whatever it is called.
+
+### Not implemented, with reasons
+
+- **A city moved wholesale cannot be caught**, and there is a test that says so.
+  Transposing all four Sarajevo points leaves a city that is internally
+  consistent and in the wrong place; nothing inside the package contradicts it.
+  The anchor would have to be external, which is the bounding-box-per-country
+  table D098 refused.
+- **A city holding both a lone wrong point and a transposed group reports only
+  the lone point.** The diameter runs only where the nearest neighbour was
+  silent, so the group surfaces on the next run once the first is fixed.
+
 ## Later
 
 - [x] **All nineteen canonical screens exist.**
@@ -1838,12 +1920,24 @@ timed and a file not packaged yet are reported by name as checks that did not
 run, never as failures.
 
 Coordinates are checked the same way, and for the same reason (D098). The
-schema already bounds the range, so what is checked is agreement: each point
-against the nearest other point in the city it declares, over 100 km being a
-finding, and the transposition named when swapping the two values lands within
-5 km of that neighbour. A transport endpoint declares no city and is printed as
+schema already bounds the range, so what is checked is agreement, and it is
+asked twice against the same 100 km. **Each point against the nearest other
+point in its city** (D098) answers "is this point in the wrong place", and names
+the transposition when swapping the two values lands within 5 km of that
+neighbour. **The city's own diameter** (D101) answers "is this city one place",
+and it is the one that sees a group transposed in one go — two coordinates wrong
+the same way are each other's near neighbour, so the first question is blind to
+them. The diameter runs only where the first found nothing in that city, so one
+defect stays one finding. A transport endpoint declares no city and is printed as
 unanchored; a city holding one coordinate is printed as unchecked; a pair of
 coincident points is correct content and is silent.
+
+A story and the audio guide it points at may not carry the same title (D102).
+The player shows the pair — guide as the title, story as the subtitle — so equal
+titles print the same line twice in the compact player and on the lock screen.
+Reported through `content_checks`, which makes it a warning until the package
+declares `production`; the two tracked packages currently trip it, on
+`story.latin-bridge` / `ag.latin-bridge`.
 
 Walk stop numbering is checked in two severities (D099). A duplicate `order` is
 an error at every stage, because which stop the traveller walks first then
@@ -1852,7 +1946,8 @@ warning until `contentStatus` is `production`, because the missing stop may
 still be on its way.
 
 Currently reported for the packaged trip: the two ticket/voucher PDFs are
-declared offline but their files are not packaged yet. The UI reflects this —
+declared offline but their files are not packaged yet, and `story.latin-bridge`
+shares its title with `ag.latin-bridge` (D102). The UI reflects this —
 it does not badge them "Offline" (D013). One audio guide of three is timed
 against a real file — `ag.bascarsija`, 720 declared over a 720.0s prototype
 WAV — and the other two are named as untimed, their `.mp3` files not being in
@@ -1867,13 +1962,14 @@ after this commit:
 | duplicate IDs | done |
 | missing refs | done |
 | missing assets | partly — offline documents only; an audio guide with no packaged file is named, not failed |
-| invalid coordinates | **done** — not the range, which the schema already bounds: each point against the nearest other point in its own city, with the transposition named when the swap resolves (D098) |
+| invalid coordinates | **done** — not the range, which the schema already bounds. Two questions of the same 100 km: each point against the nearest other point in its city (D098), and, where that finds nothing, the city's own diameter, which is what sees a group transposed in one go (D101). The transposition is named whenever the swap resolves |
 | missing offline documents | done |
 | audio duration/chapter inconsistencies | **done this commit** — both halves: the duration against the file, and the chapters against it |
 | invalid date ranges | done |
 | bad timeline refs | done |
 | bad walk ordering | **done** — duplicates are an error at every stage, gaps and a first stop that is not 1 are warnings until production (D099) |
 | unresolved mock data in production mode | partly — `content_preflight.py` flags markers and refuses `isMockContent` in production |
+| *(not in §27)* story and audio guide sharing one title | **done** — the player shows the pair, not one or the other, so equal titles print the same line twice on the lock screen (D102) |
 
 **With these two, the table closes.** Every one of §27's eleven checks is
 built. Two of them stay deliberately partial and say so in the row itself:
@@ -1891,7 +1987,7 @@ no city, a city with one coordinate, an audio format that cannot be timed.
 and starter trips) · `python -m unittest tools/test_validate_trip.py` ·
 `./gradlew testDebugUnitTest assembleDebug assembleRelease lintDebug`
 
-Unit tests: 341 passing (Kotlin), plus 28 in `tools/test_validate_trip.py`.
+Unit tests: 341 passing (Kotlin), plus 39 in `tools/test_validate_trip.py`.
 Lint: 0 errors, and no lint baseline is used. The
 warnings are dependency-hygiene notices only (`GradleDependency`,
 `UseTomlInstead`, `NewerVersionAvailable` and the like); their count moves

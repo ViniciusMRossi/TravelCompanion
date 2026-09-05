@@ -42,9 +42,11 @@ from validate_trip import (
     COORDINATE_CLUSTER_LIMIT_METERS,
     audio_duration_problems,
     audio_duration_seconds,
+    content_checks,
     coordinate_problems,
     distance_meters,
     known_timezones,
+    story_guide_title_problems,
     timezone_problems,
     walk_order_problems,
 )
@@ -366,7 +368,7 @@ class CoordinateProblemsTest(unittest.TestCase):
         self.assertEqual(len(problems), 1)
         self.assertIn("attraction 'bascarsija' location.geo (43.8595, 18.431)", problems[0])
         self.assertIn("story 'story.latin-bridge' trigger.geo (18.4289, 43.8578)", problems[0])
-        self.assertIn("no third coordinate in the city", problems[0])
+        self.assertIn("neither has a near neighbour in the city to anchor it", problems[0])
         self.assertIn("one of the two has its values transposed", problems[0])
 
     def test_coincident_points_are_correct_content(self):
@@ -469,3 +471,151 @@ class WalkOrderProblemsTest(unittest.TestCase):
         1, 2, 3. Nothing is wrong, so nothing is reported.
         """
         self.assertEqual(walk_order_problems(_walk_trip(1, 3, 2)), ([], []))
+
+
+class CoordinateWordingTest(unittest.TestCase):
+    """The sentence has to describe the condition the code actually tested."""
+
+    def test_three_points_all_far_apart_do_not_claim_there_is_no_third(self):
+        """The wording that D098 wrote in prose and the code over-generalised.
+
+        The branch is reached whenever neither member of a pair has a near
+        neighbour, which three mutually distant points satisfy just as two do.
+        The old sentence said "no third coordinate in the city" and this
+        package has three, so it was printed twice and was false twice.
+        """
+        trip = _geo_trip(
+            ("story.sarajevo", "x", (43.85, 18.43)),
+            ("story.paris", "x", (48.85, 2.35)),
+            ("story.saopaulo", "x", (-23.55, -46.63)),
+        )
+        problems, checked, _ = coordinate_problems(trip)
+        self.assertEqual(checked, ["city 'x' (3 coordinates)"])
+        self.assertEqual(len(problems), 2)
+        for problem in problems:
+            self.assertNotIn("no third coordinate", problem)
+            self.assertIn("neither has a near neighbour in the city to anchor it", problem)
+
+    def test_the_diameter_does_not_add_a_third_finding_when_the_neighbour_spoke(self):
+        """One defect, one finding: the diameter only runs where the other is blind."""
+        trip = _geo_trip(
+            ("story.latin-bridge", "sarajevo", (LATIN_BRIDGE[1], LATIN_BRIDGE[0])),
+            ("story.meeting-of-cultures", "sarajevo", MEETING_OF_CULTURES),
+            attractions=[
+                ("bascarsija", "sarajevo", BASCARSIJA),
+                ("latin-bridge", "sarajevo", LATIN_BRIDGE),
+            ],
+        )
+        problems, _, _ = coordinate_problems(trip)
+        self.assertEqual(len(problems), 1)
+        self.assertNotIn("its coordinates span", problems[0])
+
+
+class CoordinateDiameterTest(unittest.TestCase):
+    """A group transposed in one go, which the nearest neighbour cannot see."""
+
+    def test_two_of_four_transposed_together_are_caught_by_the_span(self):
+        """The case that passed in silence: every point has a close neighbour.
+
+        Transposing two of the four packaged Sarajevo points leaves two tight
+        groups 3691 km apart. Each wrong point is 0.3 km from the other wrong
+        point, each right point is 0.3 km from the other right one, so nothing
+        is far from anything and the nearest neighbour reports nothing at all.
+        """
+        trip = _geo_trip(
+            ("story.meeting-of-cultures", "sarajevo",
+             (MEETING_OF_CULTURES[1], MEETING_OF_CULTURES[0])),
+            ("story.latin-bridge", "sarajevo", (LATIN_BRIDGE[1], LATIN_BRIDGE[0])),
+            attractions=[("bascarsija", "sarajevo", BASCARSIJA)],
+            walks=[("walk.bazar-ao-rio", "sarajevo", BASCARSIJA)],
+        )
+        problems, checked, _ = coordinate_problems(trip)
+        self.assertEqual(checked, ["city 'sarajevo' (4 coordinates)"])
+        self.assertEqual(len(problems), 1)
+        self.assertIn("city 'sarajevo': its coordinates span 3691.", problems[0])
+        self.assertIn("Every point here has a close neighbour", problems[0])
+        self.assertIn("more than one group of coordinates", problems[0])
+        self.assertIn("one group has its values transposed", problems[0])
+
+    def test_all_four_transposed_together_are_caught_too(self):
+        """Nothing is left to compare against, and the span is still 0."""
+        trip = _geo_trip(
+            ("story.meeting-of-cultures", "sarajevo",
+             (MEETING_OF_CULTURES[1], MEETING_OF_CULTURES[0])),
+            ("story.latin-bridge", "sarajevo", (LATIN_BRIDGE[1], LATIN_BRIDGE[0])),
+            attractions=[("bascarsija", "sarajevo", (BASCARSIJA[1], BASCARSIJA[0]))],
+        )
+        problems, _, _ = coordinate_problems(trip)
+        # A city moved wholesale is internally consistent: it is one place, and
+        # the wrong one. Nothing in the package can say so, and this asserts
+        # that limit rather than leaving it to be found on the road.
+        self.assertEqual(problems, [])
+
+    def test_the_span_leaves_a_coincident_pair_alone(self):
+        """Zero metres is the strongest agreement there is, and spans nothing."""
+        trip = _geo_trip(
+            ("story.sebilj", "sarajevo", BASCARSIJA),
+            walks=[("walk.bazar-ao-rio", "sarajevo", BASCARSIJA)],
+        )
+        problems, checked, _ = coordinate_problems(trip)
+        self.assertEqual(problems, [])
+        self.assertEqual(checked, ["city 'sarajevo' (2 coordinates)"])
+
+    def test_the_packaged_trip_span_is_far_under_the_limit(self):
+        trip = json.loads(PACKAGED_TRIP.read_text(encoding="utf-8"))
+        problems, _, _ = coordinate_problems(trip)
+        self.assertEqual(problems, [])
+
+
+def _title_trip(story_title, guide_title, link=True):
+    return {
+        "assets": [{"id": "a", "type": "audio", "path": "audio/x.m4a"}],
+        "audioGuides": [
+            {"id": "ag.x", "title": guide_title, "audioAssetId": "a", "durationSeconds": 60}
+        ],
+        "stories": [
+            {
+                "id": "story.x",
+                "cityId": "sarajevo",
+                "title": story_title,
+                "hook": "h",
+                "body": "b",
+                **({"audioGuideId": "ag.x"} if link else {}),
+            }
+        ],
+    }
+
+
+class StoryGuideTitleTest(unittest.TestCase):
+    """The player pairs the two titles; equal ones print the same line twice."""
+
+    def test_identical_titles_are_reported(self):
+        problems = story_guide_title_problems(_title_trip("Ponte Latina", "Ponte Latina"))
+        self.assertEqual(len(problems), 1)
+        self.assertIn("story 'story.x' and audioGuide 'ag.x' carry the same title", problems[0])
+        self.assertIn("'Ponte Latina'", problems[0])
+        self.assertIn("the lock screen prints the line twice", problems[0])
+
+    def test_the_guide_naming_the_place_and_the_story_the_sentence_is_silent(self):
+        problems = story_guide_title_problems(
+            _title_trip("A Ponte Latina, e a esquina que nao e a ponte", "Ponte Latina")
+        )
+        self.assertEqual(problems, [])
+
+    def test_a_guide_no_story_points_at_has_nothing_to_collide_with(self):
+        problems = story_guide_title_problems(
+            _title_trip("Ponte Latina", "Ponte Latina", link=False)
+        )
+        self.assertEqual(problems, [])
+
+    def test_a_title_retyped_rather_than_copied_is_the_same_duplicated_line(self):
+        problems = story_guide_title_problems(_title_trip("Ponte Latina", "ponte latina "))
+        self.assertEqual(len(problems), 1)
+
+    def test_it_reaches_the_package_through_content_checks(self):
+        """Which is what makes it a warning until production, and an error in it."""
+        trip = _title_trip("Ponte Latina", "Ponte Latina")
+        with tempfile.TemporaryDirectory() as folder:
+            problems = content_checks(trip, Path(folder))
+        self.assertEqual(len(problems), 1)
+        self.assertIn("carry the same title", problems[0])
