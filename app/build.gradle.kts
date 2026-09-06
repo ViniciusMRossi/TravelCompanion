@@ -26,6 +26,19 @@ android {
         versionName = "0.1.0"
     }
 
+    buildTypes {
+        release {
+            // Signed with the debug key, deliberately. This app is installed
+            // by ADB onto two telephones and is not distributed; without a
+            // signingConfig the release comes out as `app-release-unsigned`
+            // and simply does not install, which left device QA running on
+            // the debug build — the one that draws the "Protótipo · simular
+            // chegada" scaffold on screen 07. No minify: the DEX check is
+            // worth more than the few hundred kilobytes (D110).
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true

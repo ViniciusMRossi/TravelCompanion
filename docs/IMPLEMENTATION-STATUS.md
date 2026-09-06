@@ -2241,3 +2241,75 @@ Said plainly, because a visual pass that hides its holes is worse than none.
 
 Everything else in the table above was opened, measured and sampled at both
 sizes.
+
+## A promise that was false on the safety screen, and a release nobody could install (2026-09-06)
+
+Two corrections, seven days before departure, both found in the package that
+actually boards rather than in the sample.
+
+### The note that lied on screen 17 (D109)
+
+`WITHHELD_NOTE` — "O número chega com os dados reais da viagem." — belongs to
+D061/D064 and to mock content: the package ships `+000000000` and
+`+387000000000`, and the row stays to say what is missing and when it arrives.
+`phone()` in `domain/operations/Contacts.kt` folded two different states into
+one `withheld` flag, so a number that is simply **absent from a real package**
+got the same sentence.
+
+In `assets/trip-production/trip.json` (`isMockContent=false`) five of the ten
+stays carry no `contactPhone`: `acc.bastasi.camp`, `acc.sarajevo.estudio`,
+`acc.dubrovnik.cidade-velha`, `acc.cilipi.estudio`, `acc.amsterdam.amigo` —
+**days 11, 12, 13, 16, 17, 18 and 19**. On each of those seven days screen 17
+drew a "Onde estão as malas" row promising a number that is never coming.
+
+- `phone()` now splits the gate: withheld-as-mock keeps the note; a null or
+  blank number in a real package is undialable with **no note**. Mock
+  behaviour is byte-for-byte what it was;
+- screen 17's stay row follows the rule its own header states — everything on
+  it is either a number to call or a sentence to show a stranger — so with no
+  number there is **no row**: `stay?.contactPhone?.let`, the same shape
+  `StayState` (screen 16) already used. Screen 16 never had the defect;
+- no new copy invented. The sheet does not draw "sem telefone cadastrado" and
+  the emergency screen is not where to experiment.
+
+Every other `phone()` caller was read. In the production package none of them
+can pass a null: the six emergency-profile numbers are all present in all
+seven profiles, no transport declares a `phone` action, and no Plan B step
+does either. So the only screen whose output changes is 17, on those seven
+days. `OperationsUi`'s `PhoneRow` needed nothing — it already draws
+`phone.note` only when non-null, and greys the handset when `number` is null.
+
+### The release that did not install (D110)
+
+`app/build.gradle.kts` had no `buildTypes` block, so `assembleRelease`
+produced `app-release-unsigned.apk`. `apksigner verify` on it: **DOES NOT
+VERIFY — Missing META-INF/MANIFEST.MF**. Device QA recorded above was run
+"against a debug build", which is what is on the telephones, and the debug
+build is the one that draws "Protótipo · simular chegada" on screen 07 — so
+the release-DEX guard was proving something about an artefact nobody could
+install.
+
+One line, `signingConfig = signingConfigs.getByName("debug")`. No minify, no
+new keystore. **The binary for device QA is now `app-release.apk`**, and the
+DEX check finally means something.
+
+Worth recording for the next pass: counting `META-INF/*.{RSA,SF}` zip entries
+does **not** detect signing here. With `minSdk 26` AGP signs with v2/v3 only,
+whose block is not a zip entry — the installable debug APK scores 0 by that
+measure too. Use `apksigner verify --print-certs`.
+
+### Verified
+
+- 6 validators rc=0, output unchanged; `test_validate_trip.py` 39 tests, OK;
+  `check_repo.py` PASS; `git diff --check` clean;
+- Kotlin unit tests **357, 0 failures** (355 before, plus the two written to
+  fail first), counted from the 44 XML files in
+  `app/build/test-results/testDebugUnitTest/`;
+- `lintDebug`: **0 errors**, 33 warnings;
+- both APKs carry **31 entries under `assets/trip-production/`** (27 PDF,
+  3 `.m4a`, `trip.json`), verified inside the APK;
+- DEX strings: debug "Protótipo" 2 / "simular chegada" 2; **release 0 and 0**,
+  now measured in the signed `app-release.apk`;
+- `apksigner verify --print-certs app-release.apk`: verifies under v2, one
+  signer, `CN=Android Debug`, certificate SHA-256
+  `530dacfc…b009fc` — the same certificate as `app-debug.apk`.

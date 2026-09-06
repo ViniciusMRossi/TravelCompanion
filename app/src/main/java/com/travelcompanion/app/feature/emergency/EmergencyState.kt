@@ -132,12 +132,16 @@ fun buildEmergencyState(content: TripContent, date: LocalDate): EmergencyUiState
                     isMockContent = mock,
                 )
             },
-            stay?.let {
+            // Everything on this screen is either a number to call or a
+            // sentence to show a stranger. A stay the package carries no
+            // number for is neither, so it does not take a row — the same
+            // `contactPhone?.let` screen 16 already uses (D109).
+            stay?.contactPhone?.let { number ->
                 phone(
-                    label = it.name,
-                    number = it.contactPhone,
+                    label = stay.name,
+                    number = number,
                     detail = "Onde estão as malas",
-                    accessibilityLabel = "Ligar para a hospedagem, ${it.name}",
+                    accessibilityLabel = "Ligar para a hospedagem, ${stay.name}",
                     isMockContent = mock,
                 )
             },

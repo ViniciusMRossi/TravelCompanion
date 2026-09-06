@@ -30,6 +30,11 @@ data class PhoneUi(
  * ambulance numbers beside it, are facts about a country rather than about
  * this trip, and they are dialled whatever state the package is in — which is
  * why they come through [publicService].
+ *
+ * A number simply absent from a shipped package is a third state. Five of the
+ * ten stays the real trip carries have no `contactPhone` at all, and there
+ * nothing is arriving later: the row cannot be dialled and has nothing to
+ * promise, so it gets no note (D109).
  */
 fun phone(
     label: String,
@@ -39,14 +44,15 @@ fun phone(
     isMockContent: Boolean,
     publicService: Boolean = false,
 ): PhoneUi {
-    val withheld = number.isNullOrBlank() || (isMockContent && !publicService)
+    val withheldAsMock = isMockContent && !publicService
+    val dialable = !withheldAsMock && !number.isNullOrBlank()
     return PhoneUi(
         label = label,
         detail = detail,
-        number = number.takeIf { !withheld },
+        number = number.takeIf { dialable },
         accessibilityLabel = accessibilityLabel,
-        dialable = !withheld,
-        note = if (withheld) WITHHELD_NOTE else null,
+        dialable = dialable,
+        note = if (withheldAsMock) WITHHELD_NOTE else null,
     )
 }
 
@@ -55,6 +61,9 @@ fun phone(
  * one D061 already established on screen 14: what is missing, and when it
  * arrives. The contact is still listed, because knowing an insurance line
  * exists matters even when this build cannot dial it.
+ *
+ * It is a sentence about mock content and only about that. It never stands in
+ * for a number a real package does not have (D109).
  */
 const val WITHHELD_NOTE: String = "O número chega com os dados reais da viagem."
 

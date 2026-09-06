@@ -8,6 +8,7 @@ import com.travelcompanion.app.data.trip.TwoCityTrip
 import com.travelcompanion.app.domain.operations.WITHHELD_NOTE
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -268,4 +269,43 @@ class EmergencyStateTest {
             second.contacts[1].accessibilityLabel,
         )
     }
+
+    /**
+     * Five of the ten stays the real package ships carry no `contactPhone` —
+     * a camp, three studios and a friend's spare room — and they cover days
+     * 11, 12, 13, 16, 17, 18 and 19. The retention note is a sentence about
+     * mock content ("what is missing, and when it arrives", D061/D064); in a
+     * real package nothing is arriving, so it is simply false, and it was
+     * false on the safety screen. Screen 16 already had this right
+     * (StayState uses `contactPhone?.let`): no number, no row.
+     */
+    @Test
+    fun `a real package with no host number shows no row and no note`() {
+        val real = withoutHostPhone(TwoCityTrip.content())
+
+        val state = buildEmergencyState(real, TwoCityTrip.DAY_ONE)!!
+
+        listOfNotNull(state.general, state.police, state.ambulance)
+            .plus(state.contacts)
+            .forEach { assertNotEquals(it.label, WITHHELD_NOTE, it.note) }
+        assertFalse(
+            "the stay with no number must not be listed at all",
+            state.contacts.any { it.label == "Hospedagem em Sarajevo — exemplo" },
+        )
+    }
+
+    /** [TwoCityTrip] as a shipped package, with the first night's host number gone. */
+    private fun withoutHostPhone(trip: TripContent): TripContent = TripContent(
+        trip.trip.copy(
+            metadata = trip.trip.metadata.copy(isMockContent = false),
+            accommodations = trip.trip.accommodations.map { stay ->
+                if (stay.name == "Hospedagem em Sarajevo — exemplo") {
+                    stay.copy(contactPhone = null)
+                } else {
+                    stay
+                }
+            },
+        ),
+        trip.assets,
+    )
 }

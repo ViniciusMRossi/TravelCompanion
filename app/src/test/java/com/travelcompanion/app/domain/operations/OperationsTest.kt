@@ -121,6 +121,21 @@ class OperationsTest {
     }
 
     /**
+     * The note says what is missing and when it arrives. In a shipped package
+     * the data has arrived and the number still is not there — a camp with no
+     * telephone is not a placeholder waiting to be replaced — so there is
+     * nothing to dial and nothing to promise.
+     */
+    @Test
+    fun `a missing number in a real package carries no note`() {
+        val host = phone(label = "Camp em Bastasi", number = null, isMockContent = false)
+
+        assertFalse(host.dialable)
+        assertNull(host.number)
+        assertNull(host.note)
+    }
+
+    /**
      * 112 is a fact about a country, not about this trip, so it dials whatever
      * state the package is in.
      */
