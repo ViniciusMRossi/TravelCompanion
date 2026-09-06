@@ -53,6 +53,15 @@ fun MoreScreen(
     onOpenAction: (ActionLink) -> Unit,
     onResetParticipant: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Opens Android's own permission screen, or null when passive story
+     * discovery is already on — and then nothing about it is drawn.
+     *
+     * A device fact, so it arrives as a callback rather than through
+     * [MoreUiState]: what the trip contains and what this phone has granted
+     * are different kinds of thing, and only one of them is content.
+     */
+    onEnableStoryDiscovery: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier
@@ -116,10 +125,36 @@ fun MoreScreen(
                     state.savedContent.forEach { line -> SavedLine(line) }
                 }
                 ActionRow(TcIcons.Group, "Trocar quem é você", onResetParticipant)
+
+                // Said once, here, and never as an interruption. The row is
+                // absent as soon as Android has granted it, and refusing it
+                // is a decision this app respects the way it respects a
+                // refused microphone — which is what the second line says out
+                // loud, because it is true (D104).
+                onEnableStoryDiscovery?.let { enable ->
+                    ActionRow(TcIcons.Pin, "Avisar sobre histórias por perto", enable)
+                    Text(
+                        text = STORY_DISCOVERY_NOTE,
+                        style = TcType.meta,
+                        color = FieldCompanionColors.Neutral600,
+                    )
+                }
             }
         }
     }
 }
+
+/**
+ * The whole of what the app says about the background-location permission.
+ *
+ * Plain about the mechanism, because from Android 11 the traveller has to go
+ * and do it themselves and a vaguer sentence would leave them looking; plain
+ * about the cost of saying no, because there almost is none.
+ */
+private const val STORY_DISCOVERY_NOTE =
+    "Para avisar quando você passar perto de uma história, mesmo com o app fechado, " +
+        "o Android pede a localização “o tempo todo”, nas Configurações do aparelho. " +
+        "Sem ela nada muda: o passeio, os áudios e as histórias da cidade continuam iguais."
 
 /** The one row that is impossible to miss: oxblood, 68dp. */
 @Composable

@@ -174,12 +174,27 @@ over ADB on 2026-09-03, against the final binary.
 - [x] Headphone connection reported from the device rather than asserted
 - [ ] **Screen 10 História pelo caminho and screen 11 Fim do passeio are not
       implemented.** Closing the walk completes it and returns; a story
-      triggered outside a walk posts a notification that opens the app. Both
-      canonical screens remain placeholders, as later-phase screens already are.
-- [ ] **Passive background geofencing is not implemented.** The decision layer
-      carries the outside-a-walk branch and is tested, but registration of
-      background geofences — and the background-location permission flow it
-      needs — was not in this phase's scope. Only the foreground strategy runs.
+      triggered outside a walk posts a notification that opens screen 04, where
+      that story already is (D105 (a)). Both canonical screens remain
+      placeholders, as later-phase screens already are.
+- [x] **Passive background geofencing.** The three packaged Sarajevo triggers
+      are registered as Play Services geofences whenever the app has content
+      and the permission, and put back after a restart on the same receiver
+      that puts the deadlines back. A transition wakes the app; the position it
+      carries goes through the same `decideStoryTrigger` at the trigger's own
+      radius, and only `Notify` acts. The circles are registered at a 120 m
+      floor because Android cannot be trusted with the content's 80 m — a
+      registration number that never reaches the decision (D103). A story is
+      recorded as triggered before it is announced and its circle comes down
+      immediately, so it speaks once in the trip. `ACCESS_BACKGROUND_LOCATION`
+      is declared and asked for once, from screen 19; refusing it costs the
+      automatic notice and nothing else (D104). A tap opens screen 04, which is
+      where the same story already lives outside a walk — a proposal, because
+      the approved prototype draws screen 10 only over a running walk and no
+      out-of-walk story surface at all (D105 (a)). Passive discovery is silent
+      while a walk is running, because the walk owns the decision and holds the
+      record in memory (D105 (b)). All three circles are registered, unfiltered
+      by day or city, for the reason in D105 (c).
 - [ ] **The `Paused` phase has no approved trigger yet.** §19 lists it and the
       state machine implements it, but screen 07's only transport is the
       audio's; nothing in the approved design pauses the walk itself, so

@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.travelcompanion.app.design.FieldCompanionColors
 import com.travelcompanion.app.design.TcType
 import com.travelcompanion.app.feature.shell.AppNavigation
+import com.travelcompanion.app.service.location.PassiveStoryDiscovery
 import com.travelcompanion.app.service.notification.CriticalAlertScheduler
 import com.travelcompanion.app.service.playback.PlaybackController
 import com.travelcompanion.app.service.memory.MemoryController
@@ -28,6 +29,7 @@ import com.travelcompanion.app.feature.whoareyou.WhoAreYouScreen
 fun TravelCompanionRoot(
     viewModel: RootViewModel,
     criticalAlertScheduler: CriticalAlertScheduler,
+    passiveStoryDiscovery: PassiveStoryDiscovery,
     /** A screen a notification asked for, or null on an ordinary launch. */
     requestedRoute: String?,
     onRouteHandled: () -> Unit,
@@ -91,6 +93,7 @@ fun TravelCompanionRoot(
                 ) { state.participantId },
                 memoryController = memoryController,
                 criticalAlertScheduler = criticalAlertScheduler,
+                passiveStoryDiscovery = passiveStoryDiscovery,
                 requestedRoute = requestedRoute,
                 onRouteHandled = onRouteHandled,
                 onResetParticipant = viewModel::resetParticipant,

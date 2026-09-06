@@ -54,6 +54,7 @@ class MainActivity : ComponentActivity() {
                 TravelCompanionRoot(
                     viewModel = rootViewModel,
                     criticalAlertScheduler = container.criticalAlertScheduler,
+                    passiveStoryDiscovery = container.passiveStoryDiscovery,
                     requestedRoute = requestedRoute,
                     onRouteHandled = { requestedRoute = null },
                     playbackController = container.playbackController,

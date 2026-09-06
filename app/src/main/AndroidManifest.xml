@@ -5,13 +5,28 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!--
-        Foreground location only. Walk Mode holds location behind a foreground
-        service while a walk runs (D030); nothing in the app requests location
-        in the background, so ACCESS_BACKGROUND_LOCATION is not declared. Add
-        it back in the phase that implements passive geofencing, not before.
+        Walk Mode holds location behind a foreground service while a walk runs
+        (D030). Fine location is what a geofence needs too, and what screen 06
+        asks for immediately before the walk needs it.
     -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!--
+        Passive story discovery, and only that. D033 removed this permission
+        when it was declared and never exercised, on the promise that it would
+        come back in the phase that registered background geofences: this is
+        that phase. Three circles in Sarajevo are watched by the system while
+        the app is not on screen, so that walking into Baščaršija says
+        something without the phone having been taken out.
+
+        Asked separately from the foreground grant, once, and never insisted
+        on: from Android 11 the system shows no dialog for it at all, so
+        screen 19 points at Android's own settings page and stops asking. A
+        refusal costs automatic stories and nothing else — the walk, the audio
+        and every story on screen 04 are unchanged (D104).
+    -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
@@ -102,7 +117,19 @@
             android:name=".service.notification.CriticalAlertReceiver"
             android:exported="false" />
 
-        <!-- Puts the deadlines back after a restart or an update (D092). -->
+        <!--
+            Where Play Services delivers a geofence transition. Not exported:
+            the PendingIntent that carries a transition here is this app's own,
+            and nothing outside it has any business waking a story.
+        -->
+        <receiver
+            android:name=".service.location.StoryGeofenceReceiver"
+            android:exported="false" />
+
+        <!--
+            Puts the deadlines back after a restart or an update (D092), and
+            the story geofences with them — Android drops both on boot (D103).
+        -->
         <receiver
             android:name=".service.notification.BootRescheduleReceiver"
             android:exported="false">

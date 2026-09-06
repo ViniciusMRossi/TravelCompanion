@@ -7,16 +7,24 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.travelcompanion.app.feature.shell.Routes
+import com.travelcompanion.app.service.location.StoryDiscoveryPresence
 
 /**
- * [WalkPresence] against the real Android services.
+ * [WalkPresence] against the real Android services, and the one class in the
+ * app that posts a story notification.
+ *
+ * It answers [StoryDiscoveryPresence] as well, so the passive path reuses this
+ * permission guard and this builder instead of growing a third way to notify.
+ * The two differ in one thing only, and it is the thing that has to differ:
+ * where a tap lands (D105).
  *
  * Every call here is best-effort on purpose. Posting a notification can be
  * refused — the traveller may have declined POST_NOTIFICATIONS — and starting
  * a foreground service can be refused too. Neither may end a walk or stop
  * audio, so a refusal is swallowed rather than thrown at the controller.
  */
-class AndroidWalkPresence(context: Context) : WalkPresence {
+class AndroidWalkPresence(context: Context) : WalkPresence, StoryDiscoveryPresence {
 
     private val appContext = context.applicationContext
 
@@ -52,6 +60,19 @@ class AndroidWalkPresence(context: Context) : WalkPresence {
     override fun notifyStory(storyId: String, title: String, hook: String) {
         post(WalkNotifications.storyNotificationId(storyId)) {
             WalkNotifications.storyNotification(appContext, title, hook)
+        }
+    }
+
+    /**
+     * The same notification, opening the city instead of the walk.
+     *
+     * Screen 10 is a sheet over screen 07, and outside a walk there is no
+     * screen 07 for it to rise over. Screen 04 already carries this story with
+     * its own *Ouvir* and *Ler*, so that is where the tap lands (D105 (a)).
+     */
+    override fun notifyStoryOutsideWalk(storyId: String, title: String, hook: String) {
+        post(WalkNotifications.storyNotificationId(storyId)) {
+            WalkNotifications.storyNotification(appContext, title, hook, route = Routes.EXPLORE)
         }
     }
 

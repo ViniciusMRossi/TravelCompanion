@@ -9,25 +9,32 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
- * Puts the deadlines back after a restart.
+ * Puts the deadlines and the story circles back after a restart.
  *
  * Android drops every alarm on boot, and a twenty-day trip goes through
  * reboots — a phone that runs out of battery in Žabljak and is charged
  * overnight would otherwise arrive in Sarajevo announcing nothing.
+ *
+ * Geofences are dropped on boot too, and by exactly the same rule. They are
+ * put back here rather than from a second boot receiver: one broadcast, one
+ * receiver, one place that knows what a restart costs (D103).
  */
 class BootRescheduleReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action !in RESCHEDULING_ACTIONS) return
 
-        val scheduler = context.appContainer.criticalAlertScheduler
+        val container = context.appContainer
         // The work outlives this receiver's ten seconds only in the sense that
-        // it must not be done on its thread; reading one packaged file and
-        // registering twelve alarms is short.
+        // it must not be done on its thread; reading one packaged file, then
+        // registering twelve alarms and three circles, is short.
         val pending = goAsync()
         CoroutineScope(Dispatchers.Default).launch {
             try {
-                scheduler.reschedule()
+                container.criticalAlertScheduler.reschedule()
+                // Registers only what has not already spoken, and does nothing
+                // at all without the background-location permission.
+                container.passiveStoryDiscovery.refresh()
             } finally {
                 pending.finish()
             }

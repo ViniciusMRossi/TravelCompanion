@@ -15,6 +15,8 @@ import com.travelcompanion.app.data.trip.AssetTripRepository
 import com.travelcompanion.app.data.trip.TripRepository
 import com.travelcompanion.app.data.walk.DataStoreStoryTriggerStore
 import com.travelcompanion.app.service.location.FusedLocationSource
+import com.travelcompanion.app.service.location.PassiveStoryDiscovery
+import com.travelcompanion.app.service.location.PlayServicesStoryGeofences
 import com.travelcompanion.app.service.playback.DataStorePlaybackPositionStore
 import com.travelcompanion.app.service.playback.Media3AudioEngine
 import com.travelcompanion.app.service.playback.PlaybackController
@@ -137,12 +139,41 @@ class AppContainer(context: Context) {
         epochNow = System::currentTimeMillis,
     )
 
+    /**
+     * One record for both paths.
+     *
+     * `notifyOncePerTrip` means once per trip and not once per mechanism: a
+     * story announced by a geofence must not announce itself again on the
+     * walk, so Walk Mode and passive discovery read and write the same store.
+     */
+    private val storyTriggerStore = DataStoreStoryTriggerStore(appContext.walkDataStore)
+
+    /** One notifier for both paths, for the same reason (D103). */
+    private val walkPresence = AndroidWalkPresence(appContext)
+
     val walkModeController = WalkModeController(
         locationSource = FusedLocationSource(appContext),
-        triggerStore = DataStoreStoryTriggerStore(appContext.walkDataStore),
+        triggerStore = storyTriggerStore,
         playbackController = playbackController,
-        presence = AndroidWalkPresence(appContext),
+        presence = walkPresence,
         scope = playbackScope,
+    )
+
+    /**
+     * The circles Android watches while nobody is walking.
+     *
+     * Application-scoped like the walk and the alarms, and for the same
+     * reason: a geofence outlives every screen, and the receiver that answers
+     * one needs this with no Activity existing at all.
+     */
+    val passiveStoryDiscovery = PassiveStoryDiscovery(
+        trip = { runCatching { tripRepository.load() }.getOrNull() },
+        triggerStore = storyTriggerStore,
+        geofences = PlayServicesStoryGeofences(appContext),
+        presence = walkPresence,
+        // The running walk owns the decision, and holds the record in memory
+        // from its start. Passive discovery keeps quiet while it does (D105).
+        isWalkRunning = { walkModeController.state.value.isRunning },
     )
 
     /**

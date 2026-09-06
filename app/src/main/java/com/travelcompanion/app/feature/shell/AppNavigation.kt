@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.core.content.ContextCompat
+import com.travelcompanion.app.service.location.PassiveStoryDiscovery
 import com.travelcompanion.app.service.notification.CriticalAlertScheduler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -88,6 +90,7 @@ import com.travelcompanion.app.service.playback.audioGuideRequest
 import com.travelcompanion.app.service.memory.MemoryController
 import com.travelcompanion.app.service.sync.GroupSessionController
 import com.travelcompanion.app.service.walk.WalkModeController
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import com.travelcompanion.app.service.playback.PlaybackState
@@ -174,6 +177,7 @@ fun AppNavigation(
     groupSessionController: GroupSessionController,
     memoryController: MemoryController,
     criticalAlertScheduler: CriticalAlertScheduler,
+    passiveStoryDiscovery: PassiveStoryDiscovery,
     requestedRoute: String?,
     onRouteHandled: () -> Unit,
     onResetParticipant: () -> Unit,
@@ -219,6 +223,33 @@ fun AppNavigation(
         askForExactAlarms()
     }
 
+    // Android's own screen, for the permission Android will not put in a
+    // dialog. From Android 11 requesting ACCESS_BACKGROUND_LOCATION shows the
+    // traveller nothing and returns a refusal, so pointing at the settings
+    // page is the only honest path — the same posture D093 took for exact
+    // alarms. Android 10 still asks, so there it is asked.
+    val backgroundLocation = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { }
+
+    // Whether the three story circles can be watched at all right now, read
+    // again every time the app comes back on screen: the answer changes in
+    // Android's settings, which is a place this app can point at and never
+    // control. Held in state so the row on screen 19 disappears the moment it
+    // stops being true (D104).
+    var storiesDiscoverable by remember { mutableStateOf(passiveStoryDiscovery.canDiscover()) }
+    val discoveryScope = rememberCoroutineScope()
+
+    LifecycleResumeEffect(Unit) {
+        storiesDiscoverable = passiveStoryDiscovery.canDiscover()
+        // Geofences are the system's, not this process's: they survive the app
+        // being killed and are lost on a reboot. Bringing the registered set in
+        // line here is what covers a permission just granted, a story that
+        // fired while the app was closed, and a first launch.
+        discoveryScope.launch { passiveStoryDiscovery.refresh() }
+        onPauseOrDispose { }
+    }
+
     // The set is replaced whenever the content or the traveller changes: a
     // deadline that moved must not keep its old alarm as well as its new one.
     LaunchedEffect(content, participantId) {
@@ -229,6 +260,22 @@ fun AppNavigation(
             PackageManager.PERMISSION_GRANTED
         if (needsAsking) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         else askForExactAlarms()
+    }
+
+    val enableStoryDiscovery = {
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+            backgroundLocation.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        } else {
+            runCatching {
+                context.startActivity(
+                    Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.fromParts("package", context.packageName, null),
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            }
+            Unit
+        }
     }
 
     // A notification names the screen its deadline belongs to — 15 for a
@@ -288,6 +335,14 @@ fun AppNavigation(
                         onOpenPlanB = { id -> navController.navigate(Routes.planB(id)) },
                         onOpenAction = { action -> launcher.open(action.uri, action.fallbackUri) },
                         onResetParticipant = onResetParticipant,
+                        // Shown only while passive discovery is off, and gone
+                        // the moment it is on. This is the app's one sentence
+                        // about the background permission: it never
+                        // interrupts, never returns after it is answered, and
+                        // says plainly that refusing it costs nothing but the
+                        // automatic notice (D104).
+                        onEnableStoryDiscovery = { enableStoryDiscovery() }
+                            .takeIf { !storiesDiscoverable },
                     )
                 }
 

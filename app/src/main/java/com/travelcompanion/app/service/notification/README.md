@@ -7,7 +7,7 @@ which is the state this trip is mostly in.
 | Channel | Id | Importance | Posted by | Status |
 | --- | --- | --- | --- | --- |
 | Prazos da viagem | `operational` | HIGH | `CriticalAlertReceiver` | live |
-| Histórias pelo caminho | `stories` | DEFAULT | Walk Mode | live since Phase 3 |
+| Histórias pelo caminho | `stories` | DEFAULT | Walk Mode, and passive discovery | live since Phase 3 |
 | Passeio | `walk` | LOW | the foreground service | live since Phase 3 |
 | Memórias | `memory` | LOW | — | **created, posts nothing** |
 
@@ -33,6 +33,16 @@ gate.
 
 Rescheduled after boot, after an app update, when the exact-alarm permission
 changes, and whenever the content or the traveller does.
+
+## Stories — the same notification, two ways in
+
+One builder and one permission guard, in `WalkNotifications` and
+`AndroidWalkPresence`. The two paths differ in one thing, and it is the thing
+that has to differ: **where a tap lands**. During a walk it returns to the walk
+the traveller already has, with screen 10 over it. Outside a walk there is no
+screen for that sheet to rise over, so the tap asks for screen 04 — through
+`OperationalNotifications.openAt`, which is already the one definition of "a
+notification that opens a particular screen" (D105 (a)).
 
 ## Memory
 

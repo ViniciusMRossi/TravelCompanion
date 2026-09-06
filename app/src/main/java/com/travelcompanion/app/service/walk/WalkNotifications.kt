@@ -9,6 +9,7 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.travelcompanion.app.MainActivity
 import com.travelcompanion.app.R
+import com.travelcompanion.app.service.notification.OperationalNotifications
 
 /**
  * The Walk and Stories channels from the brief's notification list.
@@ -78,14 +79,30 @@ object WalkNotifications {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
 
-    /** Outside a walk, a story is an offer the traveller can ignore. */
-    fun storyNotification(context: Context, title: String, hook: String): Notification =
+    /**
+     * A story is an offer the traveller can ignore.
+     *
+     * [route] is where a tap lands. During a walk it is null and the tap
+     * returns to the walk the traveller already has, with screen 10 over it.
+     * Passive discovery names a screen instead, because outside a walk there
+     * is no screen for that sheet to rise over (D105) — and it says so through
+     * [OperationalNotifications.openAt], which is already the one definition
+     * of "a notification that opens a particular screen".
+     */
+    fun storyNotification(
+        context: Context,
+        title: String,
+        hook: String,
+        route: String? = null,
+    ): Notification =
         NotificationCompat.Builder(context, STORIES_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_walk_notification)
             .setContentTitle(title)
             .setContentText(hook)
             .setStyle(NotificationCompat.BigTextStyle().bigText(hook))
-            .setContentIntent(openApp(context))
+            .setContentIntent(
+                if (route == null) openApp(context) else OperationalNotifications.openAt(context, route),
+            )
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
             .build()
