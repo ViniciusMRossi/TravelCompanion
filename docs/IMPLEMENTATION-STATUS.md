@@ -1198,8 +1198,9 @@ said.
 
 ### What the nineteen screens unlock, and is not done
 
-- [ ] **The second full visual pass**, this time over nineteen screens rather
-      than the eight the first one covered;
+- [x] **The second full visual pass** — done on 2026-09-06 with the real
+      package inside, over seventeen of the nineteen screens. See "The second
+      visual pass" below, including the two that could not be opened at all.
 - [ ] **The first end-to-end run of the canonical flow**, which has never been
       walked whole because it has never been whole.
 
@@ -2019,3 +2020,224 @@ is recorded per phase; Phase 4's was re-done on two devices on 2026-09-04.
 `git diff --check` reports trailing whitespace inside `content/templates/`.
 Those are Markdown hard line breaks on the fill-in label lines, where dropping
 them would run the labels together into one paragraph; they are deliberate.
+
+## The second visual pass — nineteen screens with the real package (2026-09-06)
+
+The first visual pass compared eight screens against the prototype, and it ran
+against the **sample**: one day, one city, short strings, no hard diacritic.
+The build now carries the real package — twenty days, six countries, nineteen
+cities, twenty weather cards and twenty outfit cards, twenty-seven documents,
+seven emergency profiles. Nothing had been *looked at* with that inside.
+
+**Method: the first pass's, unchanged.** Two instances of the same AVD
+(`android-37.1`, Play Store, Android 17), overridden to two sizes:
+
+- **compact** — `wm size 720x1520`, `wm density 320` → **360 × 760 dp**, 2 px/dp;
+- **large** — `wm size 1440x3120`, `wm density 480` → **480 × 1040 dp**, 3 px/dp.
+
+Colour sampled from screenshot pixels against
+`Field-Companion-Design-Tokens-v0.1.json`; measurements taken wherever
+`TELAS-E-FUNCIONALIDADES-APPROVED.md` declares a number, read from
+`uiautomator` bounds rather than from pixels by eye.
+
+**The clock.** `dayFor` clamps, so on 6 September the app opens on day 1 and
+that is all there is to see. Both AVDs are Play images and `adb root` is
+refused, so `adb shell date` cannot work. What does work, with no root, is
+**Android's own Settings**: `am start -a android.settings.DATE_SETTINGS`, then
+the Date row and the picker, driven through `uiautomator dump`. Four dates were
+set that way — 15, 20, 22 and 25 September — and the rest of the day sweep went
+through **screen 03's own day arrows**, which reach any day without touching
+the clock at all and are the cheaper instrument for everything except the
+weather and outfit cards, which live only on Hoje.
+
+### Verdict per screen
+
+| # | Screen | Verdict |
+| --- | --- | --- |
+| 01 | Quem é você | **matches** |
+| 02 | Hoje | **matches** — the three worst content days hold |
+| 03 | Dia completo | **matches** |
+| 04 | Cidade | **matches**; the city-audioguide card has no content to draw |
+| 05 | Atração | **not seen** — the real package declares zero attractions |
+| 06 | Iniciar passeio | **matches** |
+| 07 | Passeio ativo | **matches** |
+| 08 | Participantes sincronizados | **not seen** — needs a second phone in the group |
+| 09 | Ouvir juntos | **matches**, in the "ouvindo outra história" state |
+| 10 | História pelo caminho | **diverged, corrected** — D106, D107 |
+| 11 | Fim do passeio | **diverged, corrected** — D106, D108 |
+| 12 | Gravar memória | **matches** |
+| 13 | Carteira | **matches** |
+| 14 | Documento | **matches** as a ficha; QR mode has no content to draw |
+| 15 | Transporte | **matches** |
+| 16 | Hospedagem | **matches** |
+| 17 | Emergência | **diverged; one corrected, two registered** — D108 |
+| 18 | Plano B | **matches** |
+| 19 | Mais | **matches** |
+
+### Measured against the declared numbers
+
+| Declared | Measured (compact / large) |
+| --- | --- |
+| 01 participant rows 76dp | 83.5 dp / **76.0 dp** — a minimum, exceeded on compact because the real package's line wraps |
+| 03 day arrows 48dp | **48.0 / 48.0 dp** |
+| 04 hero 300px | **299.5 / 300.0 dp** |
+| 06 "Começar passeio" 56dp | **56.0 / 56.0 dp** |
+| 07 close 48dp | **48.0 / 48.0 dp** |
+| 07 transport 56 / 76 / 56dp | **56 / 76 / 56 dp** on both |
+| 09 transport 52 / 68 / 52dp | **52 / 68 / 52 dp** on both |
+| 10 "Ouvir agora" 56dp | 52 dp at 118 dp wide **before**; **316 × 56 / 436 × 56 dp** after |
+| 11 "Gravar memória" 56dp | 52 dp at 150 dp wide **before**; **320 × 56 / 440 × 56 dp** after |
+| 12 record button 82dp | **82.0 / 82.0 dp** |
+| 13 document rows, 48dp minimum | **70.0 / 70.0 dp** |
+| 17 contact rows, 48dp minimum | **76.0 / 76.0 dp** |
+| 17 122 / 124 border 2px ink | absent **before**; **4px `#16232E` at 2px/dp = 2.0 dp** after |
+| 19 emergency row 68dp | **68.0 / 68.0 dp** |
+
+### Sampled colours, all exact against the token file
+
+`#F5F1E8` paper, `#FFFDF8` surface, `#16232E` ink, `#1F6F78` teal,
+`#7A2E2E` oxblood, `#FDECEC` critical-subtle, `#E7EDE3` success-subtle,
+`#E4F0F0` primary-subtle, `#F3E8D0` warning-subtle, `#DDDCD4` neutral-200.
+The Now card's teal quarter-circle samples **`#1A454F`**, which is the
+prototype's `rgba(31,111,120,.45)` over ink to the byte.
+
+### The content days, and what they proved
+
+The rule going in was that a text which does not fit is a layout defect and
+never a text to shorten. Nothing had to be shortened.
+
+- **day 11 (23/09)** — the longest weather summary in the package, 154
+  characters, in a card that shares a `weight(1f)` row with the outfit card.
+  The card **grows**, the outfit card matches its height, and nothing is
+  clipped or ellipsized at either size. This was the case most likely to break
+  and it is clean;
+- **day 8 (20/09)** — the second-longest summary, 153, *and* a 78-character
+  `special`, both cards loaded at once. Both grow, both end together, and the
+  "ATENÇÃO" line is whole. It is also the biggest weather swing of the trip,
+  which is why the text is long;
+- **day 10 (22/09)** — the longest outfit item, 100 characters, over seven
+  lines. Here the **outfit** card is the taller one and the weather card
+  matches it: the pairing works in both directions;
+- **day 20 (02/10)** and **day 6 (18/09)** — the two longest timeline details,
+  170 and 168 characters. Both wrap and the row grows; no truncation;
+- **day 3 (15/09)** — the longest `day.title`, "Amsterdã → Corfu → Sarandë →
+  Ksamil", 35 characters with three arrows. Three clean lines at 360 dp, and
+  the day's five timeline items and its critical card all draw;
+- **day 15 (27/09)** and **day 17 (29/09)** — four cities and five timeline
+  items respectively, both fine;
+- **day 1 (13/09)** — seven documents in the day, and the Wallet reads
+  **"27 documentos"** with the "Tudo offline" pill, a state the sample package
+  could never show.
+
+**Diacritics, seen on screen rather than in the JSON:** `Baščaršija` (screens
+02, 06, 07, 09, 11), `Žabljak`, `Sarači`, `Ilidža`, `Počitelj`, `Čilipi`,
+`Sarandë`, `Amsterdã`, `São Paulo`, `Ônibus`, and `Srđ` on screens 18 and 19 —
+the lowercase d-stroke. None rendered as an empty box. **Uppercase `Đ` was not
+seen, because the package contains none:** zero occurrences in `trip.json`. The
+city the content spells `Bastasi` renders `Bastasi`; that is what the package
+says, and content is not this pass's to change.
+
+### The day-13 chain, end to end
+
+With the clock at 25 September, on both sizes:
+
+02 → the 09:00 timeline row → **06 Iniciar passeio** ("Do Sebilj ao rio", route
+"Baščaršija · Sarači · Ferhadija · Ponte Latina") → *Começar passeio* → **07
+Passeio ativo** → a mocked fix inside the 80 m radius → **10 História pelo
+caminho**, in **2.2 s** → *Ouvir agora* → audio playing → screen off, playback
+continuing at position 51 s under `PARTIAL_WAKE_LOCK 'ExoPlayer:WakeLockManager'`
+→ *Ouvir juntos* → **09** → *Encerrar passeio* → **11 Fim do passeio**, reading
+**"HISTÓRIAS OUVIDAS · 1 de 3"** → *Gravar memória* → **12**.
+
+**Screen 10's offered case is reachable in the running app for the first
+time.** The field pass could only reach it through the debug scaffold, because
+every story in the sample declared `autoPlayInWalk`; none of the three real
+triggers does, so a real arrival offers rather than plays.
+
+**D102's correction seen on screen, which had never happened.** With the guide
+playing, the media notification and the lock screen read
+
+    Sebilj, Baščaršija
+    O Sebilj tem 1891; a praça tem 1462
+
+— the guide's title over the story's, two different lines, where the defect was
+the same line printed twice. Screen 09's player card and screen 11's compact
+player show the same pair.
+
+`adb emu geo fix` does nothing on these AVDs; what works is
+`appops set --uid 2000 android:mock_location allow` plus
+`cmd location providers set-test-provider-location`, **with `--accuracy 8`**,
+because the default 100 m is correctly refused by
+`DeviceLocation.isUsableFor(80.0)`.
+
+### Corrected in this commit
+
+All four are corrections **to** the prototype, and all four were re-measured
+afterwards at both sizes and at a 1.5 system font.
+
+- **screens 10 and 11's primary action** — full width at 56dp with its icon,
+  and the secondaries beneath at 52dp, instead of a `FlowRow` of auto-width
+  52dp buttons that left the primary narrower than the button beside it (D106);
+- **screen 10's operational line** — it printed the story's title a second
+  time, two lines under the headline, because the field read a walk stop's
+  title and a stop's title *is* the story's title. The unit test asserted the
+  duplicate; it asserts the rule now (D107);
+- **screen 11's four stat tiles** — a 1dp hairline, and equal height within a
+  row, which the approved grid gets for free and a `FlowRow` does not (D108);
+- **screen 17's 122 and 124** — the 2dp ink border the sheet draws, missing
+  entirely (D108).
+
+### Registered, not corrected
+
+- **screen 10's *Depois*** is `background:transparent;border:0;color:#1F6F78`
+  in the prototype — the only tertiary button of that kind in the whole
+  approved set. It renders as an outlined secondary. No such component exists
+  in the design system, and adding one is a design-system addition rather than
+  a layout correction, so it is written down instead of invented;
+- **screen 17's "Ligar 112" composition.** The prototype draws a left-aligned
+  row: a 40px handset, then "Ligar 112" at 28px over "Emergência geral ·
+  funciona sem crédito" at 16px in `#F4D9D7`, `min-height:88px`. The app draws
+  it centred and stacked, at 150dp. The colour, the label and the reachability
+  are right and the target is larger rather than smaller; the *arrangement* is
+  not the sheet's. Not redrawn unilaterally on the safety screen — it is the
+  one place where a change of composition deserves the design's own answer
+  first;
+- **`generalEmergency.note` reaches no screen.** The real Bosnian profile
+  carries "O 112 ainda está em implantação na Bósnia; as páginas oficiais do
+  país publicam 122, 123 e 124…", which is exact and true of the country the
+  traveller is standing in, and the big button shows the app's own fixed
+  sentence instead. Where that note should go is a design question.
+
+### What could not be looked at, and why
+
+Said plainly, because a visual pass that hides its holes is worse than none.
+
+- **screen 05 Atração was not seen at all.** `attractions: []` in the real
+  package — there is no attraction to open and no "Ver atração" to open it
+  from. It was compared with the prototype in the first pass against the sample
+  package, and this pass adds nothing to it;
+- **screen 08 Participantes sincronizados was not seen.** It is a three-second
+  transition that only happens when a *shared* listen starts, which needs a
+  second phone in the group and a reachable backend. Tapping "Ouvir juntos"
+  goes straight to 09, in its "ouvindo outra história" state;
+- **screen 14's QR mode was not seen.** All 27 real documents declare
+  `qr: {mode: "none"}` — a content decision, and a different reason from the
+  mock-code block the field pass recorded;
+- **screen 04's city audioguide card and its chapter list were not seen.** The
+  real Sarajevo city carries no `audioGuideId`, and all three packaged guides
+  have zero chapters, so the declared "play de 46dp, 5 capítulos, 34 min" has
+  nothing to draw;
+- **screen 09's Sincronizado and divergent states**, for the same want of a
+  peer as screen 08;
+- **screen 07's Denied state was not re-exercised** this session; Searching was
+  seen in passing;
+- **uppercase `Đ`** has no occurrence in the package to render;
+- **nothing was checked on the Galaxy S24.** Colour cannot be sampled there
+  (D086) and this pass is about colour and measurement, so it is both emulators
+  and neither phone;
+- **rotation was not re-checked**, and **night mode was checked on one screen
+  only** — it stays light, with dark bar icons on the paper strip, which is
+  D052 holding.
+
+Everything else in the table above was opened, measured and sampled at both
+sizes.

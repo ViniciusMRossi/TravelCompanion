@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -123,20 +122,37 @@ fun StoryTriggerSheet(
                 )
             }
 
-            // Three labels never fit on one line at 360dp with the font at
-            // 1.5, and a squeezed button is the defect D066 and D072 both
-            // recorded. Each keeps its whole label and takes the next line.
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
+            // The approved sheet's own composition: *Ouvir agora* across the
+            // whole width at 56dp, and the two answers that cost nothing side
+            // by side beneath it, each taking half. A `FlowRow` of three put
+            // all of them on one line at 360dp, which made the primary a
+            // 118dp chip — smaller than either secondary is wide, and 4dp
+            // short of the height the sheet declares for it.
+            //
+            // This is not a step back towards D066 and D072: those are about
+            // two long labels squeezed into one row, and the shape below is
+            // the remedy rather than the defect. The primary has the full
+            // width, and *Ler* and *Depois* have half of it each — more room
+            // than the three-across row gave them, not less.
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (state.hasAudio) {
-                    TcPrimaryButton(onClick = onListen) { Text("Ouvir agora") }
+                    TcPrimaryButton(
+                        onClick = onListen,
+                        modifier = Modifier.fillMaxWidth(),
+                        minHeight = 56.dp,
+                        icon = TcIcons.Play,
+                    ) { Text("Ouvir agora") }
                 }
-                TcSecondaryButton(onClick = { reading = !reading }) {
-                    Text(if (reading) "Fechar" else "Ler")
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    TcSecondaryButton(
+                        onClick = { reading = !reading },
+                        modifier = Modifier.weight(1f),
+                    ) { Text(if (reading) "Fechar" else "Ler") }
+                    TcSecondaryButton(
+                        onClick = onLater,
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Depois") }
                 }
-                TcSecondaryButton(onClick = onLater) { Text("Depois") }
             }
 
             Text(

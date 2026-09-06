@@ -1,8 +1,10 @@
 package com.travelcompanion.app.feature.walk
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +23,7 @@ import com.travelcompanion.app.design.FieldCompanionColors
 import com.travelcompanion.app.design.TcCardShape
 import com.travelcompanion.app.design.TcChip
 import com.travelcompanion.app.design.TcChipTone
+import com.travelcompanion.app.design.TcIcons
 import com.travelcompanion.app.design.TcPrimaryButton
 import com.travelcompanion.app.design.TcSecondaryButton
 import com.travelcompanion.app.design.TcType
@@ -35,6 +38,7 @@ import com.travelcompanion.app.domain.today.TimelineRowUi
  * the critical item keeps its oxblood and its instruction, because finishing a
  * walk at 18:40 is exactly when the bus at 19:30 matters most.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun WalkFinishedScreen(
     state: WalkFinishedUiState,
@@ -66,6 +70,13 @@ fun WalkFinishedScreen(
 
         // Four cards, two by two: at 360dp with the font at 1.5 a single row of
         // four is unreadable, and wrapping keeps every label whole (D072).
+        //
+        // `fillMaxRowHeight` is the approved grid's `align-items: stretch`,
+        // which a `FlowRow` does not do by itself. With the real package
+        // "HISTÓRIAS OUVIDAS" wraps to two lines and "QUEM OUVIU" does not, so
+        // the pair came out ragged — one tile a line taller than the one
+        // beside it. It resolves from the row's measured height rather than
+        // from an incoming constraint, so it is not D051's or D066's shape.
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -75,8 +86,12 @@ fun WalkFinishedScreen(
                 Column(
                     modifier = Modifier
                         .weight(1f)
+                        .fillMaxRowHeight()
                         .clip(TcCardShape)
                         .background(FieldCompanionColors.Surface)
+                        // The approved tile carries a hairline, like every
+                        // other card on paper in this design.
+                        .border(1.dp, FieldCompanionColors.Neutral200, TcCardShape)
                         .padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
@@ -106,12 +121,22 @@ fun WalkFinishedScreen(
             }
         }
 
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            TcPrimaryButton(onClick = onRecordMemory) { Text("Gravar memória") }
-            TcSecondaryButton(onClick = onBackToToday) { Text("Voltar para Hoje") }
+        // The approved sheet's own composition, and its own numbers: *Gravar
+        // memória* across the whole width at 56dp with the microphone, and
+        // *Voltar para Hoje* across the whole width at 52dp beneath it. A
+        // `FlowRow` put the two side by side, which made the primary a 150dp
+        // button 4dp shorter than the sheet declares.
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            TcPrimaryButton(
+                onClick = onRecordMemory,
+                modifier = Modifier.fillMaxWidth(),
+                minHeight = 56.dp,
+                icon = TcIcons.Mic,
+            ) { Text("Gravar memória") }
+            TcSecondaryButton(
+                onClick = onBackToToday,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Voltar para Hoje") }
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.travelcompanion.app.feature.story
 
+import com.travelcompanion.app.data.trip.Story
 import com.travelcompanion.app.data.trip.TripContent
 import com.travelcompanion.app.domain.walk.WalkModeState
 import java.util.Locale
@@ -37,7 +38,6 @@ fun buildStoryTriggerState(
     val pending = walkState.pending ?: return null
     val story = content.story(pending.storyId) ?: return null
     val guide = content.audioGuide(story.audioGuideId)
-    val stop = walkState.stops.firstOrNull { it.storyId == story.id }
 
     return StoryTriggerUiState(
         title = story.title,
@@ -45,13 +45,33 @@ fun buildStoryTriggerState(
         fullText = story.body,
         operationalLine = listOfNotNull(
             pending.distanceMeters?.let(::distanceLabel),
-            stop?.title ?: content.city(story.cityId)?.name,
+            placeOf(content, story),
             guide?.let { "áudio de ${it.durationMinutes} min" },
         ).joinToString(" · "),
         hasAudio = story.audioGuideId != null,
         footnote = FOOTNOTE,
     )
 }
+
+/**
+ * The *place*, which is the middle field the approved sheet draws there: "A
+ * 20 m de você · **Ponte Latina, margem norte** · 6 min de áudio".
+ *
+ * It used to read `stop.title ?: city.name`, and the walk stop's title is
+ * `story.title` by construction (`prepareWalk`) — so the field could only ever
+ * repeat the headline two lines above it. With the real package that printed
+ * "a 0 m · O Sebilj tem 1891; a praça tem 1462 · áudio de 3 min" directly
+ * under an h1 saying the same thing: **the same line twice on one sheet**,
+ * which is D102's defect one screen over, and the second time this repository
+ * has shipped it.
+ *
+ * So the stop is not consulted at all, and the city is the place. It is less
+ * specific than the sheet draws, and that is a content limit rather than a
+ * layout one: no field in the schema carries "margem norte", and inventing one
+ * is a content decision this did not have to make.
+ */
+private fun placeOf(content: TripContent, story: Story): String? =
+    content.city(story.cityId)?.name
 
 /** "a 40 m" / "a 1,2 km". */
 private fun distanceLabel(meters: Int): String =

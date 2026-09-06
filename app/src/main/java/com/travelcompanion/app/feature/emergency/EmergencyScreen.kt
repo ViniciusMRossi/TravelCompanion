@@ -1,6 +1,7 @@
 package com.travelcompanion.app.feature.emergency
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -157,6 +158,12 @@ private fun BigButton(phone: PhoneUi, modifier: Modifier, onDial: (String) -> Un
         modifier = modifier
             .clip(TcCardShape)
             .background(FieldCompanionColors.Surface)
+            // 2dp of ink, which the approved sheet draws on these two and on
+            // nothing else in the app. This is the screen that is read in a
+            // hurry and possibly in sunlight, and the border is the contrast
+            // that separates the police and ambulance numbers from the paper
+            // behind them — it was missing entirely.
+            .border(2.dp, FieldCompanionColors.Ink, TcCardShape)
             .then(
                 if (number != null) {
                     Modifier

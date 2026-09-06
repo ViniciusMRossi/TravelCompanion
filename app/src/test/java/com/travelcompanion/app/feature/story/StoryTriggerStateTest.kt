@@ -42,9 +42,31 @@ class StoryTriggerStateTest {
         val state = buildStoryTriggerState(content, walking("story.latin-bridge"))!!
 
         assertEquals("Latin Bridge", state.title)
-        assertEquals("a 40 m · Latin Bridge · áudio de 9 min", state.operationalLine)
+        assertEquals("a 40 m · Sarajevo · áudio de 9 min", state.operationalLine)
         assertTrue(state.hasAudio)
         assertFalse(state.body.contains("m ·"))
+    }
+
+    /**
+     * The line's middle field is a *place*, and never the headline again.
+     *
+     * It used to read the walk stop's title, and a stop's title is the story's
+     * title by construction — so the sheet printed its own h1 a second line
+     * later. Both assertions below failed before the fix, and the first one
+     * had been written into this file asserting the duplicate.
+     */
+    @Test
+    fun `the place is never the story title repeated`() {
+        for (storyId in listOf("story.latin-bridge", "story.meeting-of-cultures")) {
+            val state = buildStoryTriggerState(content, walking(storyId))!!
+            val place = state.operationalLine.split(" · ").getOrNull(1)
+
+            assertEquals("Sarajevo", place)
+            assertFalse(
+                "the operational line repeats the title: ${state.operationalLine}",
+                state.operationalLine.contains(state.title),
+            )
+        }
     }
 
     /** A distance the app does not have is left out, never estimated. */
@@ -52,7 +74,7 @@ class StoryTriggerStateTest {
     fun `no fix means no distance on the line`() {
         val state = buildStoryTriggerState(content, walking("story.latin-bridge", distance = null))!!
 
-        assertEquals("Latin Bridge · áudio de 9 min", state.operationalLine)
+        assertEquals("Sarajevo · áudio de 9 min", state.operationalLine)
     }
 
     /** A story with no audio offers no "Ouvir agora". */
