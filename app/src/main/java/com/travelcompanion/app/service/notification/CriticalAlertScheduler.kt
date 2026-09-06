@@ -5,11 +5,14 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.core.content.edit
 import com.travelcompanion.app.domain.alerts.CriticalAlert
 import com.travelcompanion.app.domain.alerts.criticalAlerts
 import com.travelcompanion.app.data.trip.TripRepository
 import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 /**
  * Puts the decided list of deadlines into `AlarmManager`, and nothing else.
@@ -80,10 +83,13 @@ class CriticalAlertScheduler(
         // told twice, once wrongly.
         cancelAll()
 
+        // Asked once rather than per alarm, so the line logged for each alert
+        // names the mode that alert was actually registered with (D111).
+        val exact = canBeExact()
         alerts.forEach { alert ->
             val fire = alert.at.toEpochMilli()
             val operation = firePendingIntent(alert)
-            if (canBeExact()) {
+            if (exact) {
                 manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fire, operation)
             } else {
                 // Degraded rather than absent, for a traveller who refused
@@ -93,9 +99,24 @@ class CriticalAlertScheduler(
                 // still beats none (D093).
                 manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fire, operation)
             }
+            Log.i(
+                TAG,
+                "alarm scheduled id=${alert.criticalItemId} " +
+                    "at=${localIso(fire)} mode=${if (exact) "exact" else "inexact"}",
+            )
             remember(alert)
         }
+        Log.i(TAG, "alarms scheduled total=${alerts.size} canBeExact=$exact")
     }
+
+    /**
+     * The fire instant in the phone's own zone, which is the only rendering
+     * that answers "will this ring at 04:45 where I am standing" (D111).
+     */
+    private fun localIso(epochMillis: Long): String =
+        DateTimeFormatter.ISO_ZONED_DATE_TIME.format(
+            Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()),
+        )
 
     private fun cancelAll() {
         val manager = alarms ?: return
@@ -150,6 +171,8 @@ class CriticalAlertScheduler(
         OperationalNotifications.notificationId(criticalItemId)
 
     private companion object {
+        /** One tag for the whole app, so `adb logcat -s TravelCompanion` is the filter. */
+        const val TAG = "TravelCompanion"
         const val STORE = "critical_alerts"
         const val KEY_IDS = "scheduled_ids"
         const val KEY_ASKED_EXACT = "asked_exact_alarm"

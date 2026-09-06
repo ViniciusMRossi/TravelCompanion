@@ -1201,8 +1201,16 @@ said.
 - [x] **The second full visual pass** — done on 2026-09-06 with the real
       package inside, over seventeen of the nineteen screens. See "The second
       visual pass" below, including the two that could not be opened at all.
-- [ ] **The first end-to-end run of the canonical flow**, which has never been
-      walked whole because it has never been whole.
+- [ ] **The canonical flow from 01, on a physical phone.** The reason this
+      item carried — "never walked whole because it has never been whole" — no
+      longer holds: the screens all exist, and on 2026-09-06 the chain
+      **02 → 06 → 07 → 10 → 09 → 11 → 12** was walked whole on the emulator
+      with the real package (see "The day-13 chain, end to end"). What is
+      still untried is the run that **starts at 01 Quem é você?** on a first
+      launch and ends at 12, on hardware rather than an emulator, against the
+      signed `app-release.apk` (D110). Screens 05 and 08 are not part of what
+      is missing here: 05 has no attraction in the real package and 08 needs a
+      second phone, both recorded separately.
 
 ## The fourth first-element, and a rule (2026-09-04)
 
@@ -2313,3 +2321,103 @@ measure too. Use `apksigner verify --print-certs`.
 - `apksigner verify --print-certs app-release.apk`: verifies under v2, one
   signer, `CN=Android Debug`, certificate SHA-256
   `530dacfc…b009fc` — the same certificate as `app-debug.apk`.
+
+## Hygiene, and the first two lines of log this app has ever had (2026-09-06)
+
+No behaviour change, no UI change, no dependency. Five small things, seven
+days out.
+
+1. **`CLAUDE.md` described a repository seven phases gone.** Its "Current
+   repository phase" section still read "This is a Phase 0 starter … implement
+   approved screens 01, 02 and 05" — the first file every agent reads,
+   carrying the defect class this repository keeps finding: a note describing
+   a state that stopped existing. Only that section was rewritten. It now
+   names Phase 8, §32 at 12 of 13, the gitignored production package, the
+   signed `app-release.apk` as the QA binary, the two tracked `trip.json`
+   blobs that must stay equal, and the trip dates. **No counts were copied
+   into it** — test totals and lint numbers age, and they live here.
+
+2. **A §32 line this file already contradicted.** "The first end-to-end run of
+   the canonical flow, which has never been walked whole because it has never
+   been whole" was written before the screens existed. The 2026-09-06 pass
+   walked 02 → 06 → 07 → 10 → 09 → 11 → 12 whole, on the emulator, with the
+   real package. The item is not deleted and not ticked: it is rewritten to
+   the thing that is actually still untried — **starting at 01 on a first
+   launch, ending at 12, on hardware, against the signed release APK**.
+
+3. **A test whose name outlived its meaning.** After D109 "withheld" means the
+   mock note, and `a missing number is withheld even in a real package` names
+   the one case that is *not* withheld. Its assertion was and remains correct,
+   so only the name changed, to `a missing number is never dialable, mock or
+   real`.
+
+4. **Room's version 1 says what happens next (D111).** No migration, no
+   `fallbackToDestructiveMigration()`, and until now nothing said so. A KDoc on
+   `@Database` now states that the first unmigrated schema change stops the app
+   opening at all, with the trip's memories inside — and that the destructive
+   fallback is refused on purpose, because it converts that crash into a
+   silent `DROP TABLE` of the one thing this app holds that exists nowhere
+   else.
+
+5. **Two `Log.i` sites, and nothing else (D112).** The app had no `Log.*` call
+   anywhere. `CriticalAlertScheduler.schedule()` now logs one line per alarm
+   and one total; `PlayServicesStoryGeofences.register()` logs one line per
+   circle, one naming which permission is missing on an early return, and one
+   if the call throws. Tag `TravelCompanion`, `Log.i` so it survives into the
+   release build. No personal data, no continuous position, nothing on screen.
+
+### The logcat, from the signed release APK
+
+`app-release.apk` installed on the Pixel emulator, whose **clock is at 25
+September 2026** — day 13 of the trip, so 5 of the package's 12 deadlines are
+still ahead of it and only those are registered. Location granted by `adb`;
+exact alarms left at the system default, which is denied:
+
+```text
+I TravelCompanion: alarm scheduled id=ci.train-mostar at=2026-09-26T01:50:00-03:00[America/Sao_Paulo] mode=inexact
+I TravelCompanion: alarm scheduled id=ci.tour-herzegovina at=2026-09-27T04:20:00-03:00[America/Sao_Paulo] mode=inexact
+I TravelCompanion: alarm scheduled id=ci.bus-dubrovnik at=2026-09-28T01:30:00-03:00[America/Sao_Paulo] mode=inexact
+I TravelCompanion: alarm scheduled id=ci.caiaque at=2026-09-28T07:45:00-03:00[America/Sao_Paulo] mode=inexact
+I TravelCompanion: alarm scheduled id=ci.bagdrop-dubrovnik at=2026-09-29T23:45:00-03:00[America/Sao_Paulo] mode=inexact
+I TravelCompanion: alarms scheduled total=5 canBeExact=false
+I TravelCompanion: geofence requested id=story.sarajevo.sebilj radius=120.0m
+I TravelCompanion: geofence requested id=story.sarajevo.encontro-de-culturas radius=120.0m
+I TravelCompanion: geofence requested id=story.sarajevo.ponte-latina radius=120.0m
+```
+
+**`mode=inexact` is the proof the line is worth having**: the emulator denies
+`SCHEDULE_EXACT_ALARM` by default, so every one of those deadlines is on a
+maintenance window rather than the minute (D093), and nothing on any screen
+says so. Granting the appop and relaunching flips the same six lines to
+`mode=exact` / `canBeExact=true`, so the field reports the state rather than a
+constant. The zone shown is the *phone's* — `America/Sao_Paulo` on this
+emulator — which is the rendering that answers "will it ring at 04:45 where I
+am standing": `ci.bagdrop-dubrovnik` at `2026-09-29T23:45-03:00` is 04:45 on
+30 September in Dubrovnik, the deadline Phase 8 was built for.
+
+The three geofences are the three Sarajevo triggers, each at **120 m** — the
+registration floor, not the content's 80 m, which is `GEOFENCE_FLOOR_RADIUS_METERS`
+behaving as D103 describes.
+
+### What the log found on its first run, and is not fixed here
+
+**Every one of those lines appears twice per launch**, on two different
+threads. `LaunchedEffect(content, participantId)` in `AppNavigation` re-runs
+when its second key resolves, so the whole set is cancelled and re-registered
+a second time on every cold start. It is harmless — `cancelAll()` then the
+same five alarms, same ids, same instants — and it is real duplicated work
+that nothing could see before this commit. Not touched seven days out;
+recorded so the next pass has it.
+
+### Verified — baseline unchanged by this commit
+
+- 6 validators rc=0; `test_validate_trip.py` 39 tests OK; `check_repo.py`
+  PASS; `git diff --check` clean;
+- Kotlin **357 tests, 0 failures**, counted from the 44 XML files in
+  `app/build/test-results/testDebugUnitTest/`, the renamed test present under
+  its new name;
+- `lintDebug` **0 errors, 33 warnings**;
+- both APKs carry **31 entries** under `assets/trip-production/`; release DEX
+  `"Protótipo"` 0 and `"simular chegada"` 0;
+- `apksigner verify --print-certs app-release.apk`: verifies, `CN=Android
+  Debug`.

@@ -69,16 +69,35 @@ Avoid:
 
 ## Current repository phase
 
-This is a **Phase 0 starter**.
+**Phase 8, seven days from departure.** Not a starter: all 19 canonical
+screens exist, and §32's Definition of Done stands at 12 of 13 — the open one
+is weather's live/cached states, where only the trip's own fallback exists.
+Real-device QA is marked closed, but it was run against a *debug* build; the
+release APK has never been on a phone (D110). That, not new feature work, is
+the risk worth spending the remaining days on.
 
-Next:
+What matters before touching anything:
 
-1. Run `python tools/check_repo.py`.
-2. Sync/build/test.
-3. Complete Phase 0.
-4. Implement approved screens 01, 02 and 05.
-5. Continue the vertical slice in the implementation brief.
+- the real package ships in `app/src/main/assets/trip-production/`, which is
+  **gitignored** — it is not in the repository and cannot be recovered from it;
+- the binary for device QA is
+  `app/build/outputs/apk/release/app-release.apk`, signed with the debug key
+  by decision (D110). The debug build draws a prototype scaffold on screen 07
+  and must not be what gets tested;
+- the two **tracked** `trip.json` files, `app/src/main/assets/trip/` and
+  `trip-package/sample/sample-trip.json`, are the same git blob and have to
+  stay that way. `core.autocrlf` is on, so never `git checkout --` them to
+  "clean up";
+- the verification recipe — validators, Gradle tasks, and what each one is
+  expected to say — lives in `docs/IMPLEMENTATION-STATUS.md`. Run it from
+  there rather than from memory, and read the counts there rather than here.
 
-Update `docs/IMPLEMENTATION-STATUS.md` after meaningful milestones.
+The trip runs **13 September to 2 October 2026**. Until it ends, every commit
+needs a reason: no refactors, no dependency bumps, no redesign. A change that
+cannot name the defect it fixes is a change that can only break something that
+currently works.
+
+Update `docs/IMPLEMENTATION-STATUS.md` after meaningful milestones, and record
+decisions in `docs/DECISIONS.md`.
 
 If a visual question appears, inspect the approved prototype before asking for a new design decision.

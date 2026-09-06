@@ -152,7 +152,7 @@ class OperationsTest {
     }
 
     @Test
-    fun `a missing number is withheld even in a real package`() {
+    fun `a missing number is never dialable, mock or real`() {
         assertFalse(phone(label = "Consulado", number = null, isMockContent = false).dialable)
         assertFalse(phone(label = "Consulado", number = "  ", isMockContent = false).dialable)
     }

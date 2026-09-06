@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingClient
@@ -69,6 +70,9 @@ const val GEOFENCE_FLOOR_RADIUS_METERS = 120f
  */
 private const val LOITERING_DELAY_MILLIS = 60_000
 
+/** One tag for the whole app, so `adb logcat -s TravelCompanion` is the filter (D111). */
+private const val TAG = "TravelCompanion"
+
 /**
  * The radius Android is asked to watch for one trigger.
  *
@@ -108,7 +112,20 @@ class PlayServicesStoryGeofences(context: Context) : StoryGeofences {
     @SuppressLint("MissingPermission") // guarded by canRegister() on the line above
     override fun register(stories: List<Story>) {
         val fences = stories.mapNotNull(::geofenceFor)
-        if (fences.isEmpty() || !canRegister()) return
+        if (fences.isEmpty() || !canRegister()) {
+            // The silent return was the thing a log had to end: "no automatic
+            // story fired" and "no circle was ever asked for" looked the same
+            // from outside the app (D111).
+            Log.i(
+                TAG,
+                "geofences not requested: " + when {
+                    fences.isEmpty() -> "no story declares a trigger"
+                    !hasForegroundLocation(appContext) -> "ACCESS_FINE_LOCATION not granted"
+                    else -> "ACCESS_BACKGROUND_LOCATION not granted"
+                },
+            )
+            return
+        }
 
         val request = GeofencingRequest.Builder()
             // A traveller who is already standing at the Sebilj when the app
@@ -117,10 +134,28 @@ class PlayServicesStoryGeofences(context: Context) : StoryGeofences {
             .addGeofences(fences)
             .build()
 
+        // "requested", never "registered": Play Services accepts or declines
+        // this asynchronously and that answer is not read here, so the log
+        // must not claim a circle Android agreed to watch (D111).
+        stories.forEach { story ->
+            val trigger = story.trigger ?: return@forEach
+            Log.i(
+                TAG,
+                "geofence requested id=${story.id} " +
+                    "radius=${registrationRadiusMeters(trigger)}m",
+            )
+        }
+
         // Best-effort throughout, like every other Android call this app makes
         // about a story: passive discovery is enrichment, and a registration
         // that Play Services declines must cost nothing else.
         runCatching { client.addGeofences(request, transitionIntent()) }
+            .onFailure {
+                Log.i(
+                    TAG,
+                    "geofence request refused: ${it.javaClass.simpleName}: ${it.message}",
+                )
+            }
     }
 
     override fun cancel(storyIds: List<String>) {
