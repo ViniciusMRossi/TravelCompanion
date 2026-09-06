@@ -2421,3 +2421,108 @@ recorded so the next pass has it.
   `"Protótipo"` 0 and `"simular chegada"` 0;
 - `apksigner verify --print-certs app-release.apk`: verifies, `CN=Android
   Debug`.
+
+## Three content corrections, and one that could not be made (2026-09-06)
+
+Content only. No Kotlin, no `tools/`, no screen. Six days of trip content, six
+days from departure.
+
+### The five missing host telephones stay missing (D113)
+
+The five stays with no `contactPhone` — `acc.bastasi.camp`,
+`acc.sarajevo.estudio`, `acc.dubrovnik.cidade-velha`, `acc.cilipi.estudio`,
+`acc.amsterdam.amigo` — were taken back to the 28 vouchers in
+`trip-package/source/private/`, and **not one of them could be filled**. This
+is the scope's main result and it is a finding, not a failure to look:
+
+| stay | document consulted | why it stayed empty |
+| --- | --- | --- |
+| `acc.sarajevo.estudio` | `Hospedagem Saravejo.pdf` | Airbnb trip sheet. Host "Dino", co-host "Mona", a *"Ligar para o anfitrião"* button — **no number printed** |
+| `acc.dubrovnik.cidade-velha` | `Hospedagem Dubrovnik.pdf` | Airbnb. Host "Teo", same button, no number |
+| `acc.cilipi.estudio` | `Hospedagem Čilipi.pdf` | Airbnb. Host "Mihaela", same button, no number |
+| `acc.bastasi.camp` | **none exists** | no file in `source/private/` mentions Bastasi, rafting or the Tara |
+| `acc.amsterdam.amigo` | **none exists** | a friend's spare room; no voucher was ever issued |
+
+The split is clean and explains itself: **every stay that has a number was
+booked through Booking.com or Decolar**, whose vouchers print the property line
+beside the address — that is where Kotor's `+382 67 268 787`, Ksamil's,
+Žabljak's and Mostar's came from. **Every stay that lacks one is an Airbnb**,
+which by design routes contact through the app and prints no host telephone.
+The `"Ligar para o anfitrião"` button was checked for a `tel:` link annotation
+in the raw PDF objects as well as in the extracted text: there is none.
+
+So the field is left absent, on purpose (D064, D109). **The consequence is
+unchanged and worth restating**: on days 11, 12, 13, 16, 17, 18 and 19 screen
+17 offers no accommodation row and screen 16 no host button. Closing that
+needs a number from the traveller — from the Airbnb app or a message to the
+host — not from this repository.
+
+### Day 3's coat pointed past the end of the trip (D115)
+
+Before:
+
+> O casaco sai de cena aqui e só volta a servir em **Žabljak, no dia 20**
+
+After:
+
+> O casaco sai de cena aqui e só volta a servir na **subida ao Lovćen, no dia 7**
+
+Wrong twice. The "20" was the *date*, 20 September, on a screen whose header
+reads "Dia 3 de 20" — so read as the screen invites, it pointed past the last
+day of the trip. And Žabljak is Dia 8 in any case, while the coat comes back
+on **Dia 7**, whose own outfit line already reads "Casaco fino mesmo com 27 °C
+na baía" for the Lovćen massif. Days 4, 5 and 6 are beach and city and need
+none, so the new sentence is the first day the coat is actually wanted.
+
+### Montenegro's consular note was filed against the 112 button (D114)
+
+Before — on `generalEmergency`, the emergency number:
+
+> Montenegro não tem posto brasileiro; quem cobre é Belgrado, por jurisdição
+> cumulativa.
+
+After — on `consular`, where the schema already allowed a `note`, reworded so
+it no longer repeats the label standing above it:
+
+> Montenegro não tem posto brasileiro próprio; esta embaixada o cobre por
+> jurisdição cumulativa.
+
+**Bosnia's `generalEmergency.note` was deliberately not touched.** It claims
+the screen shows "122, 123 e 124" when the schema has no fire-brigade field and
+the profile carries only 122 and 124 — a separate defect whose fix waits on a
+design decision. No `generalEmergency.note` reaches any screen today.
+
+### The three copies, and proving the invariant is real
+
+`generated`, `production` and `assets/trip-production` must stay byte-identical
+except for `metadata.contentStatus`, because copying `generated` over
+`production` would carry `"draft"` along and silently drop the validator out of
+its strictest mode. All three were edited, and the invariant was **proved by
+breaking it**: with `production`'s `contentStatus` tampered to `"draft"` the
+comparison reports `MISMATCH` and exits 1; restored, it exits 0 with all three
+agreeing. Final state:
+
+```text
+generated        contentStatus='draft'       expected='draft'       OK
+production       contentStatus='production'  expected='production'  OK
+trip-production  contentStatus='production'  expected='production'  OK
+production       identical to generated (ignoring contentStatus): True
+trip-production  identical to generated (ignoring contentStatus): True
+rc=0
+```
+
+**None of the three is in the commit** — all are gitignored (D028), and the
+only tracked authoring source, `source/itinerary/`, carries neither of the two
+corrected sentences. This commit therefore contains documentation only, and the
+content changes live in the working copy and in the APK built from it.
+
+### Verified
+
+- 6 validators rc=0; `check_repo.py` PASS; `test_validate_trip.py` 39 tests OK;
+  `git diff --check` clean;
+- `content_preflight` **PASS 3 warning(s)** on `generated` and **PASS 8** on
+  `assets/trip`, both unchanged;
+- Kotlin **357 tests, 0 failures** from the 44 XML files in
+  `app/build/test-results/testDebugUnitTest/`; `lintDebug` 0 errors;
+- both APKs carry **31 entries** under `assets/trip-production/`; release DEX
+  `"Protótipo"` 0 and `"simular chegada"` 0.
