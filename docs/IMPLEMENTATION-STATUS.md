@@ -3018,3 +3018,126 @@ the fix if the framing matters.
 - `apksigner verify`: exit 0, `CN=Android Debug` (D110);
 - `app/src/main/assets/trip/trip.json` and `trip-package/sample/sample-trip.json`
   both still `97627a8c8cda0c1126eacda352aff0b30e6427ce` — no content was touched.
+
+## The icon art, recomposed, plus the themed-icon layer (2026-09-07)
+
+No Kotlin, no dependency, no screen, no manifest, no content. `res/` and
+`docs/design/` only. Follows 77e1832, which installed an icon whose art did not
+fit the geometry.
+
+### What changed
+
+| | file | size |
+| --- | --- | --- |
+| replaced | `docs/design/app-icon-source.png` (1254², subject now 63%×60%) | 2,383,283 B |
+| new | `docs/design/app-icon-monochrome-source.png` (1024², LA) | 139,950 B |
+| replaced | `mipmap-{m,h,x,xx,xxx}dpi/ic_launcher_background.png` | 20,483 → 292,809 B |
+| new | `mipmap-{m,h,x,xx,xxx}dpi/ic_launcher_monochrome.png` | 4,091 → 39,056 B |
+| **deleted** | `mipmap-{m,h,x,xx,xxx}dpi/ic_launcher.png` | 6,681 → 82,408 B |
+| edited | `mipmap-anydpi-v26/ic_launcher.xml`, `ic_launcher_round.xml` | 906 B each |
+
+`AndroidManifest.xml` untouched. `applicationId`, `namespace`, `versionCode`,
+`versionName`, `app_name` untouched.
+
+### The premise that was wrong, and the number that proves the fix (D122)
+
+An adaptive icon discards the outer third **before** masking: the guaranteed
+area is the central 66dp of 108. The old art put the subject across 93% × 89%,
+so the silhouette was not trimmed, it was removed. The new art puts it in
+**63% × 60%**.
+
+Measured on the packaged 432px layer:
+
+| | old art | new art |
+| --- | --- | --- |
+| subject survives the 72/108 circle | ~71% | **99.86%** |
+| subject survives a squircle | ~74% | **100%** |
+| pixels the circle still clips | ~21,000 | **68** (0.036% of frame) |
+
+Those 68 pixels graze the outer edge of the left shoulder strap in the
+top-left and are invisible on the device.
+
+### The legacy PNGs are gone, and the gate that allowed it
+
+`minSdk` is 26, so `mipmap-anydpi-v26/` resolves everywhere this app can run.
+Verified rather than assumed — with the five PNGs deleted:
+
+```text
+application-icon-120:'res/BW.xml'    application-icon-320:'res/BW.xml'
+application-icon-160:'res/BW.xml'    application-icon-480:'res/BW.xml'
+application-icon-240:'res/BW.xml'    application-icon-640:'res/BW.xml'
+                                     application-icon-65534:'res/BW.xml'
+```
+
+All seven resolve to the adaptive XML. Those five files were the sole source of
+the five `IconLauncherShape` warnings.
+
+### Lint: 40 → 33, and only the two expected ids moved
+
+| id | before | after |
+| --- | --- | --- |
+| `IconLauncherShape` | 5 | **0** |
+| `MonochromeLauncherIcon` | 2 | **0** |
+| `ObsoleteSdkInt` | 1 | 1 — kept on purpose (D122) |
+| GradleDependency 11 · UseTomlInstead 9 · NewerVersionAvailable 6 · UseKtx 2 · AndroidGradlePluginVersion 2 · ModifierParameter 1 · InlinedApi 1 | 32 | 32 |
+
+0 errors either way. No other id changed.
+
+### What the screenshots showed
+
+Release APK installed on two emulators (Pixel-class API 37, 1440×3120 and
+720×1520, so two mipmap densities). Both render the same circular mask.
+
+**Colour icon — the backpack is whole.** The top carry handle is complete and
+clear of the mask. Both ends of the bedroll are inside: the spiral end at the
+lower left and the strapped end at the lower right. The enamel mug hangs
+complete on the left, the sprig is complete behind the flap, and both strap
+runs with all four buckles are inside the circle. The pack has a silhouette
+again — you can see where it ends and the background begins, which is exactly
+what was missing before.
+
+**The yellow halo became a frame.** It reads as a full ring behind the pack,
+and it is the blue field outside it that the mask eats. Nothing of the subject
+touches the boundary except the graze noted above.
+
+**At size:** legible as a backpack at 48px — pack, straps, cream bedroll, halo,
+blue ring all separate. In 77e1832 the same 48px was an unreadable green mass.
+
+**Label** reads **Bálcãs**, one line, á and ã correct.
+`aapt2 dump badging`: `application-label:'Bálcãs'`.
+
+**Themed icon — tested, and it works.** Enabled through Wallpaper & style →
+Home screen → Icons → Style → **Minimal** (this Android version's name for
+themed icons). Confirmed applied: the dock dropped from ~0.7 mean saturation to
+~0.21–0.31. Note that Pixel Launcher applies themed icons on the **home
+screen** only — All Apps keeps colour icons — so the app was dragged to the home
+screen to be seen.
+
+The monochrome layer renders as a **tinted silhouette with its interior
+drawn**, not a block: the carry handle, both strap runs, all the buckles, the
+front pocket, the mug, the sprig leaves and the bedroll's spiral are each
+readable as pale lines, because they are transparent in the alpha and the
+system's light field shows through. That is the payoff of keeping detail in the
+alpha rather than in opaque white.
+
+**One thing left changed on the device:** themed icons are still enabled on
+`emulator-5554`, and the app has a home-screen shortcut there. Blind `adb`
+taps could not reliably drive the picker back to *Default*; it is one tap in
+Wallpaper & style → Icons → Style. Nothing in the repository is affected.
+
+### Verified
+
+- 6 validators rc=0; `check_repo.py` PASS; `test_validate_trip.py` 39 tests OK;
+  `git diff --check` rc=0;
+- Kotlin **357 tests, 0 failures**, from the 44 XML files in
+  `app/build/test-results/testDebugUnitTest/`;
+- `lintDebug` **0 errors, 33 warnings** (40 before);
+- both APKs still carry **31 entries** under `assets/trip-production/`;
+- release DEX `"Protótipo"` 0 and `"simular chegada"` 0;
+- release APK icon resources via `aapt2 dump resources`: `mipmap/ic_launcher`
+  anydpi XML only, `ic_launcher_background` 5 PNG densities,
+  `ic_launcher_monochrome` 5 PNG densities, `ic_launcher_round` anydpi XML;
+- alpha re-checked on every packaged monochrome layer after the resize:
+  min 0 / max 255, 77.8%–81.4% fully transparent — the channel survived;
+- `apksigner verify` exit 0, `CN=Android Debug`;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.

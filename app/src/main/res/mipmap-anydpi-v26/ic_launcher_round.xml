@@ -5,10 +5,15 @@
     would expose the layer behind it along one edge. <foreground> is required by
     AdaptiveIconDrawable, hence the transparent drawable.
 
-    The mask therefore crops the corners, which is where the source art has its
-    blurred vignette and no subject. See D121 for what that costs.
+    The art was recomposed for this geometry after the first attempt: the
+    subject now occupies 63% x 60% of the frame and survives the mask, so the
+    bleed costs the blurred corners and nothing else (D122).
+
+    <monochrome> is the themed-icon layer. Its shape lives in the alpha channel,
+    including the interior detail lines, so the system tint keeps them.
 -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@mipmap/ic_launcher_background" />
     <foreground android:drawable="@android:color/transparent" />
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
 </adaptive-icon>
