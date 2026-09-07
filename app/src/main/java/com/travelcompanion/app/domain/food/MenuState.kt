@@ -23,8 +23,13 @@ data class DishUi(
     val photoCaption: String?,
     val description: String,
     val history: String,
-    val phrase: String,
-    val phraseTranslation: String,
+    /**
+     * The ordering sentence and its translation, or null on a dish nobody
+     * orders. Null here means the "Para pedir" box is not drawn at all, the
+     * same way a null [photoPath] means no photo area (D130).
+     */
+    val phrase: String?,
+    val phraseTranslation: String?,
 )
 
 /** One meal heading and the dishes under it. */

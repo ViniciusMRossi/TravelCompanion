@@ -239,6 +239,44 @@ class MenuStateTest {
         assertEquals("o prato Ćevapi numa mesa de bairro", dish.photoCaption)
     }
 
+    /**
+     * Not every dish is ordered. The half-board meals at the Bastasi camp
+     * arrive served — there is nothing to choose and nothing to say — so the
+     * card ends at the history and the "Para pedir" box is not drawn (D130).
+     */
+    @Test
+    fun `a dish nobody orders carries no phrase`() {
+        val halfBoard = MenuFixtures.menu(
+            meals = listOf(
+                Meal(
+                    "Café da manhã",
+                    "07:00–10:00",
+                    listOf(MenuFixtures.servedDish("camp-cafe", "Café da manhã do camp")),
+                ),
+            ),
+        )
+        val content = MenuFixtures.content(sarajevoMenu = halfBoard)
+
+        val dish = buildMenuState(content, "sarajevo")!!.meals.single().dishes.single()
+        assertNull(dish.phrase)
+        assertNull(dish.phraseTranslation)
+        // Everything else about the card is untouched.
+        assertEquals("Café da manhã do camp", dish.name)
+        assertEquals("incluído na meia pensão", dish.priceRange)
+    }
+
+    /** And the box is still drawn for every dish that does have one. */
+    @Test
+    fun `a dish that is ordered keeps its phrase`() {
+        val content = MenuFixtures.content(sarajevoMenu = MenuFixtures.menu())
+
+        val dishes = buildMenuState(content, "sarajevo")!!.meals.flatMap { it.dishes }
+        assertTrue(dishes.isNotEmpty())
+        assertTrue(dishes.all { it.phrase != null && it.phraseTranslation != null })
+        assertEquals("Jedan Burek, molim.", dishes.first().phrase)
+        assertEquals("Um Burek, por favor.", dishes.first().phraseTranslation)
+    }
+
     @Test
     fun `meals keep the order the content declares`() {
         val content = MenuFixtures.content(sarajevoMenu = MenuFixtures.menu())

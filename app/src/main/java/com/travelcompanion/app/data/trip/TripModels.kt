@@ -180,8 +180,15 @@ data class Dish(
     val photoCaption: String? = null,
     val description: String,
     val history: String,
-    val phrase: String,
-    val phraseTranslation: String,
+    /**
+     * What to say to order it, and the same sentence in Portuguese.
+     *
+     * Both absent where there is nothing to order: a half-board table arrives
+     * served, and no sentence would be said to anyone (D130). They travel as a
+     * pair — `validate_trip.py` rejects one without the other.
+     */
+    val phrase: String? = null,
+    val phraseTranslation: String? = null,
 )
 
 @Serializable

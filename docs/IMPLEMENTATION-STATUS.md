@@ -3335,3 +3335,51 @@ and they are deliberately not the same parameter (D089).
   rather than re-sorting it, so the rule currently lives only in the content
   brief. A validator check is the right home for it and was left out rather
   than guessed at.
+
+## A dish may have no ordering phrase (2026-09-07)
+
+Four small changes, no content. `$defs/dish` required `phrase` and
+`phraseTranslation`; the food guide has **two dishes of 75** that correctly have
+neither — the half-board breakfast and lunch at the Bastasi rafting camp, where
+the table arrives served and there is nothing to ask for. They could not be
+represented at all, so the modelling was wrong, not the content (D130).
+
+| # | change |
+| --- | --- |
+| 1 | schema: `phrase` and `phraseTranslation` leave `required`, keep their shape |
+| 2 | `Dish.phrase` / `Dish.phraseTranslation` are `String? = null` |
+| 3 | `DishUi` carries them nullable; `FoodScreen` draws no "Para pedir" box without a phrase — the card ends at the history |
+| 4 | new guard: one half of the pair without the other is a content error |
+
+The screen's rule is the one it already used for the absent photograph, and the
+one `AssetResolver.packagedPathIfPresent` uses everywhere: absent data means an
+absent element, never an empty box (D128).
+
+### The guard, through the validator's exit code
+
+Four packages built from `starter/` with `contentStatus: production`, so any
+content finding is a hard error:
+
+```text
+both               rc=0
+neither            rc=0
+phrase-only        rc=1  city 'sarajevo' dish 'camp-cafe' declares phrase without
+                         phraseTranslation; write both or neither
+translation-only   rc=1  city 'sarajevo' dish 'camp-cafe' declares phraseTranslation
+                         without phrase; write both or neither
+```
+
+### Verified
+
+- 6 validators rc=0, output unchanged — a loosened `required` cannot make an
+  existing package fail, and all six were re-run to confirm it;
+- `check_repo.py` PASS; `content_preflight` PASS 3 / PASS 8, unchanged;
+- `test_validate_trip.py` **51 tests** (47 + 4 for the pair);
+- Kotlin **376 tests, 0 failures** (374 + 2), from the 45 XML files;
+- `lintDebug` **0 errors, 33 warnings**, same eight ids;
+- both APKs **31 entries** under `assets/trip-production/`; release DEX
+  `"Protótipo"` 0 and `"simular chegada"` 0;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+No visual pass: with no menu content screen 20 is still unreachable in the app,
+which is correct until the content lands.

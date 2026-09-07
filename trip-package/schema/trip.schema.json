@@ -422,9 +422,7 @@
         "id",
         "name",
         "description",
-        "history",
-        "phrase",
-        "phraseTranslation"
+        "history"
       ],
       "properties": {
         "id": {
@@ -458,11 +456,11 @@
         },
         "phrase": {
           "$ref": "#/$defs/nonEmpty",
-          "description": "What to say to order it, in the local language."
+          "description": "What to say to order it, in the local language. Absent where there is nothing to order - a half-board table arrives served (D130). Write both this and phraseTranslation, or neither."
         },
         "phraseTranslation": {
           "$ref": "#/$defs/nonEmpty",
-          "description": "The same sentence in Portuguese, so the traveller knows what they are saying."
+          "description": "The same sentence in Portuguese, so the traveller knows what they are saying. Paired with phrase: half of the pair on screen is worse than none of it."
         }
       }
     },

@@ -33,6 +33,18 @@ object MenuFixtures {
         phraseTranslation = "Um $name, por favor.",
     )
 
+    /**
+     * A dish nobody orders: the half-board table at the Bastasi rafting camp,
+     * which arrives served and has no sentence to say to anyone (D130).
+     */
+    fun servedDish(id: String, name: String) = Dish(
+        id = id,
+        name = name,
+        priceRange = "incluído na meia pensão",
+        description = "Mesa farta de meia pensão, servida em mesa comunitária.",
+        history = "Cardápio fixo do camp de rafting, para quem vai remar o dia inteiro.",
+    )
+
     fun menu(
         title: String = "Dez pratos da mesa bósnia",
         currency: String = "KM",

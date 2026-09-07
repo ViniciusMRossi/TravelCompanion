@@ -358,7 +358,12 @@ private fun DishCard(dish: DishUi) {
             Text(dish.description, style = TcType.body, color = FieldCompanionColors.Ink)
             Text(dish.history, style = TcType.historyBody, color = FieldCompanionColors.Neutral700)
 
-            OrderBlock(dish.phrase, dish.phraseTranslation)
+            // Nothing to order, so nothing to say: the card ends at the
+            // history. An empty teal box, or one carrying invented words,
+            // would both be worse than its absence (D130).
+            if (dish.phrase != null && dish.phraseTranslation != null) {
+                OrderBlock(dish.phrase, dish.phraseTranslation)
+            }
         }
     }
 }

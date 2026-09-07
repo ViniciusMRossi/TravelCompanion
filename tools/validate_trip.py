@@ -831,6 +831,21 @@ def content_checks(trip: dict, assets_root: Path) -> list[str]:
                 dish_id = dish.get("id")
                 where = f"city '{city['id']}' dish '{dish_id}'"
                 ref("asset", assets, dish.get("photoAssetId"), where)
+
+                # The ordering sentence and its translation are one thing.
+                # Neither is required — a half-board table arrives served and
+                # has nothing to order (D130) — but half of the pair is worse
+                # than none of it: a phrase with no translation leaves the
+                # screen showing the local language with nothing under it, and
+                # a translation with no phrase has nothing to translate.
+                has_phrase = bool(dish.get("phrase"))
+                has_translation = bool(dish.get("phraseTranslation"))
+                if has_phrase != has_translation:
+                    missing = "phraseTranslation" if has_phrase else "phrase"
+                    present = "phrase" if has_phrase else "phraseTranslation"
+                    problems.append(
+                        f"{where} declares {present} without {missing}; write both or neither"
+                    )
                 if dish_id in seen_dishes:
                     duplicate_dishes.add(dish_id)
                 seen_dishes.add(dish_id)

@@ -629,7 +629,12 @@ def _menu_trip(cities, fallback=None):
     return trip
 
 
-def _city(city_id, dish_ids=(), photo=None):
+def _city(city_id, dish_ids=(), photo=None, phrase="p", translation="pt"):
+    phrasing = {}
+    if phrase is not None:
+        phrasing["phrase"] = phrase
+    if translation is not None:
+        phrasing["phraseTranslation"] = translation
     city = {"id": city_id, "name": city_id}
     if dish_ids:
         city["menu"] = {
@@ -645,9 +650,8 @@ def _city(city_id, dish_ids=(), photo=None):
                             "name": d,
                             "description": "d",
                             "history": "h",
-                            "phrase": "p",
-                            "phraseTranslation": "pt",
                             **({"photoAssetId": photo} if photo else {}),
+                            **phrasing,
                         }
                         for d in dish_ids
                     ],
@@ -713,3 +717,37 @@ class MenuChecksTest(unittest.TestCase):
 
     def test_a_dish_photo_that_resolves_is_silent(self):
         self.assertEqual(self._run(_menu_trip([_city("sarajevo", ["burek"], photo="a")])), [])
+
+
+class DishPhrasePairTest(unittest.TestCase):
+    """The ordering sentence and its translation are one thing, or neither.
+
+    A dish nobody orders carries no phrase at all, which is why the schema
+    stopped requiring them (D130). What the schema cannot say is that writing
+    one half is worse than writing neither: a `phrase` with no translation
+    leaves the screen showing Bosnian with nothing under it, and a translation
+    with no phrase has nothing to translate.
+    """
+
+    def _run(self, trip):
+        with tempfile.TemporaryDirectory() as folder:
+            return content_checks(trip, Path(folder))
+
+    def test_a_phrase_with_no_translation_is_reported(self):
+        problems = self._run(_menu_trip([_city("sarajevo", ["burek"], translation=None)]))
+        self.assertEqual(len(problems), 1)
+        self.assertIn("dish 'burek'", problems[0])
+        self.assertIn("phraseTranslation", problems[0])
+
+    def test_a_translation_with_no_phrase_is_reported(self):
+        problems = self._run(_menu_trip([_city("sarajevo", ["burek"], phrase=None)]))
+        self.assertEqual(len(problems), 1)
+        self.assertIn("dish 'burek'", problems[0])
+        self.assertIn("phrase", problems[0])
+
+    def test_both_together_are_silent(self):
+        self.assertEqual(self._run(_menu_trip([_city("sarajevo", ["burek"])])), [])
+
+    def test_neither_is_silent_because_some_dishes_are_not_ordered(self):
+        trip = _menu_trip([_city("bastasi", ["camp-cafe"], phrase=None, translation=None)])
+        self.assertEqual(self._run(trip), [])
