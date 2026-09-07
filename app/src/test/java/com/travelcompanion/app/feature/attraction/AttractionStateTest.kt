@@ -1,6 +1,7 @@
 package com.travelcompanion.app.feature.attraction
 
 import com.travelcompanion.app.data.trip.PackagedTripTest.Companion.packagedContent
+import com.travelcompanion.app.data.trip.EditorialSection
 import com.travelcompanion.app.data.trip.TripContent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -114,6 +115,132 @@ class AttractionStateTest {
         assertEquals("Se chover forte", state.planBTitle)
         assertEquals(3, state.whatToObserve.size)
         assertTrue(state.chips.contains("Entrada livre"))
+    }
+
+    /* ------------------------------------------- editorial sections (D133) */
+
+    /** The packaged content with `bascarsija` carrying the given sections. */
+    private fun withSections(vararg sections: EditorialSection): TripContent {
+        val trip = content.trip
+        return TripContent(
+            trip.copy(
+                attractions = trip.attractions.map { attraction ->
+                    if (attraction.id == "bascarsija") {
+                        attraction.copy(historySections = sections.toList())
+                    } else {
+                        attraction
+                    }
+                },
+            ),
+            content.assets,
+        )
+    }
+
+    /**
+     * `historySections` was parsed since the first schema and read by nobody:
+     * 127 written sections would have entered the package and reached no
+     * screen at all. Screen 05 now carries them (D133).
+     */
+    @Test
+    fun theEditorialSectionsReachTheState() {
+        val withTwo = withSections(
+            EditorialSection("O bazar otomano", "Fundado em 1462 pelo governador."),
+            EditorialSection("A fonte no meio", "O Sebilj que está ali hoje é de 1891."),
+        )
+
+        val state = buildAttractionState(withTwo, "bascarsija", dayDate)!!
+
+        assertEquals(2, state.historySections.size)
+        assertEquals(
+            listOf("O bazar otomano", "A fonte no meio"),
+            state.historySections.map { it.title },
+        )
+        assertEquals(
+            listOf("Fundado em 1462 pelo governador."),
+            state.historySections.first().paragraphs,
+        )
+        assertEquals(
+            listOf("O Sebilj que está ali hoje é de 1891."),
+            state.historySections.last().paragraphs,
+        )
+    }
+
+    /**
+     * The schema keeps a section's body in one string, and the written content
+     * carries several paragraphs inside it, separated by a blank line. Handing
+     * that string to one `Text` is three hundred words in a single slab, so the
+     * body is split where the author broke it (D133).
+     */
+    @Test
+    fun aBodyOfThreeParagraphsDoesNotCollapseIntoOne() {
+        val threeParagraphs = withSections(
+            EditorialSection(
+                "A cidade e o cerco",
+                """
+                    Primeiro parágrafo, sobre o começo.
+
+                    Segundo parágrafo, sobre o meio.
+
+                    Terceiro parágrafo, sobre o fim.
+                """.trimIndent(),
+            ),
+        )
+
+        val paragraphs = buildAttractionState(threeParagraphs, "bascarsija", dayDate)!!
+            .historySections
+            .single()
+            .paragraphs
+
+        assertEquals(3, paragraphs.size)
+        assertEquals("Primeiro parágrafo, sobre o começo.", paragraphs[0])
+        assertEquals("Segundo parágrafo, sobre o meio.", paragraphs[1])
+        assertEquals("Terceiro parágrafo, sobre o fim.", paragraphs[2])
+    }
+
+    /** Windows line endings break a paragraph exactly as Unix ones do. */
+    @Test
+    fun aBodySplitWithCarriageReturnsSplitsTheSameWay() {
+        val crlf = withSections(
+            EditorialSection("t", "Um." + "\r\n" + "\r\n" + "Dois."),
+        )
+
+        assertEquals(
+            listOf("Um.", "Dois."),
+            buildAttractionState(crlf, "bascarsija", dayDate)!!
+                .historySections.single().paragraphs,
+        )
+    }
+
+    /** A single-paragraph body is one paragraph, not one-and-an-empty. */
+    @Test
+    fun aBodyOfOneParagraphStaysOne() {
+        val one = withSections(EditorialSection("t", "Um parágrafo só, sem quebra."))
+
+        assertEquals(
+            listOf("Um parágrafo só, sem quebra."),
+            buildAttractionState(one, "bascarsija", dayDate)!!
+                .historySections.single().paragraphs,
+        )
+    }
+
+    /**
+     * The regression guard. Every attraction in the packaged trip has no
+     * sections, and so do all 27 in the real package: adding this block must
+     * leave those screens byte-for-byte as they were.
+     */
+    @Test
+    fun anAttractionWithNoSectionsDrawsNothingAndChangesNothingElse() {
+        val state = bascarsija()
+
+        assertTrue(state.historySections.isEmpty())
+        // The rest of the screen is untouched: same summary, same strip, same
+        // observations, same Plan B.
+        assertEquals(content.attraction("bascarsija")!!.summary, state.summary)
+        assertEquals("11:00", state.departure!!.time)
+        assertTrue(state.whatToObserve.isNotEmpty())
+        assertNotNull(state.planBTitle)
+        // And the state with an empty section list is the state as it was.
+        assertEquals(state, buildAttractionState(withSections(), "bascarsija", dayDate))
     }
 
     @Test

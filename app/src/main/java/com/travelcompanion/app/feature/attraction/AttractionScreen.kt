@@ -96,6 +96,13 @@ fun AttractionScreen(
         ) {
             HeroBlock(state)
 
+            // Narration sits between the summary and the operational strip on
+            // purpose. The approved sheet keeps editorial and operational
+            // apart — "o horário nunca fica dentro do parágrafo editorial" —
+            // and the rule holds in both directions: the long text does not
+            // drift down beside the departure time either (D133).
+            state.historySections.forEach { section -> EditorialSectionBlock(section) }
+
             state.departure?.let { departure -> DepartureStrip(departure) }
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -265,6 +272,33 @@ private fun HeroBlock(state: AttractionUiState) {
                 text = state.summary,
                 style = TcType.editorialBody,
                 color = FieldCompanionColors.Neutral800,
+            )
+        }
+    }
+}
+
+/**
+ * One titled stretch of narration.
+ *
+ * Each paragraph is its own `Text`, spaced like the rest of the screen: the
+ * body arrives as a single field and would otherwise be one slab of three
+ * hundred words. Nothing is drawn for an attraction with no sections — no
+ * heading, no reserved space — which is the same rule as the missing
+ * photograph and screen 20's absent "Para pedir" box (D133).
+ */
+@Composable
+private fun EditorialSectionBlock(section: EditorialSectionUi) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            text = section.title,
+            style = TcType.sectionTitle,
+            color = FieldCompanionColors.Ink,
+        )
+        section.paragraphs.forEach { paragraph ->
+            Text(
+                text = paragraph,
+                style = TcType.editorialBody,
+                color = FieldCompanionColors.Neutral700,
             )
         }
     }

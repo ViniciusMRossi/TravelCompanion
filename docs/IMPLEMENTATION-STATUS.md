@@ -3548,3 +3548,59 @@ no day (D132).
 The **seventeen photographs** — now seventy-five briefs, one `photoCaption` per
 dish, and no binary for any of them. The layout is already correct without them
 (D128), and the day they arrive nothing above or below a card moves.
+
+## Screen 05 draws its editorial sections (2026-09-07)
+
+No content, no schema, no package. `attraction.historySections` had been parsed
+and read by nobody since the models existed; screen 05 now carries it (D133).
+
+Proof of the defect, before the change:
+
+```text
+$ grep -rn "historySections" app/src/main/java --include=*.kt
+TripModels.kt:140:    val historySections: List<EditorialSection> = emptyList(),
+TripModels.kt:213:    val historySections: List<EditorialSection> = emptyList(),
+```
+
+Two model declarations and no reader.
+
+### What was built
+
+- `EditorialSectionUi(title, paragraphs)` and
+  `AttractionUiState.historySections: List<EditorialSectionUi>`, filled in
+  `buildAttractionState` — empty list when absent, never a meaningful null;
+- `paragraphsOf`, which splits a body on the blank line (`\r\n` as well as
+  `\n`, runs of any length counting as one break) so a three-paragraph section
+  is three `Text`s rather than one slab;
+- `EditorialSectionBlock` in `AttractionScreen`, drawn **between the summary and
+  the operational strip**, title in `TcType.sectionTitle` / `Ink` and each
+  paragraph in `TcType.editorialBody` / `Neutral700`. No new type style, no new
+  colour.
+
+Order on screen: hero, chips, summary, **sections**, operational strip, actions,
+what to observe, Plan B, fixed bar.
+
+`SCREEN-INDEX-v2.md` was **not** touched: it carries a one-line purpose for
+screen 05 and no block-level structure, so there was nothing to add a block to
+and inventing one would have been worse than leaving it.
+
+### Not touched, on purpose
+
+`interestingFacts` is also parsed and read by nobody, and also has no place on
+the approved sheet — left exactly as it was, and named in D133 so the next
+reader finds a decision rather than a second discovery. `city.historySections`
+and screen 04 likewise: same shape, no city content this round.
+
+### Verified
+
+- 6 validators rc=0, output unchanged; `check_repo.py` PASS;
+  `test_validate_trip.py` **51 tests OK**, unchanged;
+- Kotlin **381 tests, 0 failures** (376 + 5), from the 45 XML files;
+- `lintDebug` **0 errors, 33 warnings**, the same eight ids;
+- both APKs **31 entries** under `assets/trip-production/`; release DEX
+  `"Protótipo"` 0 and `"simular chegada"` 0;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+**No visual pass.** All 27 attractions in the real package are section-less, so
+screen 05 draws today exactly what it drew yesterday — which is what the
+regression test asserts. The first look belongs to the content session.
