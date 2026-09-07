@@ -3383,3 +3383,79 @@ translation-only   rc=1  city 'sarajevo' dish 'camp-cafe' declares phraseTransla
 
 No visual pass: with no menu content screen 20 is still unreachable in the app,
 which is correct until the content lands.
+
+## Menus, phase 1: Bosnia — and the first time screen 20 runs (2026-09-07)
+
+Content only. Three menus, **20 dishes**, plus `fallbackMenuCityId: sarajevo`.
+The food guide is now versioned at
+`trip-package/source/itinerary/guia-gastronomico-balcas-2026.md` and is the
+single source (D131).
+
+| city | title | dishes | days that gain a menu |
+| --- | --- | --- | --- |
+| `sarajevo` | Nove pratos da mesa bósnia | 9 | Dia 12, Dia 13 |
+| `mostar` | Nove pratos entre o rio Neretva e a herança turca | 9 | Dia 14, Dia 15 |
+| `bastasi` | Dois pratos de meia pensão à beira do Tara | 2 | Dia 11 |
+
+Nothing was retyped: the menus are parsed from the guide, and a verification
+pass asserts every packaged string is a substring of the source. 75 ids are
+unique across the package; zero `photoAssetId`.
+
+### What the screenshots showed
+
+Release APK on `emulator-5554`, clock set from Settings → Date & time.
+
+**25/09, Dia 13, Sarajevo.** Screen 02 draws the row above "Gravar memória":
+fork icon in teal, **"Comer em Sarajevo"**, **"9 pratos"**, chevron. Opening it:
+header with a 48dp back arrow, "Comer em Sarajevo" over "Dia 13 de 20 · Sexta,
+25 de setembro", both chevrons dark. Then the eyebrow **"CULINÁRIA LOCAL ·
+BÓSNIA E HERZEGOVINA"** with the fork, the serif title "Nove pratos da mesa
+bósnia", the intro, and **"Preços em marcos convertíveis (KM) · esta página fica
+offline"**. Meal headings carry their time range right-aligned over a hairline.
+**Every card starts at the dish name — there is no photo area at all**, which is
+D128 on screen for the first time. Pronunciation renders in monospace between
+slashes (`/bú-rek/`), and the two-pronunciation case renders as
+`/sír-ni-tsa · ze-lia-ní-tsa/`. Each dish carries the teal "PARA PEDIR" box with
+the sentence and its translation. The page ends on the prices note.
+
+Meal headings seen directly: **Café da manhã**, **Jantar** and **Doce e café ·
+qualquer hora**. The Almoço heading itself was never framed cleanly by the
+scroll, but all three of its dishes (Ćevapi sarajevski, Begova čorba, Sarma)
+appear in position between Café da manhã and Jantar.
+
+**23/09, Dia 11, Bastasi — reached with the chevrons, not by resetting the
+clock.** Two dishes, two meals, and **neither card carries a "PARA PEDIR"
+block**: both end at the history, with no empty box and no pronunciation line.
+The price pill reads "incluído na meia pensão". This is the case that motivated
+`6c761b4`, drawn correctly the first time it was ever rendered.
+
+**Dia 1, São Paulo — the fallback.** The amber notice is the first element of
+the scroll: *"Cardápio próprio de São Paulo ainda não escrito. Mostrando os
+pratos de Sarajevo como referência."* Below it the page is entirely Sarajevo's —
+eyebrow "BÓSNIA E HERZEGOVINA", title "Nove pratos da mesa bósnia", and **"Preços
+em marcos convertíveis (KM)"**, not Brazil and not reais. Only the header strip
+names the real day. The **left chevron is greyed** at the first day, keeping its
+space. That is D127 proved on a device.
+
+**The cursor does not leak.** After walking from Dia 13 down to Dia 1 inside
+screen 20 and pressing back, screen 02 still reads **"Comer em Sarajevo · 9
+pratos"** — D089 held.
+
+**Diacritics** render intact throughout: `Ćevapi`, `Begova čorba`, `Baščaršija`,
+`Hurmašice`, `Sudžuk`, `manhã`. No empty boxes.
+
+### Verified
+
+- 6 validators rc=0 — including the checks added for menus: duplicate dish id,
+  unknown or menu-less fallback city, and half a phrase pair;
+- three copies identical except `contentStatus`, proved by tampering
+  `production` to `"draft"` (rc=1) and restoring (rc=0);
+- `check_repo.py` PASS; `content_preflight` PASS 3 / PASS 8, unchanged;
+- `test_validate_trip.py` **51 tests OK**; Kotlin **376 tests, 0 failures** from
+  45 XML files; `lintDebug` **0 errors, 33 warnings**;
+- both APKs **31 entries** under `assets/trip-production/`; release DEX
+  `"Protótipo"` 0 and `"simular chegada"` 0;
+- read back **from inside `app-release.apk`**: 3 menus (sarajevo 9, mostar 9,
+  bastasi 2), 20 dishes, `fallbackMenuCityId` = `sarajevo`, exactly 2 dishes
+  without a `phrase` — both Bastasi — and 0 `photoAssetId`;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
