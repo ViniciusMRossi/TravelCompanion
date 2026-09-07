@@ -2526,3 +2526,93 @@ content changes live in the working copy and in the APK built from it.
   `app/build/test-results/testDebugUnitTest/`; `lintDebug` 0 errors;
 - both APKs carry **31 entries** under `assets/trip-production/`; release DEX
   `"Protótipo"` 0 and `"simular chegada"` 0.
+
+## Editorial migration, phase 0: four corrections from the detailed itinerary (2026-09-07)
+
+Content only. No Kotlin, no `tools/`, no schema, no screen. The first pass that
+reads the traveller's **detailed itinerary** — 1808 lines of prose that stay
+outside the repository (booking locators, door PINs, card references) — against
+the packaged trip. This phase carries the four corrections that document forces;
+the editorial migration proper (`usefulApps`, `attractions`, `restaurants`)
+follows in phases 1 to 3.
+
+### What changed
+
+| # | Field | Before | After |
+| --- | --- | --- | --- |
+| 0.1 | `acc.bastasi.camp.contactPhone` | absent | `+381 64 420 1956`, second number in `instructions` |
+| 0.2 | `days[2].outfit.special[0]` | "…só volta a servir na subida ao Lovćen, no dia 7" | "…só volta a servir em **Žabljak, no dia 8**" |
+| 0.3 | `transport.ksamil-budva.night` | 1 `criticalItem`; the 4h38 wait unmodelled | 2 `criticalItems`; new Dia 5 timeline row at 05:00 |
+| 0.4 | `OU 663` (6 strings, id included) | `OU 663` | `OU 661` |
+
+### The coat reverses D115, and the source is why (D116)
+
+D115, six days ago, moved the coat from "Žabljak, no dia 20" — a *date* on a
+screen headed "Dia 3 de 20" — to "na subida ao Lovćen, no dia 7". The move away
+from the date was right. The destination was not: it was inferred from Dia 7's
+own `carry` line, "Casaco fino mesmo com 27 °C na baía", and an inference from
+a neighbouring field loses to the source. The itinerary calls the Lovćen day
+*"o dia mais leve para vestir da viagem inteira"* and says, on the next day in
+Žabljak, **"O casaco sai da mochila aqui."** Dia 8. D115's rule — in prose the
+day is `dayNumber` — is untouched; only where the coat comes back changed.
+
+### The camp's telephone was never in a voucher, because there is no voucher
+
+D113 searched the 28 files in `source/private/` and reported, correctly, that
+none mentions Bastasi, rafting or the Tara. The camp issues no voucher; it
+confirmed by e-mail, and the two numbers live in the itinerary's day-23
+contingency. So the rule D113 set holds — a number enters the package only if a
+document prints it — and what widened is which documents count. **Screen 17 now
+has an accommodation row on Dia 11**, the most isolated base of the route. The
+four remaining stays without a number stay without one, for D113's reasons.
+
+### Podgorica: 4h38 that existed only as a subordinate clause
+
+The night bus is one booking and stays one `transport`. What it lacked was any
+representation of the change: arrival 05:00, next boarding 09:38, a second leg
+by another company (Touring Kotor, route CHR3229, **no FlixBus livery**), and
+station fees in cash only. It now carries `ci.podgorica-conexao`
+(`actionByTime` 09:20), and Dia 5 opens with `d05.podgorica` at 05:00. No
+`timeZone` override: both times are `Europe/Podgorica`, which is the zone Dia 5
+declares — the row would have needed one only on Dia 4 (`Europe/Tirane`).
+
+### OU 663 was never a flight
+
+The itinerary says OU661 twice; the package said OU 663 six times. Neither
+document can settle that against the other, so the ticket was opened:
+`Croatia Airlines Ticket.pdf`, booking 96LE2K, flight table
+`30SEP 0615 DUBROVNIK ZAGREB 0710 OU661`. All six corrected, **including
+`transport.dubrovnik-zagreb.ou663` → `…ou661`** — nothing outside the package
+referenced the id, and it was the last place the wrong number survived.
+
+### The three copies
+
+Proved by breaking it. With `production`'s `contentStatus` tampered to
+`"draft"` the comparison reports `MISMATCH` and exits 1; restored, it exits 0.
+Final state:
+
+```text
+generated        contentStatus='draft'       expected='draft'       OK
+production       contentStatus='production'  expected='production'  OK
+trip-production  contentStatus='production'  expected='production'  OK
+production       identical to generated (ignoring contentStatus): True
+trip-production  identical to generated (ignoring contentStatus): True
+rc=0
+```
+
+### Verified
+
+- 6 validators rc=0; `check_repo.py` PASS; `test_validate_trip.py` 39 tests OK;
+  `git diff --check` clean;
+- `content_preflight` **PASS 3 warning(s)** on `generated` and **PASS 8** on
+  `assets/trip`, both unchanged;
+- Kotlin **357 tests, 0 failures**, counted from the 44 XML files in
+  `app/build/test-results/testDebugUnitTest/`; `lintDebug` **0 errors, 33
+  warnings**;
+- both APKs carry **31 entries** under `assets/trip-production/`; release DEX
+  `"Protótipo"` 0 and `"simular chegada"` 0;
+- read back **from inside `app-release.apk`**: `contactPhone` present, coat line
+  reads Žabljak/dia 8, `ci.podgorica-conexao` and `d05.podgorica` present,
+  `OU 661` with zero occurrences of `OU 663` or `ou663`;
+- `app/src/main/assets/trip/trip.json` and `trip-package/sample/sample-trip.json`
+  both still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
