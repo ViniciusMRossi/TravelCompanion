@@ -3661,3 +3661,49 @@ not touch — recorded in D134 rather than fixed here.
 - from inside `app-release.apk`: 27 attractions, **27 with `location.geo`**,
   3 with `historySections` (the three written in an earlier session), 3 sections;
 - both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Audio guide, phase 2: 76 editorial sections, and screen 05 shows them (2026-09-07)
+
+Content only. All 27 existing attractions now carry `historySections` — **76
+sections**, two or three each, verbatim from the audio guide. `summary`,
+`whatToObserve`, `practical`, `actions` and `subtitle` were not touched.
+
+Three attractions had a single section each from the detailed itinerary;
+those are **replaced** by the audio guide's two or three (D135).
+
+### The paragraph separation, checked after packaging
+
+```text
+sections total:                     76
+sections with >1 paragraph:         50 of 76
+bodies with a stray single newline:  0
+```
+
+Zero is the number that matters: a body joined with `\n` instead of a blank line
+renders as one slab and no validator would notice (D135).
+
+### What the screenshots showed — the first time a section has ever appeared
+
+**Baščaršija (3 sections).** Directly under the summary card: **"O bazar que
+fundou a cidade"** as a serif heading, then **three paragraphs with real vertical
+space between them** — not one block. Below it "Incêndio de 1697, Áustria em
+1878" and "Sob fogo no cerco, de pé hoje", each with its own paragraphs. Then,
+**below all of it and clearly separated, the 09:00 departure strip** — no
+editorial text touching the operational block, which is the D133 rule holding on
+a real page.
+
+**Lago Negro (2 sections).** Same shape with two headings; the second, "Parque de
+1952, montanha do trabalhador", carries two paragraphs, again visibly apart.
+This card has no walk, so the order runs sections → map buttons → "O que
+observar". `Međed` renders with its đ.
+
+### Verified
+
+- 6 validators rc=0; three copies identical except `contentStatus` (rc=0);
+- `check_repo.py` PASS; `content_preflight` PASS 3 / PASS 8, unchanged;
+- `test_validate_trip.py` **51 tests OK**; Kotlin **381 tests, 0 failures** from
+  45 XML files; `lintDebug` **0 errors, 33 warnings**;
+- both APKs **31 entries** under `assets/trip-production/`; release DEX clean;
+- from inside `app-release.apk`: 27 attractions, 27 with `location.geo`,
+  **27 with `historySections`, 76 sections**, 50 multi-paragraph, 0 collapsible;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
