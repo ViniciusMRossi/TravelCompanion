@@ -3497,3 +3497,54 @@ Three countries, three currency lines, each taken from the menu on screen.
 - from inside `app-release.apk`: **6 menus, 46 dishes**, all ids unique, still
   exactly 2 dishes without a `phrase` (both Bastasi), 0 `photoAssetId`;
 - both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Menus, phase 3: Žabljak, Dubrovnik, Čilipi, Budva — and the set is complete (2026-09-07)
+
+Content only. Four menus, **29 dishes**. The package now carries **10 menus and
+all 75 dishes of the guide**, and **19 of the 20 days** have a menu of their own.
+
+| city | title | dishes | days |
+| --- | --- | --- | --- |
+| `zabljak` | Nove pratos das terras altas de Durmitor | 9 | Dias 8, 9, 10 |
+| `dubrovnik` | Nove pratos da antiga república marítima | 9 | Dia 16 |
+| `cilipi` | Dois pratos da konoba rural de Konavle | 2 | Dia 17 |
+| `budva` | Nove pratos entre a pesca da manhã e o café turco | 9 | **none — see D132** |
+
+Only **Dia 1**, São Paulo on the evening of the flight out, falls back — and it
+borrows Sarajevo, which is what `fallbackMenuCityId` declares.
+
+### What the screenshots showed
+
+**21/09 Dia 9** "Comer em Žabljak · 9 pratos"; **28/09 Dia 16** "Comer em
+Dubrovnik · 9 pratos"; **29/09 Dia 17** "Comer em Čilipi · 2 pratos". `Ž` and
+`Č` render in the row labels.
+
+**Čilipi opened**: "CULINÁRIA LOCAL · CROÁCIA", "Dois pratos da konoba rural de
+Konavle", "Preços em euros (€)", and then **only two meal headings — Almoço and
+Jantar**. No empty Café da manhã and no empty Doce e café: a meal with no dish
+is not drawn (handoff §4).
+
+**Budva has no shortcut on any day, as expected.** On **17/09, Dia 5** — the day
+the trip actually passes through Budva, arriving at 11:07 and leaving for Kotor
+at 18:00 — screen 02 reads **"Comer em Kotor · 9 pratos"**, because Dia 5's
+`baseCityId` is Kotor. Budva's nine dishes are in the package and reachable from
+no day (D132).
+
+### Verified
+
+- 6 validators rc=0; three copies identical except `contentStatus` (rc=0);
+- `check_repo.py` PASS; `content_preflight` PASS 3 / PASS 8, unchanged;
+- `test_validate_trip.py` **51 tests OK**; Kotlin **376 tests, 0 failures** from
+  45 XML files; `lintDebug` **0 errors, 33 warnings**;
+- both APKs **31 entries** under `assets/trip-production/`; release DEX clean;
+- from inside `app-release.apk`: **10 menus, 75 dishes**, all ids unique,
+  `fallbackMenuCityId` = `sarajevo`, exactly **2** dishes without a `phrase`
+  (both Bastasi), **0** `photoAssetId`, and **19 of 20 days** resolving to their
+  own city's menu;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+### What is left
+
+The **seventeen photographs** — now seventy-five briefs, one `photoCaption` per
+dish, and no binary for any of them. The layout is already correct without them
+(D128), and the day they arrive nothing above or below a card moves.
