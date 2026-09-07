@@ -2919,3 +2919,102 @@ adjacent field.
   tour operator alone visits. They have no `city` in the package, and adding
   cities to carry two stops would change the 19-city shape for content the
   document gives two sentences.
+
+## App identity: a launcher icon, and the name "Bálcãs" (2026-09-07)
+
+No Kotlin, no dependency, no screen, no behaviour. `res/` and the manifest only.
+
+### What changed
+
+| file | change |
+| --- | --- |
+| `res/values/strings.xml` | `app_name`: "Travel Companion" → **Bálcãs** |
+| `AndroidManifest.xml` | `+android:icon="@mipmap/ic_launcher"`, `+android:roundIcon="@mipmap/ic_launcher_round"` |
+| `res/mipmap-anydpi-v26/ic_launcher.xml` | new, adaptive icon |
+| `res/mipmap-anydpi-v26/ic_launcher_round.xml` | new, identical |
+| `res/mipmap-{m,h,x,xx,xxx}dpi/ic_launcher_background.png` | new, 108/162/216/324/432 px |
+| `res/mipmap-{m,h,x,xx,xxx}dpi/ic_launcher.png` | new legacy square, 48/72/96/144/192 px |
+| `docs/design/app-icon-source.png` | the 3.2 MB master, now versioned (D121) |
+
+`applicationId`, `namespace`, `versionCode` and `versionName` are untouched —
+see D120 for why that is a data-safety decision and not a style one.
+
+### Lint did not go 33 → 32. It went 33 → 40, and the eight are informative
+
+`MissingApplicationIcon` is gone, which was the goal. Eight warnings arrived,
+all of them direct consequences of path A and none of them errors:
+
+| id | before | after | what it is |
+| --- | --- | --- | --- |
+| `MissingApplicationIcon` | 1 | **0** | the defect this commit fixes |
+| `IconLauncherShape` | 0 | **5** | "Launcher icons should not fill every pixel of their square region" — once per legacy density |
+| `MonochromeLauncherIcon` | 0 | **2** | no `<monochrome>` layer for Android 13 themed icons |
+| `ObsoleteSdkInt` | 0 | **1** | `-v26` is redundant when `minSdkVersion` is 26 |
+| everything else | 32 | 32 | unchanged |
+
+**`IconLauncherShape` is worth reading as evidence, not as noise.** It is lint
+saying, in its own words, what D121 measures: the art fills its square, and an
+adaptive icon assumes it will not. It fires on the *legacy* PNG only; every
+device that runs this app is API 26+ and resolves the XML instead.
+`MonochromeLauncherIcon` needs a monochrome art layer, which is a commission
+(path B). `ObsoleteSdkInt` is correct and one rename would silence it; the
+`-v26` qualifier was kept because it is the universal convention and because
+the brief specified that path.
+
+### What the screenshot actually shows
+
+Installed from `app-release.apk` on two emulators (Pixel-class, API 37, one at
+1440×3120 and one at 720×1520, so two different mipmap densities are exercised).
+Both render **the same circular mask**; no image on this SDK ships the
+`com.android.theme.icon.*` overlays, so a squircle could not be tested on
+device.
+
+**The label** reads **Bálcãs** in the app drawer, one line, not truncated, with
+the acute á and the tilde ã drawn correctly. `aapt2 dump badging` agrees:
+`application-label:'Bálcãs'`.
+
+**The crop, in words:**
+
+- **The top of the pack is cut.** The circle slices across the pack's lid; the
+  top edge of the flap is gone.
+- **The upper-left shoulder strap is cut** at its outer end, mid-buckle.
+- **The bedroll is cut**, and this is the most visible loss: only the upper
+  right of the cream spiral survives, and it reads as a pale wedge rather than
+  as a rolled blanket.
+- **Both side edges of the pack body are gone**, so the pack has no silhouette
+  — it runs off the mask on the left and the right.
+- **The blue field survives as one sliver at the lower left**; the yellow halo
+  as two slivers, left and upper right. The framing the painting was composed
+  around is not in the icon.
+- **The mug and the sprig survive intact** and are the two most legible objects.
+
+**At size:** at 144 px and 96 px it reads clearly as a backpack. At 72 px it is
+still a backpack. At **48 px it is a green mass with orange diagonal stripes and
+a pale blob** — the pack's outline is what would carry it at that size, and the
+outline is exactly what the mask removed.
+
+The honest summary: it is unmistakably *this* app and unmistakably not the green
+Android robot, which is the whole point of the commit. It is not a well-framed
+icon, and the reason is structural, not a mistake in the crop. Path B (D121) is
+the fix if the framing matters.
+
+### Verified
+
+- 6 validators rc=0; `check_repo.py` PASS; `test_validate_trip.py` 39 tests OK;
+  `git diff --check` rc=0;
+- Kotlin **357 tests, 0 failures**, from the 44 XML files in
+  `app/build/test-results/testDebugUnitTest/`;
+- `lintDebug` **0 errors**, 40 warnings (33 before; see the table above);
+- both APKs still carry **31 entries** under `assets/trip-production/` — this
+  commit touched `res/`, not `assets/`;
+- release DEX `"Protótipo"` 0 and `"simular chegada"` 0;
+- icon resources in the release APK, via `aapt2 dump resources`:
+  `mipmap/ic_launcher` 5 PNG densities + `anydpi` XML,
+  `mipmap/ic_launcher_background` 5 PNG densities,
+  `mipmap/ic_launcher_round` `anydpi` XML — 10 PNGs and 2 XMLs;
+  `application-icon-{120..640}` all resolve to the adaptive XML;
+- `aapt2 dump badging`: `application-label:'Bálcãs'`, `versionCode='1'`,
+  `versionName='0.1.0'`, `package: name='com.travelcompanion.app'`;
+- `apksigner verify`: exit 0, `CN=Android Debug` (D110);
+- `app/src/main/assets/trip/trip.json` and `trip-package/sample/sample-trip.json`
+  both still `97627a8c8cda0c1126eacda352aff0b30e6427ce` — no content was touched.
