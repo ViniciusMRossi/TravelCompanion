@@ -3604,3 +3604,60 @@ and screen 04 likewise: same shape, no city content this round.
 **No visual pass.** All 27 attractions in the real package are section-less, so
 screen 05 draws today exactly what it drew yesterday — which is what the
 regression test asserts. The first look belongs to the content session.
+
+## Audio guide, phase 1: coordinates on all 27 attractions (2026-09-07)
+
+Content only. The audio guide is now versioned at
+`trip-package/source/itinerary/audioguia-balcas-2026.md` and is the source for
+this phase and the two that follow: 50 entries, of which **3 are marked
+`**Não usar:**` and dropped whole** (D134), leaving 47 — 27 enriching existing
+attractions and 20 becoming new ones.
+
+**All 27 existing attractions gained `location.geo`.** `name` and `mapsQuery`
+were left exactly as they were.
+
+### The coordinate guard, first run against real content
+
+```text
+Coordinates: 6 city cluster(s) checked, 8 point(s) with nothing to anchor them to
+- checked city 'amsterdam' (2 coordinates)
+- checked city 'dubrovnik' (4 coordinates)
+- checked city 'kotor' (4 coordinates)
+- checked city 'mostar' (3 coordinates)
+- checked city 'sarajevo' (7 coordinates)
+- checked city 'zabljak' (3 coordinates)
+- no coordinate check for city 'bastasi' … (single coordinate) ×8
+```
+
+**Nothing accused.** Note this is six cities checked and not the eight the brief
+expected: eight cities hold exactly one point each, and a lone point has nothing
+in its own city to be compared with. Phase 3 adds attractions to four of them.
+
+### What the screenshot showed
+
+**25/09, Dia 13** → Explorar → Sarajevo → Baščaršija. The card draws exactly what
+it drew before: hero, summary, the 09:00 departure strip, the two map buttons,
+"O que observar" with its three numbered notes, and the fixed "Iniciar passeio"
+bar. **A coordinate changes no layout**, which is the point of checking.
+
+What it does change is one of the two buttons, and only one:
+
+| button | before | after |
+| --- | --- | --- |
+| Como chegar | `google.navigation:q=Bascarsija%20Sarajevo` | `google.navigation:q=43.8594,18.4326` |
+| Abrir no mapa | `…/maps/search/?api=1&query=Bascarsija+Sarajevo` | **unchanged** |
+
+"Abrir no mapa" reads the attraction's own `actions` array, which this phase did
+not touch — recorded in D134 rather than fixed here.
+
+### Verified
+
+- 6 validators rc=0; three copies identical except `contentStatus`, proved by
+  tampering `production` to `"draft"` (rc=1) and restoring (rc=0);
+- `check_repo.py` PASS; `content_preflight` PASS 3 / PASS 8, unchanged;
+- `test_validate_trip.py` **51 tests OK**; Kotlin **381 tests, 0 failures** from
+  45 XML files; `lintDebug` **0 errors, 33 warnings**;
+- both APKs **31 entries** under `assets/trip-production/`; release DEX clean;
+- from inside `app-release.apk`: 27 attractions, **27 with `location.geo`**,
+  3 with `historySections` (the three written in an earlier session), 3 sections;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
