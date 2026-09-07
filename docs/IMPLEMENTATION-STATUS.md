@@ -3707,3 +3707,65 @@ observar". `Međed` renders with its đ.
 - from inside `app-release.apk`: 27 attractions, 27 with `location.geo`,
   **27 with `historySections`, 76 sections**, 50 multi-paragraph, 0 collapsible;
 - both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Audio guide, phase 3: twenty new attractions (2026-09-07)
+
+Content only. The package goes from **27 to 47 attractions**, all 47 with a
+coordinate and with editorial sections — **127 sections** in total, which is
+every one the audio guide wrote.
+
+| city | before | after | new ids |
+| --- | --- | --- | --- |
+| amsterdam | 2 | **6** | `rijksmuseum`, `museu-holocausto`, `museu-resistencia`, `museu-van-gogh` |
+| kotor | 4 | **5** | `forte-sao-joao` |
+| zabljak | 3 | **4** | `ledena-pecina` |
+| bastasi | 1 | **2** | `sipcanica` |
+| sarajevo | 3 | **7** | `morica-han`, `chama-eterna`, `catedral`, `rosas` |
+| dubrovnik | 4 | **13** | `portao-pile`, `lokrum`, `porto-velho`, `forte-lovrijenac`, `palacio-do-reitor`, `museu-maritimo`, `mosteiro-franciscano`, `museu-rupe`, `forte-imperial` |
+
+All prefixed `attr.<city>.`. No `practical` and no `subtitle` on any of the 20 —
+the source has neither (D136).
+
+### The coordinate guard, with 20 more points
+
+```text
+Coordinates: 7 city cluster(s) checked, 7 point(s) with nothing to anchor them to
+- checked city 'amsterdam' (6 coordinates)
+- checked city 'bastasi' (2 coordinates)
+- checked city 'dubrovnik' (13 coordinates)
+- checked city 'kotor' (5 coordinates)
+- checked city 'mostar' (3 coordinates)
+- checked city 'sarajevo' (11 coordinates)
+- checked city 'zabljak' (4 coordinates)
+```
+
+Nothing accused, with Dubrovnik at 13 points and Sarajevo at 11.
+
+### What the screenshots showed
+
+**Explorar to Dubrovnik** lists 13 attractions. Screen 04 draws them in a
+**horizontal carousel**, so thirteen is a sideways scroll and not a wall — the
+ninth card takes eight swipes to reach. Recorded as a screen-04 question in
+D136 rather than solved by cutting content.
+
+**Palácio do Reitor** — hero with "DUBROVNIK · CROÁCIA" and the name and **no
+strapline**, the summary card, then three sections ("Um chefe de Estado por
+trinta dias", "Duas explosões e um terremoto", "Museu de História Cultural"),
+each with its paragraphs apart, then the two map buttons, then "O que observar"
+with exactly three numbered items. **No chip row**, because there is no
+`practical` — the card is honest about what the source gave it.
+
+**Ledena Pećina** (Žabljak, one of the three approximate coordinates) — the same
+shape, two sections, `Ž` and `ć` intact.
+
+### Verified
+
+- 6 validators rc=0; three copies identical except `contentStatus` (rc=0);
+- `check_repo.py` PASS; `content_preflight` PASS 3 / PASS 8, unchanged;
+- `test_validate_trip.py` **51 tests OK**; Kotlin **381 tests, 0 failures** from
+  45 XML files; `lintDebug` **0 errors, 33 warnings**;
+- both APKs **31 entries** under `assets/trip-production/`; release DEX clean;
+- from inside `app-release.apk`: **47 attractions, 47 with `location.geo`, 47
+  with `historySections`, 127 sections**, all ids unique, 20 without
+  `practical` or `subtitle`, and **no dangling `city.attractionIds`**;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
