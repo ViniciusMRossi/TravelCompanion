@@ -3769,3 +3769,78 @@ shape, two sections, `Ž` and `ć` intact.
   with `historySections`, 127 sections**, all ids unique, 20 without
   `practical` or `subtitle`, and **no dangling `city.attractionIds`**;
 - both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Audio guide, phase 4: six bodies that carried the document (2026-09-07)
+
+Content only, and a correction to phases 2 and 3. The section parser ended a
+body at the next `### ` and the next `## ` but **not at `# `**, the guide's
+country heading, so the **last section of every country block** ran past its own
+end and swallowed the `---` rule, the country title after it and — in the last
+block — the document footer, the whole `## Dúvidas` list and the whole
+`## O que mudou` changelog. Six sections, always an attraction's last:
+
+| attraction | section | before | after | source |
+| --- | --- | --- | --- | --- |
+| `attr.amsterdam.museu-van-gogh` | Rietveld, Kurokawa e a cronologia | 4 | **2** | 2 |
+| `attr.butrinto.sitio` | Escavações italianas, quatro impérios numa trilha | 4 | **2** | 2 |
+| `attr.sarajevo.vijecnica` | Vinte anos até reabrir em 2014 | 4 | **2** | 2 |
+| `attr.pocitelj.vila` | Guerra de 1993, romãs em setembro | 4 | **2** | 2 |
+| `attr.bastasi.sipcanica` | Banho, fotos e a escala do cânion | 3 | **1** | 1 |
+| `attr.dubrovnik.forte-imperial` | Museu de 2008 e a vista | 9 | **2** | 2 |
+
+Every body is truncated at its first paragraph beginning `---`. Nothing else in
+the package changed. `attr.bastasi.sipcanica` leaves **one** paragraph, because
+the guide writes that section as one (D137).
+
+### The check that replaces the substring check
+
+Phases 2 and 3 verified that every packaged paragraph was a substring of the
+source, and **every contaminated paragraph was** — the changelog really is in
+the guide, just not under that `###`. The new check compares, for all **127
+sections**, the packaged paragraph list with the source's list under the same
+heading, **count and text, element by element**. Run before the fix as well as
+after, so it is known to fail on the defect:
+
+```text
+before:  121 identical, 6 mismatched, 0 unresolvable   (rc=1)
+after:   127 identical, 0 mismatched, 0 unresolvable   (rc=0)
+```
+
+**Stray single newlines: 0** in every body of all three copies. The two that
+existed were inside the swallowed markdown lists — list-item separators, not
+paragraph breaks and not mid-sentence breaks — and the truncation removed them
+with the lists.
+
+### Two things the swallowed section was hiding
+
+- **`attr.sarajevo.catedral` and `attr.sarajevo.rosas` share `43.8592, 18.4258`**
+  — the package's only duplicated coordinate. It comes verbatim from source
+  entries 26 and 27, and entry 27 explains it: *"a mais visível, diante da
+  catedral"*. Left exactly as it is; **no coordinate invented**. Open for
+  Vinícius (D138). The pair the source itself doubted is a different one —
+  entries 24/25 — and entry 24 is a `Não usar`, so it never entered the package.
+- **Tekke de Blagaj, Bektashi × Naqshbandi.** The guide doubts its own line;
+  the text is packaged unchanged in `attr.blagaj.tekke`, section *"Um mosteiro
+  onde o rio nasce"*. Open for Vinícius (D139).
+
+### What the screenshot showed
+
+Release APK on the emulator, clock at **28/09/2026** — Dia 16, Dubrovnik.
+(29/09 is Dia 17 and resolves to **Čilipi**, which has no attractions.)
+Explorar → Dubrovnik → thirteenth card → **Forte Imperial e Museu da Guerra da
+Pátria**. The last section, *"Museu de 2008 e a vista"*, ends at *"…ver tudo
+daqui era uma questão de vida ou morte para quem defendia a cidade lá embaixo."*
+and the map buttons follow immediately. **No `---`, no `## Dúvidas`, no
+changelog.**
+
+### Verified
+
+- 6 validators rc=0; three copies identical except `contentStatus` (rc=0);
+- `check_repo.py` PASS; `content_preflight` PASS 3 / PASS 8, unchanged;
+- `test_validate_trip.py` **51 tests OK**; Kotlin **381 tests, 0 failures** from
+  45 XML files; `lintDebug` **0 errors, 33 warnings**;
+- both APKs **31 entries** under `assets/trip-production/`;
+- read back from inside `app-release.apk`: **47 attractions, 127 sections, 127
+  identical to the source by count and text, 0 stray newlines, 0 bodies holding
+  a rule or a heading**;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
