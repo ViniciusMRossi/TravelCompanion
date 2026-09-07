@@ -2580,7 +2580,7 @@ declares — the row would have needed one only on Dia 4 (`Europe/Tirane`).
 
 The itinerary says OU661 twice; the package said OU 663 six times. Neither
 document can settle that against the other, so the ticket was opened:
-`Croatia Airlines Ticket.pdf`, booking 96LE2K, flight table
+`Croatia Airlines Ticket.pdf`, flight table
 `30SEP 0615 DUBROVNIK ZAGREB 0710 OU661`. All six corrected, **including
 `transport.dubrovnik-zagreb.ou663` → `…ou661`** — nothing outside the package
 referenced the id, and it was the last place the wrong number survived.
