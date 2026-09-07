@@ -2674,3 +2674,113 @@ falls through `market://search?q=…` to `https://play.google.com/store/search?q
 - read back **from inside `app-release.apk`**: 7 `usefulApps`, ids, names,
   `countryCodes` and `market://` URIs all as written;
 - both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Editorial migration, phase 2: twenty-seven attractions (2026-09-07)
+
+Content only. `attractions` was `[]` across 19 cities, so screen 04 listed none
+and screen 05 was unreachable. It now carries **27**, all linked from
+`city.attractionIds`, plus the **11** timeline `refId`s that were `null` and the
+walk start that screen 05 needs.
+
+| city | n | attractions |
+| --- | --- | --- |
+| amsterdam | 2 | Jordaan e os canais · Casa de Anne Frank |
+| ksamil | 1 | Ksamil e as ilhotas |
+| butrinto | 1 | Butrinto |
+| budva | 1 | Casco antigo de Budva |
+| kotor | 4 | Muralhas e forte de São João · Casco antigo · Ladder of Kotor · Teleférico Lovćen e Alpine Coaster |
+| zabljak | 3 | Lago Negro · Bobotov Kuk · Cânion Nevidio |
+| bastasi | 1 | Rafting no cânion do Tara |
+| sarajevo | 3 | Baščaršija · War Childhood Museum · Vijećnica |
+| butmir | 1 | Túnel da Guerra |
+| mostar | 3 | Stari Most · Bazar Kujundžiluk · Minarete da Koski Mehmed Pasha |
+| blagaj | 1 | Tekke de Blagaj |
+| kravice | 1 | Cachoeiras de Kravice |
+| pocitelj | 1 | Počitelj |
+| dubrovnik | 4 | Caiaque e Lokrum · Cidade velha · Muralhas · Teleférico do Monte Srđ |
+
+Four carry a `planBId` — Lovćen, Bobotov Kuk, the kayak and the Srđ — and three
+carry `documentIds` into tickets already in the wallet.
+
+### No coordinate was packaged, and that is the result (D118)
+
+The itinerary carries map **queries**, never latitude and longitude, so every
+`location` here is `name` + `mapsQuery` and sometimes `address`. A coordinate
+would have had to come from outside the document, and D098/D100/D101 catch a
+wrong point but not a plausibly wrong one. `AttractionState.directionsAction`
+already falls back to `mapsQuery` when there is no `geo`, so "Como chegar"
+works on all 27. The validator reports, unchanged from before this commit:
+
+```text
+Coordinates: 1 city cluster(s) checked, 0 point(s) with nothing to anchor them to
+- checked city 'sarajevo' (4 coordinates)
+```
+
+### What the eleven refIds do, and what they do not
+
+They do **not** make the rows clickable. `timelineDestination`
+(`AppNavigation.kt:151`) routes transport, accommodation and walk and returns
+null for attraction, and `TimelineDestinationTest` asserts exactly that, on
+purpose. What they do buy is real: `CityState.kt:104` builds its schedule map
+from these rows, so screen 04 now prints the hour beside eleven attraction
+cards. Navigation waits on a code change no content session should make.
+
+| day | row | points at |
+| --- | --- | --- |
+| 2 · 15:30 | `d02.anne-frank` | `attr.amsterdam.anne-frank` |
+| 4 · 08:30 | `d04.butrinto` | `attr.butrinto.sitio` |
+| 6 · 06:15 | `d06.muralhas` | `attr.kotor.muralhas` |
+| 12 · 09:00 | `d12.rafting` | `attr.bastasi.rafting-tara` |
+| 13 · 14:45 | `d13.tunel` | `attr.butmir.tunel` |
+| 15 · 11:00 | `d15.blagaj` | `attr.blagaj.tekke` |
+| 15 · 13:30 | `d15.kravice` | `attr.kravice.cachoeiras` |
+| 15 · 16:00 | `d15.pocitelj` | `attr.pocitelj.vila` |
+| 16 · 13:00 | `d16.caiaque` | `attr.dubrovnik.caiaque` |
+| 17 · 08:00 | `d17.muralhas` | `attr.dubrovnik.muralhas` |
+| 17 · 17:30 | `d17.teleferico` | `attr.dubrovnik.teleferico-srd` |
+
+`walk.sarajevo.bazar-ao-rio` also gained `startAttractionId:
+attr.sarajevo.bascarsija`, so screen 05 for Baščaršija shows the walk's
+departure strip on Dia 13 — the 02 to 05 flow D008 describes.
+
+### Where the document hesitates, the field hesitates
+
+- **Kotor's walls**: `price` is the itinerary's own sentence, *"As fontes
+  divergem entre €8 e €15 por pessoa… com uns €30 trocados no casal a dúvida
+  não importa"*, not a number chosen from it.
+- **Kravice**: the document contradicts itself, ~€5 per person in the
+  description against €10 at the gate in the tour voucher. `price` records both
+  and says to carry the €10.
+- **A duration given as a range sets no `recommendedDurationMinutes`.** 8–10 h
+  on the Bobotov Kuk, 45–60 min at the Tunnel, 2h30–3h at the Nevidio: the chip
+  reads "Visita ~N min", and any N would be this session choosing. Only single
+  figures the document states became one — 180 Butrinto, 90 Lago Negro and
+  Blagaj, 210 rafting, 120 Anne Frank and Dubrovnik's walls, 60 Počitelj.
+
+### Corfu has no attraction
+
+The itinerary describes Corfu as a port to pass through — which terminal, and
+not to confuse it with the old one — and that is transport, already modelled on
+the ferry leg. There is no sight in it to write, and inventing one is the single
+thing this session must not do.
+
+`historySections` (3) and `interestingFacts` (0) were written only where the
+document carries real history. **Neither reaches a screen today**:
+`AttractionState` reads `whatToObserve`, not those two. Packaged as content, not
+as a promise.
+
+### Verified
+
+- 6 validators rc=0; `check_repo.py` PASS; `test_validate_trip.py` 39 tests OK;
+  `git diff --check` rc=0;
+- `content_preflight` **PASS 3 warning(s)** on `generated` and **PASS 8** on
+  `assets/trip`, both unchanged;
+- three copies identical except `contentStatus` (rc=0);
+- Kotlin **357 tests, 0 failures**, from the 44 XML files in
+  `app/build/test-results/testDebugUnitTest/`; `lintDebug` **0 errors, 33
+  warnings**;
+- both APKs carry **31 entries** under `assets/trip-production/`; release DEX
+  `"Protótipo"` 0 and `"simular chegada"` 0;
+- read back **from inside `app-release.apk`**: 27 attractions, all 14 city links,
+  all 11 `refId`s, the walk start and the 4 `planBId` links;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
