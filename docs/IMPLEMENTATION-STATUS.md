@@ -2784,3 +2784,138 @@ as a promise.
 - read back **from inside `app-release.apk`**: 27 attractions, all 14 city links,
   all 11 `refId`s, the walk start and the 4 `planBId` links;
 - both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Editorial migration, phase 3: plan Bs, restaurants, and five dates that read as day numbers (2026-09-07)
+
+Content only. `planBs` 6 → **12**, `restaurants` 0 → **4**, plus **9** new
+`planBId` links, five corrections of the D115 class and one dangling document
+reference that has been silently dropping a row from the Plan B screen.
+
+### The six contingencies the itinerary tabulates but the package did not carry
+
+| new plan B | hangs off |
+| --- | --- |
+| `planb.voo-corfu` — perder o voo das 07:15 para Corfu | `transport.ams-corfu.u2` |
+| `planb.ferry-corfu-sarande` — ferry cancelado por vento | **nothing — see below** |
+| `planb.embarque-ksamil` — perder o ônibus das 19:30 | `transport.ksamil-budva.night`, Dia 4 |
+| `planb.nevidio-chuva` — chuva adia o Nevidio | `attr.zabljak.nevidio`, Dia 10 |
+| `planb.trem-mostar` — perder o trem das 07:15 | `transport.sarajevo-mostar.train`, Dia 14 |
+| `planb.voo-volta-dbv` — atraso do voo de volta | `transport.dubrovnik-zagreb.ou661`, Dia 18 |
+
+**The ferry plan hangs off nothing, and that is a finding.** The Corfu → Sarandë
+crossing is a timeline row with `refId: null` and **no `transport` entity**, and
+Dia 3's single `planBId` is already spent on the Ksamil check-in. Screen 19
+lists every plan B in `planBs` whatever points at it, so the traveller can reach
+it; what it lacks is a route in from the leg it belongs to. Closing that means
+modelling the ferry as a transport — more than a content session should do.
+
+`planb.nevidio-chuva` carries **the first `kind: "phone"` action in the
+package** (`tel:+38268001150`), which `PlanBScreen.kt:163` draws as a dial row.
+The document's instruction for that contingency is to message the operator the
+moment the forecast turns, and a plan whose first step is a telephone call
+should offer the telephone.
+
+### Four restaurants, and the table that deliberately did not become forty
+
+| city | place | practicalNote (screen 04 joins it with priceNote) |
+| --- | --- | --- |
+| sarajevo | Morića Han | Não é espresso e não se toma rápido: reservem meia hora sentados |
+| sarajevo | Zlatna Ribica | Passando de dia parece fechada e abandonada: insistam |
+| kotor | Forza Kuk | No alto do Lovćen, nos dois planos do dia |
+| kotor | Monte 1350 | No alto do Lovćen, ao lado da estação Kuk |
+
+These are the only four places the itinerary names. Its *Comida* table lists
+dishes and price bands by country — general knowledge about a cuisine, not
+places with doors — and **none of it became a restaurant row**.
+
+### Two scenarios rewritten, one reassurance that was simply wrong
+
+- `planb.bobotov-kuk` said *"para a travessia do Bobotov Kuk"*, on a route the
+  same package describes as out-and-back from Žabljak. Now: *"Se o tempo fechar
+  no Bobotov Kuk, ou o dia parecer longo demais."*
+- `planb.caiaque-dubrovnik` said *"por falta de participantes"* where the
+  voucher says a **minimum of six**. Now: *"…ou por não juntar os seis
+  participantes mínimos."*
+- Its `reassurance` promised *"troca por caminhada guiada"*, which the operator
+  does not offer. The document says another date or time, or a full refund —
+  and now so does the field.
+
+The other four scenarios read well and were left alone.
+
+### The D115 rule found four more violations of itself, and one of mine
+
+Sweeping the package for `dia N` in prose:
+
+| where | before | after |
+| --- | --- | --- |
+| `acc.sarajevo.estudio.instructions` | "o código é liberado no **dia 22**" | **dia 10** |
+| `acc.mostar.guesthouse.instructions` | "as 21:00 do **dia 26**" | **dia 14** |
+| `planb.caiaque-dubrovnik.reassurance` | "a manhã do **dia 29**" | **dia 17** |
+| `planb.caiaque-dubrovnik.steps[1].title` | "a manhã do **dia 29**" | **dia 17** |
+| `attr.kotor.muralhas.practical.bestTime` | "o nascer do sol no **dia 18 de setembro**" | date removed |
+
+Three of those five numbers are **greater than 20**, so on a screen headed
+"Dia N de 20" they cannot be read as a day at all. The last was written in
+phase 2 of this same migration — correct, since it said "de setembro", but
+still a number offered to a reader who is counting days, and the sunrise hour
+was the content.
+
+### One dangling reference, found by an assertion rather than a validator
+
+`planb.ksamil-checkin.relatedDocumentIds` named `doc.ticket.ferry-corfu-sarande`.
+**That id has never existed** — the ferry is packaged per passenger, `.vinicius`
+and `.erika`. `PlanBState` resolves the list with `mapNotNull`, so nothing
+failed: the ferry ticket simply did not appear on the Plan B screen. Both real
+ids are now listed.
+
+`content_checks` validates `documentIds` on days, transports and stays but not
+`relatedDocumentIds` on a plan B, which is why six validators passed over it.
+Closing that gap is a change to `tools/`, which this session does not touch.
+
+### Verified
+
+- 6 validators rc=0; `check_repo.py` PASS; `test_validate_trip.py` 39 tests OK;
+  `git diff --check` rc=0;
+- an independent sweep of every id-bearing field the validator does not check
+  (`relatedDocumentIds`, `attractionIds`, `storyIds`, `walkIds`, `transportIds`,
+  `accommodationIds`, `usefulAppIds`, `criticalItemIds`) now reports **0
+  dangling references**, against 1 before this commit;
+- `content_preflight` **PASS 3 warning(s)** on `generated` and **PASS 8** on
+  `assets/trip`, both unchanged;
+- three copies identical except `contentStatus` (rc=0);
+- Kotlin **357 tests, 0 failures**, from the 44 XML files in
+  `app/build/test-results/testDebugUnitTest/`; `lintDebug` **0 errors, 33
+  warnings**;
+- both APKs carry **31 entries** under `assets/trip-production/`; release DEX
+  `"Protótipo"` 0 and `"simular chegada"` 0;
+- read back **from inside `app-release.apk`**: 12 plan Bs in the order screen 19
+  draws them, 4 restaurants, all 9 new links, the phone action, the five date
+  corrections and the repaired ferry reference;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## What the detailed itinerary carries that schema 1.1 has no field for
+
+Recorded at the end of the migration so it becomes a schema decision after the
+trip, not a forced field before it. Nothing below was invented into an
+adjacent field.
+
+- **Money, water, pharmacies, tipping, language, mines, smoking, street dogs,
+  the Euronet trap, refusing DCC, what not to photograph.** All of it is
+  per-country or trip-wide practical advice. `practicalInfo` exists **only
+  inside `attraction`** — not on `city`, not at the top level — so there is
+  nowhere to put a fact about Albania that is not about a particular sight.
+- **The medical reference table by base**, including that Žabljak has only a
+  clinic, with a hospital in Nikšić ~1h30 away and a full centre in Podgorica
+  ~2h30. `emergencyProfile` is per country and carries contacts, not a note
+  about how far the nearest hospital is from tonight's bed. No screen reads a
+  profile note today either.
+- **Photography**: which hour the light works at each place. Where it belongs
+  to one attraction it went into `practical.bestTime`; the table as a whole,
+  and `heroAssetId` for any of the 27, have no home — the package carries no
+  image binaries at all.
+- **The eighth useful app**, the bank's, which the document names without
+  naming a bank (see D117).
+- **The Bunski Kanali and the Fortica Sky Walk**, two stops the Herzegovina
+  tour operator alone visits. They have no `city` in the package, and adding
+  cities to carry two stops would change the 19-city shape for content the
+  document gives two sentences.
