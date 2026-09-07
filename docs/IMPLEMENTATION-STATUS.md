@@ -3141,3 +3141,95 @@ Wallpaper & style → Icons → Style. Nothing in the repository is affected.
   min 0 / max 255, 77.8%–81.4% fully transparent — the channel survived;
 - `apksigner verify` exit 0, `CN=Android Debug`;
 - both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Screen 17's "MOSTRE ESTA TELA" card, on six of seven profiles (2026-09-07)
+
+Content only. No Kotlin, no `tools/`, no `res/`, no schema. The card was built
+and tested and **no profile in the real package carried `showToSomeone`**, so it
+would never have drawn on the trip. Six now do.
+
+| profile | language | localLanguageText |
+| --- | --- | --- |
+| `emergency.ba` | Bosnian | Trebam pomoć. Molim vas, pozovite hitnu službu. |
+| `emergency.me` | = Montenegrin | *identical* |
+| `emergency.hr` | = Croatian | *identical* |
+| `emergency.al` | Albanian | Kam nevojë për ndihmë. Ju lutem, telefononi shërbimin e urgjencës. |
+| `emergency.gr` | Greek | Χρειάζομαι βοήθεια. Παρακαλώ, καλέστε τις υπηρεσίες έκτακτης ανάγκης. |
+| `emergency.nl` | Dutch | Ik heb hulp nodig. Bel alstublieft de hulpdiensten. |
+| `emergency.br` | — | **no card, deliberate (D123)** |
+
+`translation` is the same Portuguese sentence on all six. Every card has
+**exactly two fields**: `audioAssetId` is absent, not empty (D123).
+
+### The identical trio is content, not the D102 defect
+
+Bosnian, Montenegrin and Croatian are one language — the itinerary says so —
+and the sentence a stranger reads is the same in Sarajevo, Kotor and Dubrovnik.
+Three invented variants would be dialect added to decorate a data structure, on
+the one screen where being understood is the point. **No validator or preflight
+check fired on the repetition**, which was the thing to stop for; the recipe is
+unchanged at 6 rc=0 / PASS 3 / PASS 8.
+
+### One card that can never appear, and why it was written anyway
+
+Screen 17 picks its profile from `day.baseCityId`. The countries that are ever
+a base are AL, BA, BR, HR, ME, NL — **Greece is not one**: Corfu appears only in
+Dia 3's `cityIds`, and that day's base is Ksamil. So the Greek card is
+unreachable on screen, exactly as the Greek profile's own 112 and 166 already
+were. Written because it is correct and costs nothing, not because it will be
+seen.
+
+### What the screenshots showed
+
+Release APK on `emulator-5554`, date driven from Settings → Date & time (the
+image has no root, so `date` from the shell is refused).
+
+- **26/09, Dia 14, "Mostar · Bósnia e Herzegovina"** — the dark ink card is at
+  the foot of the screen under the consular row. Teal eyebrow **MOSTRE ESTA
+  TELA**, then the Bosnian sentence large and white, wrapping onto two lines,
+  complete, with `ć` and `š` drawn correctly; under it the Portuguese in small
+  muted type. Nothing truncated, no tofu boxes.
+- **15/09, "Ksamil · Albânia"** — same card, Albanian sentence, all five `ë`
+  rendering; two lines, complete.
+- **29/09, "Čilipi · Croácia"** — **the same sentence as Bosnia**, which is the
+  expected result and the point of D123.
+- **13/09, "São Paulo · Brasil"** — **no card**. The screen ends after "Seguro
+  viagem — assistência 24 h", as intended.
+- **14/09, "Amsterdã · Países Baixos"** — added to the check because it costs
+  one date change and covers a third language: the Dutch sentence renders in
+  full.
+
+Montenegro was not opened on the device; it carries the same string as Bosnia
+and Croatia, both of which were seen, and it was read back from inside the APK.
+Greece cannot be reached, per above.
+
+### The three copies
+
+Proved by breaking it: with `production` tampered to `"draft"` the comparison
+reports `MISMATCH` and exits 1; restored, it exits 0.
+
+```text
+generated        contentStatus='draft'       expected='draft'       OK
+production       contentStatus='production'  expected='production'  OK
+trip-production  contentStatus='production'  expected='production'  OK
+production       identical to generated (ignoring contentStatus): True
+trip-production  identical to generated (ignoring contentStatus): True
+rc=0
+```
+
+### Verified
+
+- 6 validators rc=0; `check_repo.py` PASS; `test_validate_trip.py` 39 tests OK;
+  `git diff --check` rc=0;
+- `content_preflight` **PASS 3** on `generated` and **PASS 8** on `assets/trip`,
+  both unchanged;
+- Kotlin **357 tests, 0 failures**, from the 44 XML files in
+  `app/build/test-results/testDebugUnitTest/`; `lintDebug` **0 errors, 33
+  warnings**;
+- both APKs carry **31 entries** under `assets/trip-production/`; release DEX
+  `"Protótipo"` 0 and `"simular chegada"` 0;
+- read back **from inside `app-release.apk`**: the trip.json there is
+  byte-equal to `trip-package/production/trip.json`, 6 profiles carry the card,
+  Brazil does not, and no `showToSomeone` carries `audioAssetId`;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`
+  — the Bosnian sentence was copied *from* the prototype, never edited there.
