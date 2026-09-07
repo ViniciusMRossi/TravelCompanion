@@ -2616,3 +2616,61 @@ rc=0
   `OU 661` with zero occurrences of `OU 663` or `ou663`;
 - `app/src/main/assets/trip/trip.json` and `trip-package/sample/sample-trip.json`
   both still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Editorial migration, phase 1: seven usefulApps (2026-09-07)
+
+Content only. `usefulApps` was `[]`, so screen 19's "Na estrada" section drew
+Plan B rows and nothing else. It now carries **7 apps**, in the priority order
+the itinerary's *Apps e ferramentas* section sets.
+
+| id | name (what screen 19 renders) | countryCodes |
+| --- | --- | --- |
+| `app.mapa-offline` | Organic Maps ou Maps.me · mapa offline dos seis países | — |
+| `app.tradutor` | Google Tradutor · pacotes de albanês, bósnio, croata e grego | AL BA HR GR ME |
+| `app.whatsapp` | WhatsApp · como o camp, os operadores e os táxis falam | AL ME BA HR |
+| `app.busticket4me` | BusTicket4.me · horários e compra de ônibus | AL ME BA HR |
+| `app.getbybus` | GetByBus · horários e compra de ônibus | AL ME BA HR |
+| `app.ferryhopper` | Ferryhopper · o ferry de Corfu a Sarandë saiu daqui | GR AL |
+| `app.conversor` | XE ou conversor offline · são quatro moedas na mesma viagem | — |
+
+`MoreState.kt:57` maps these to `UsefulAppUi(it.name, it.action)` and
+`MoreScreen.kt:87` draws one `ActionRow` each, so all seven are on screen today.
+
+### Two deviations, both deliberate (D117)
+
+**`requiresInternet` is `true` on all seven, including the two apps that work
+offline.** The field documents the *action*, not the app — `TripModels.kt` says
+so at the default: *"assume an action needs the network unless the content
+package states otherwise, so offline UI never over-promises"* — and the only
+`false` in the repository is `directionsAction`, whose primary `uri` is
+`google.navigation:`, an installed app opened with no network. Every action
+here is a **Play Store listing**, which needs the network whoever asks. So the
+offline fact went into `name` instead, which is the one string screen 19
+renders, and it reaches the traveller rather than sitting in a flag no screen
+reads.
+
+**The bank app, the document's eighth item, is left out.** It names no bank, no
+app and no identifier; `action.uri` is required, and the only URI available
+would have been invented. Its real content is a reminder tied to the Kotor
+withdrawal on days 5–7, which `usefulApp` has no field for.
+
+`uri` is a store **search** on the name the document uses, never a package id —
+a wrong id is a dead end at the moment the row is pressed. `ExternalActionLauncher.open`
+falls through `market://search?q=…` to `https://play.google.com/store/search?q=…`.
+`dayIds` is set nowhere: the document ties no app to a day.
+
+### Verified
+
+- 6 validators rc=0; `check_repo.py` PASS; `test_validate_trip.py` 39 tests OK;
+  `git diff --check` rc=0;
+- `content_preflight` **PASS 3 warning(s)** on `generated` and **PASS 8** on
+  `assets/trip`, both unchanged;
+- three copies identical except `contentStatus` (rc=0);
+- Kotlin **357 tests, 0 failures**, from the 44 XML files in
+  `app/build/test-results/testDebugUnitTest/`; `lintDebug` **0 errors, 33
+  warnings**;
+- both APKs carry **31 entries** under `assets/trip-production/`; release DEX
+  `"Protótipo"` 0 and `"simular chegada"` 0;
+- read back **from inside `app-release.apk`**: 7 `usefulApps`, ids, names,
+  `countryCodes` and `market://` URIs all as written;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
