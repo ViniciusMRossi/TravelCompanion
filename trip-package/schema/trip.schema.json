@@ -106,6 +106,10 @@
         "$ref": "#/$defs/usefulApp"
       }
     },
+    "fallbackMenuCityId": {
+      "$ref": "#/$defs/id",
+      "description": "City whose menu screen 20 borrows for a day whose own city has none. Declared, never discovered: picking the first city that happens to carry a menu is the defect D097 exists to stop, and the borrowed menu is labelled with its own country and currency (D070)."
+    },
     "days": {
       "type": "array",
       "minItems": 1,
@@ -411,6 +415,116 @@
         }
       }
     },
+    "dish": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "description",
+        "history",
+        "phrase",
+        "phraseTranslation"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmpty",
+          "description": "The local name with its own diacritics, never transliterated and never translated."
+        },
+        "pronunciation": {
+          "type": "string",
+          "description": "Approximation for a Portuguese speaker, between slashes, e.g. /tchevapi/. Not IPA."
+        },
+        "priceRange": {
+          "type": "string",
+          "description": "An observed range, never an exact price. The currency is the menu's."
+        },
+        "photoAssetId": {
+          "$ref": "#/$defs/id"
+        },
+        "photoCaption": {
+          "type": "string",
+          "description": "What the photograph should show. Kept even when no binary exists, so the brief survives with the dish."
+        },
+        "description": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "history": {
+          "$ref": "#/$defs/nonEmpty",
+          "description": "Origin, technique or why the dish belongs to this place. A dish with no history does not earn a card."
+        },
+        "phrase": {
+          "$ref": "#/$defs/nonEmpty",
+          "description": "What to say to order it, in the local language."
+        },
+        "phraseTranslation": {
+          "$ref": "#/$defs/nonEmpty",
+          "description": "The same sentence in Portuguese, so the traveller knows what they are saying."
+        }
+      }
+    },
+    "meal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "dishes"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/nonEmpty",
+          "description": "Cafe da manha, Almoco, Jantar, Doce e cafe - written in the order the day happens."
+        },
+        "timeRange": {
+          "type": "string",
+          "description": "\"07:00-10:00\", or \"qualquer hora\" where the meal has no clock."
+        },
+        "dishes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/dish"
+          }
+        }
+      }
+    },
+    "menu": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "intro",
+        "currency",
+        "meals"
+      ],
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/nonEmpty",
+          "description": "Written per city, by hand, never generated. A number in the title has to match the dish count."
+        },
+        "intro": {
+          "$ref": "#/$defs/nonEmpty"
+        },
+        "currency": {
+          "$ref": "#/$defs/nonEmpty",
+          "description": "Currency the prices are quoted in - \"KM\", \"EUR\". Belongs to the menu's own city, so a borrowed menu keeps its own (D070)."
+        },
+        "pricesNote": {
+          "type": "string",
+          "description": "Footer: when the ranges were observed, and the tipping convention."
+        },
+        "meals": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/meal"
+          }
+        }
+      }
+    },
     "restaurant": {
       "type": "object",
       "additionalProperties": false,
@@ -515,6 +629,9 @@
           "items": {
             "$ref": "#/$defs/restaurant"
           }
+        },
+        "menu": {
+          "$ref": "#/$defs/menu"
         }
       }
     },

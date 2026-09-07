@@ -30,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -57,6 +58,8 @@ import com.travelcompanion.app.design.TcHairline
 import com.travelcompanion.app.design.TcIcons
 import com.travelcompanion.app.design.TcType
 import com.travelcompanion.app.design.formatPlaybackTime
+import com.travelcompanion.app.domain.food.buildFoodState
+import com.travelcompanion.app.domain.food.currentDayIndex
 import com.travelcompanion.app.domain.today.ShortcutUi
 import com.travelcompanion.app.feature.attraction.AttractionScreen
 import com.travelcompanion.app.feature.attraction.AttractionViewModel
@@ -65,6 +68,7 @@ import com.travelcompanion.app.feature.today.TodayScreen
 import com.travelcompanion.app.feature.today.TodayViewModel
 import com.travelcompanion.app.feature.document.DocumentRoute
 import com.travelcompanion.app.feature.emergency.EmergencyScreen
+import com.travelcompanion.app.feature.food.FoodScreen
 import com.travelcompanion.app.feature.fullday.FullDayScreen
 import com.travelcompanion.app.feature.city.CityScreen
 import com.travelcompanion.app.feature.city.buildCityState
@@ -92,6 +96,7 @@ import com.travelcompanion.app.service.sync.GroupSessionController
 import com.travelcompanion.app.service.walk.WalkModeController
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.util.Locale
 import java.time.LocalTime
 import com.travelcompanion.app.service.playback.PlaybackState
 
@@ -119,6 +124,7 @@ internal object Routes {
     const val WALK = "walk/{walkId}"
     const val LISTEN_TOGETHER = "listen-together"
     const val MEMORY = "memory"
+    const val FOOD = "food"
 
     fun attraction(id: String) = "attraction/$id"
     fun document(id: String) = "document/$id"
@@ -439,6 +445,9 @@ fun AppNavigation(
                         )
                     }
                 }
+                composable(Routes.FOOD) {
+                    FoodRoute(content = content, navController = navController)
+                }
                 composable(Routes.PLAN_B) { entry ->
                     val state = buildPlanBState(
                         content = content,
@@ -534,6 +543,41 @@ fun AppNavigation(
             )
         }
     }
+}
+
+/**
+ * Screen 20's day cursor lives here, and nowhere else.
+ *
+ * It starts on the day being lived every time the screen opens, and it is not
+ * the value screen 02 reads for its food shortcut. Those are two different
+ * facts that happen to be equal at the moment the screen opens, and a value
+ * that usually equals another is not a guard, it is a coincidence (D089).
+ */
+@Composable
+private fun FoodRoute(
+    content: TripContent,
+    navController: NavHostController,
+) {
+    val startIndex = remember(content) { currentDayIndex(content, LocalDate.now()) }
+    var dayIndex by rememberSaveable(content) { mutableIntStateOf(startIndex) }
+    val state = buildFoodState(content, dayIndex, Locale.forLanguageTag(content.info.locale))
+
+    if (state == null) {
+        PlaceholderScreen(
+            title = "Comer aqui",
+            message = "Esta viagem ainda não traz dias para mostrar.",
+            actionLabel = "Voltar",
+            onAction = navController::popBackStack,
+        )
+        return
+    }
+
+    FoodScreen(
+        state = state,
+        onBack = navController::popBackStack,
+        onPreviousDay = { dayIndex = (dayIndex - 1).coerceAtLeast(0) },
+        onNextDay = { dayIndex = (dayIndex + 1).coerceAtMost(content.days.lastIndex) },
+    )
 }
 
 @Composable
@@ -713,6 +757,7 @@ private fun TodayRoute(
             when (shortcut.kind) {
                 ShortcutUi.Kind.Document -> navController.navigate(Routes.document(shortcut.id))
                 ShortcutUi.Kind.PlanB -> navController.navigate(Routes.planB(shortcut.id))
+                ShortcutUi.Kind.Food -> navController.navigate(Routes.FOOD)
                 ShortcutUi.Kind.Memory -> navController.navigate(Routes.MEMORY)
             }
         },

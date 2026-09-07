@@ -1,6 +1,7 @@
 # Travel Companion — Canonical Screen Index v2
 
-The approved design contains **19 screens**.
+The approved design contains **19 canonical screens**, plus **screen 20**,
+added after them from its own handoff (D124).
 
 | ID | Screen | Area | Primary purpose |
 |---|---|---|---|
@@ -23,6 +24,10 @@ The approved design contains **19 screens**.
 | 17 | Emergência | Safety | Immediate emergency actions and contacts |
 | 18 | Plano B | Recovery | Calm contingency instructions |
 | 19 | Mais | Utilities | Emergency, phrases, apps, group, settings |
+| 20 | Comer aqui | Explore | Local dishes for the day's city, with the sentence that orders them |
+
+Screen 20 arrived in its own handoff, which numbered it 11. Eleven was already
+"Fim do passeio", so the number moved and nothing else did (D124).
 
 ## Primary flow
 

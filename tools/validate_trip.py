@@ -802,6 +802,41 @@ def content_checks(trip: dict, assets_root: Path) -> list[str]:
     for guide in audio_guides.values():
         ref("asset", assets, guide.get("audioAssetId"), f"audioGuide '{guide['id']}'")
 
+    # Screen 20's menus. The fallback is a declared city, and a fallback that
+    # points at a city carrying no menu is not a fallback: it is a day that
+    # silently shows nothing, which is the failure the field exists to prevent
+    # (D126). Checked here rather than in the schema, which cannot see across
+    # the package.
+    fallback_id = trip.get("fallbackMenuCityId")
+    if fallback_id is not None:
+        fallback_city = next(
+            (c for c in trip.get("cities", []) if c.get("id") == fallback_id), None
+        )
+        if fallback_city is None:
+            problems.append(f"fallbackMenuCityId: unknown city '{fallback_id}'")
+        elif not (fallback_city.get("menu") or {}).get("meals"):
+            problems.append(
+                f"fallbackMenuCityId points at city '{fallback_id}', which carries no menu"
+            )
+
+    # A dish id has to be unique across the whole package, not merely inside
+    # its own meal: it is the id a screen and a later photograph both name.
+    seen_dishes, duplicate_dishes = set(), set()
+    for city in trip.get("cities", []):
+        menu = city.get("menu")
+        if not menu:
+            continue
+        for meal in menu.get("meals", []):
+            for dish in meal.get("dishes", []):
+                dish_id = dish.get("id")
+                where = f"city '{city['id']}' dish '{dish_id}'"
+                ref("asset", assets, dish.get("photoAssetId"), where)
+                if dish_id in seen_dishes:
+                    duplicate_dishes.add(dish_id)
+                seen_dishes.add(dish_id)
+    for dupe in sorted(duplicate_dishes):
+        problems.append(f"cities: duplicate dish id '{dupe}'")
+
     problems.extend(story_guide_title_problems(trip))
 
     for attraction in attractions.values():

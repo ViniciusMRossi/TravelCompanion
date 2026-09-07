@@ -619,3 +619,97 @@ class StoryGuideTitleTest(unittest.TestCase):
             problems = content_checks(trip, Path(folder))
         self.assertEqual(len(problems), 1)
         self.assertIn("carry the same title", problems[0])
+
+
+def _menu_trip(cities, fallback=None):
+    """A package carrying only what the menu checks look at."""
+    trip = {"assets": [{"id": "a", "type": "image", "path": "images/x.jpg"}], "cities": cities}
+    if fallback is not None:
+        trip["fallbackMenuCityId"] = fallback
+    return trip
+
+
+def _city(city_id, dish_ids=(), photo=None):
+    city = {"id": city_id, "name": city_id}
+    if dish_ids:
+        city["menu"] = {
+            "title": "t",
+            "intro": "i",
+            "currency": "KM",
+            "meals": [
+                {
+                    "name": "Almoço",
+                    "dishes": [
+                        {
+                            "id": d,
+                            "name": d,
+                            "description": "d",
+                            "history": "h",
+                            "phrase": "p",
+                            "phraseTranslation": "pt",
+                            **({"photoAssetId": photo} if photo else {}),
+                        }
+                        for d in dish_ids
+                    ],
+                }
+            ],
+        }
+    return city
+
+
+class MenuChecksTest(unittest.TestCase):
+    """Screen 20's menus: the declared fallback, and dish ids that must be unique.
+
+    The fallback is the reason these exist. `fallbackMenuCityId` is what stops
+    the screen scanning for the first city that happens to carry a menu (D097),
+    and a value that resolves to a city with no menu puts it straight back in
+    the failure it was added to prevent - silently, because nothing else in the
+    package contradicts it.
+    """
+
+    def _run(self, trip):
+        with tempfile.TemporaryDirectory() as folder:
+            return content_checks(trip, Path(folder))
+
+    def test_a_fallback_naming_a_city_that_does_not_exist_is_reported(self):
+        problems = self._run(_menu_trip([_city("sarajevo", ["burek"])], fallback="ohrid"))
+        self.assertEqual(len(problems), 1)
+        self.assertIn("fallbackMenuCityId: unknown city 'ohrid'", problems[0])
+
+    def test_a_fallback_naming_a_city_with_no_menu_is_reported(self):
+        problems = self._run(
+            _menu_trip([_city("sarajevo", ["burek"]), _city("mostar")], fallback="mostar")
+        )
+        self.assertEqual(len(problems), 1)
+        self.assertIn("carries no menu", problems[0])
+        self.assertIn("mostar", problems[0])
+
+    def test_a_fallback_that_resolves_is_silent(self):
+        problems = self._run(
+            _menu_trip([_city("sarajevo", ["burek"]), _city("mostar")], fallback="sarajevo")
+        )
+        self.assertEqual(problems, [])
+
+    def test_a_package_with_no_fallback_is_silent(self):
+        self.assertEqual(self._run(_menu_trip([_city("sarajevo", ["burek"])])), [])
+
+    def test_a_dish_id_repeated_across_cities_is_reported(self):
+        problems = self._run(
+            _menu_trip([_city("sarajevo", ["baklava"]), _city("mostar", ["baklava"])])
+        )
+        self.assertEqual(len(problems), 1)
+        self.assertIn("duplicate dish id 'baklava'", problems[0])
+
+    def test_the_same_dish_id_once_is_silent(self):
+        problems = self._run(
+            _menu_trip([_city("sarajevo", ["burek"]), _city("mostar", ["japrak"])])
+        )
+        self.assertEqual(problems, [])
+
+    def test_a_dish_photo_pointing_at_no_asset_is_reported(self):
+        problems = self._run(_menu_trip([_city("sarajevo", ["burek"], photo="missing")]))
+        self.assertEqual(len(problems), 1)
+        self.assertIn("unknown asset 'missing'", problems[0])
+
+    def test_a_dish_photo_that_resolves_is_silent(self):
+        self.assertEqual(self._run(_menu_trip([_city("sarajevo", ["burek"], photo="a")])), [])

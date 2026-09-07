@@ -94,9 +94,14 @@ class FullDayUseCase(private val content: TripContent) {
             stays = day.accommodationIds.mapNotNull { id ->
                 content.accommodation(id)?.let { DayStayUi(it.id, it.name, it.checkIn.from) }
             },
-            // Today's third shortcut is "Gravar memória", which belongs to
-            // Today; the footer of this screen is documents and the Plan B.
-            shortcuts = state.shortcuts.filter { it.kind != ShortcutUi.Kind.Memory },
+            // Today's own shortcuts stay on Today: "Gravar memória", and the
+            // food row. The food row is left out for a sharper reason than
+            // tidiness — this screen renders a *browsed* day, screen 20 always
+            // opens on the day being lived, and a row that names one city
+            // while opening another is precisely the confusion D089 names.
+            shortcuts = state.shortcuts.filter {
+                it.kind != ShortcutUi.Kind.Memory && it.kind != ShortcutUi.Kind.Food
+            },
             previousDate = days.getOrNull(index - 1)?.let(::dateOf),
             nextDate = days.getOrNull(index + 1)?.let(::dateOf),
         )

@@ -26,6 +26,20 @@ object TcIcons {
         icon("tc-chevron-right", stroke = "M9 5 L16 12 L9 19")
     }
 
+    /** Screen 20's "previous day". Drawn as a path in the sprite, unlike its mirror. */
+    val ChevronLeft: ImageVector by lazy {
+        icon("tc-chevron-left", stroke = "M15 5 L8 12 L15 19")
+    }
+
+    /** Screen 20 — "Comer aqui", and its shortcut on screen 02. */
+    val Fork: ImageVector by lazy {
+        icon(
+            "tc-fork",
+            stroke = "M6 3 v5 a2 2 0 0 0 4 0 V3 M8 10 v11 " +
+                "M16 21 V3 c2.2 1 3.4 3.2 3.4 6 S18.2 14 16 15",
+        )
+    }
+
     val Pin: ImageVector by lazy {
         icon(
             "tc-pin",

@@ -96,7 +96,7 @@ data class ShortcutUi(
     val kind: Kind,
     val trailingNote: String? = null,
 ) {
-    enum class Kind { Document, PlanB, Memory }
+    enum class Kind { Document, PlanB, Food, Memory }
 }
 
 data class TodayUiState(

@@ -4,6 +4,7 @@ import com.travelcompanion.app.data.trip.ActionLink
 import com.travelcompanion.app.data.trip.TimelineItem
 import com.travelcompanion.app.data.trip.TripContent
 import com.travelcompanion.app.data.trip.TripDay
+import com.travelcompanion.app.domain.food.buildFoodShortcut
 import com.travelcompanion.app.data.trip.WeatherFallback
 import java.time.LocalDate
 import java.time.LocalTime
@@ -214,6 +215,21 @@ class TodayUseCase(
                     id = planB.id,
                     label = "Plano B · ${planB.scenario.replaceFirstChar { it.lowercase(locale) }}",
                     kind = ShortcutUi.Kind.PlanB,
+                )
+            )
+        }
+        // Only when the day's own city has a menu: screen 20's fallback exists
+        // for someone already walking the days inside it, never as a door
+        // offered from here. The count is summed from the meals, never
+        // authored, and the label names the city of *this* day - screen 20's
+        // cursor is not visible from here and must not be (D089).
+        buildFoodShortcut(content, LocalDate.parse(day.date))?.let { food ->
+            add(
+                ShortcutUi(
+                    id = day.id,
+                    label = food.label,
+                    kind = ShortcutUi.Kind.Food,
+                    trailingNote = food.trailingNote,
                 )
             )
         }

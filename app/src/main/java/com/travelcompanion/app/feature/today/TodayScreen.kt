@@ -649,6 +649,13 @@ internal fun ShortcutRow(shortcut: ShortcutUi, onClick: () -> Unit) {
             trailingNote = shortcut.trailingNote,
         )
 
+        ShortcutUi.Kind.Food -> TcShortcutRow(
+            icon = TcIcons.Fork,
+            label = shortcut.label,
+            onClick = onClick,
+            trailingNote = shortcut.trailingNote,
+        )
+
         ShortcutUi.Kind.PlanB -> TcShortcutRow(
             icon = TcIcons.AltRoute,
             label = shortcut.label,

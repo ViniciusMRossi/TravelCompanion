@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
+<script src="./tc-icons.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; }
+  body { background: #E7E3DA; font-family: Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #1F6F78; text-decoration: none; }
+  a:hover { color: #185860; }
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:18px;padding:28px 16px 40px;box-sizing:border-box;color:#16232E">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#65717A">Travel Companion · tela 11</div>
+    <div style="font-family:Fraunces,Georgia,serif;font-weight:600;font-size:22px">Comer aqui</div>
+  </div>
+
+  <div style="position:relative;width:412px;height:892px;flex:0 0 auto;border-radius:34px;overflow:hidden;background:#F5F1E8;box-shadow:0 14px 40px rgba(22,35,46,.26)">
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F5F1E8">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 20px;font-size:12px;font-weight:500;color:#16232E;flex:0 0 auto">
+          <span>21:04</span>
+          <span style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" style="display:block" aria-hidden="true"><use href="#tc-offline"></use></svg>84%</span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:4px;padding:6px 10px 8px;flex:0 0 auto">
+          <button type="button" onClick="{{ goHoje }}" aria-label="Voltar para Hoje" style="width:48px;height:48px;display:grid;place-items:center;border:0;background:transparent;border-radius:999px;cursor:pointer;color:#16232E;flex:0 0 auto">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-arrow-left"></use></svg>
+          </button>
+          <div style="flex:1;min-width:0;text-align:center">
+            <div style="font-size:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Comer em {{ eatCity }}</div>
+            <div style="font-size:12px;color:#65717A">{{ eatDayLabel }} · {{ eatDate }}</div>
+          </div>
+          <sc-if value="{{ eatCanPrev }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ eatPrev }}" aria-label="Dia anterior" style="width:48px;height:48px;display:grid;place-items:center;border:0;background:transparent;border-radius:999px;cursor:pointer;color:#16232E;flex:0 0 auto">
+              <svg width="22" height="22" style="display:block" aria-hidden="true"><use href="#tc-chevron-left"></use></svg>
+            </button>
+          </sc-if>
+          <sc-if value="{{ eatAtStart }}" hint-placeholder-val="{{ false }}">
+            <span aria-hidden="true" style="width:48px;height:48px;display:grid;place-items:center;color:#B4BAB6;flex:0 0 auto">
+              <svg width="22" height="22" style="display:block"><use href="#tc-chevron-left"></use></svg>
+            </span>
+          </sc-if>
+          <sc-if value="{{ eatCanNext }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ eatNext }}" aria-label="Próximo dia" style="width:48px;height:48px;display:grid;place-items:center;border:0;background:transparent;border-radius:999px;cursor:pointer;color:#16232E;flex:0 0 auto">
+              <svg width="22" height="22" style="display:block" aria-hidden="true"><use href="#tc-chevron-right"></use></svg>
+            </button>
+          </sc-if>
+          <sc-if value="{{ eatAtEnd }}" hint-placeholder-val="{{ false }}">
+            <span aria-hidden="true" style="width:48px;height:48px;display:grid;place-items:center;color:#B4BAB6;flex:0 0 auto">
+              <svg width="22" height="22" style="display:block"><use href="#tc-chevron-right"></use></svg>
+            </span>
+          </sc-if>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;padding:4px 20px 24px;display:flex;flex-direction:column;gap:20px">
+          <sc-if value="{{ eatBorrowed }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:12px;padding:14px 16px;background:#F3E8D0;border:1px solid #E4D2AD;border-radius:14px">
+              <svg width="20" height="20" style="display:block;color:#684817;flex:0 0 auto" aria-hidden="true"><use href="#tc-warning"></use></svg>
+              <p style="margin:0;font-size:14px;line-height:20px;color:#5C4114;text-wrap:pretty">Cardápio próprio de {{ eatCity }} ainda não escrito. Mostrando os pratos de {{ eatBorrowedFrom }} como referência.</p>
+            </div>
+          </sc-if>
+
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#65717A">
+              <svg width="16" height="16" style="display:block;color:#1F6F78" aria-hidden="true"><use href="#tc-fork"></use></svg>
+              Culinária local · {{ eatCountry }}
+            </div>
+            <h1 style="margin:0;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:30px;line-height:36px">{{ eatTitle }}</h1>
+            <p style="margin:0;font-size:16px;line-height:24px;color:#4B5962;text-wrap:pretty">{{ eatIntro }}</p>
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#65717A">
+              <svg width="16" height="16" style="display:block;color:#1F6F78;flex:0 0 auto" aria-hidden="true"><use href="#tc-offline"></use></svg>
+              <span>Preços em {{ eatCurrency }} · esta página fica offline</span>
+            </div>
+          </div>
+
+
+          <sc-for list="{{ eatMeals }}" as="meal" hint-placeholder-count="2">
+            <section style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding-bottom:8px;border-bottom:1px solid #DDDCD4">
+                <h2 style="margin:0;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:22px;line-height:28px">{{ meal.meal }}</h2>
+                <span style="font-size:13px;color:#65717A;font-variant-numeric:tabular-nums;flex:0 0 auto">{{ meal.time }}</span>
+              </div>
+
+              <sc-for list="{{ meal.dishes }}" as="dish" hint-placeholder-count="2">
+                <article style="background:#FFFDF8;border:1px solid #DDDCD4;border-radius:18px;overflow:hidden">
+                  <div style="position:relative;height:158px;background-image:repeating-linear-gradient(115deg,#D7CFBC 0 12px,#CDC4AE 12px 24px)">
+                    <span style="position:absolute;top:12px;left:12px;right:12px;font-family:'Roboto Mono',monospace;font-size:11px;line-height:15px;padding:4px 7px;border-radius:6px;background:rgba(22,35,46,.46);color:#F2EFE7">foto — {{ dish.photo }}</span>
+                  </div>
+                  <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+                      <div style="min-width:0">
+                        <h3 style="margin:0;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:24px;line-height:30px">{{ dish.name }}</h3>
+                        <div style="font-family:'Roboto Mono',monospace;font-size:13px;color:#65717A;margin-top:3px">{{ dish.pron }}</div>
+                      </div>
+                      <span style="flex:0 0 auto;padding:6px 11px;border-radius:999px;background:#E7EDE3;color:#3D5337;font-size:13px;font-weight:500;font-variant-numeric:tabular-nums">{{ dish.price }}</span>
+                    </div>
+
+                    <p style="margin:0;font-size:16px;line-height:24px;text-wrap:pretty">{{ dish.desc }}</p>
+                    <p style="margin:0;font-size:15px;line-height:23px;color:#4B5962;text-wrap:pretty">{{ dish.hist }}</p>
+
+                    <div style="display:flex;flex-direction:column;gap:4px;padding:13px 15px;background:#E4F0F0;border:1px solid #C8DEDE;border-radius:14px">
+                      <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#1F6F78">Para pedir</div>
+                      <div style="font-size:17px;line-height:24px;font-weight:500;color:#16232E">{{ dish.phrase }}</div>
+                      <div style="font-size:14px;line-height:20px;color:#3F6165">{{ dish.phraseTr }}</div>
+                    </div>
+                  </div>
+                </article>
+              </sc-for>
+            </section>
+          </sc-for>
+
+          <p style="margin:0;font-size:13px;line-height:19px;color:#65717A;text-wrap:pretty">Faixas de preço observadas em setembro de 2026 em casas de bairro, fora das ruas turísticas. Gorjeta habitual: arredondar a conta para cima.</p>
+        </div>
+
+        <nav style="display:grid;grid-template-columns:repeat(5,1fr);align-items:center;height:66px;background:#FFFDF8;border-top:1px solid #DDDCD4;flex:0 0 auto">
+          <button type="button" onClick="{{ goHoje }}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:66px;border:0;background:transparent;color:#65717A;font-size:11px;font-weight:500;cursor:pointer">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-sun"></use></svg>
+            Hoje
+          </button>
+          <span style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#65717A;font-size:11px;font-weight:500">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-calendar"></use></svg>
+            Viagem
+          </span>
+          <span style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#1F6F78;font-size:11px;font-weight:500">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-compass"></use></svg>
+            Explorar
+          </span>
+          <span style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#65717A;font-size:11px;font-weight:500">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-wallet"></use></svg>
+            Carteira
+          </span>
+          <span style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#65717A;font-size:11px;font-weight:500">
+            <svg width="24" height="24" style="display:block" aria-hidden="true"><use href="#tc-more-horiz"></use></svg>
+            Mais
+          </span>
+        </nav>
+
+        <div style="height:22px;display:grid;place-items:center;background:#FFFDF8;flex:0 0 auto">
+          <span style="width:112px;height:4px;border-radius:999px;background:#C8CCC5"></span>
+        </div>
+      </div>
+
+  </div>
+
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;max-width:412px">
+    <span style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#65717A">Dia</span>
+    <button type="button" onClick="{{ eatSar }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">9 · Sarajevo</button>
+    <button type="button" onClick="{{ eatMos }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">10 · Mostar</button>
+    <button type="button" onClick="{{ eatOhr }}" style="min-height:36px;padding:0 12px;border:1px solid #C8CCC5;border-radius:999px;background:#FFFDF8;color:#4B5962;font-size:12px;font-weight:500;cursor:pointer">3 · sem cardápio</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:480,&quot;height&quot;:1080}}">
+class Component extends DCLogic {
+  state = { eatDay: 9 };
+
+
+  TODAY = 9;
+
+  ROUTE = [
+    [1, 2, "Tirana", "Albânia"], [3, 4, "Ohrid", "Macedônia do Norte"],
+    [5, 6, "Ksamil", "Albânia"], [7, 8, "Kotor", "Montenegro"],
+    [9, 9, "Sarajevo", "Bósnia e Herzegovina"], [10, 11, "Mostar", "Bósnia e Herzegovina"],
+    [12, 13, "Dubrovnik", "Croácia"], [14, 15, "Split", "Croácia"],
+    [16, 17, "Zagreb", "Croácia"], [18, 19, "Ljubljana", "Eslovênia"],
+    [20, 21, "Belgrado", "Sérvia"]
+  ];
+
+  MENUS = {
+    Sarajevo: {
+      country: "Bósnia e Herzegovina", currency: "marcos convertíveis (KM)",
+      title: "Dez pratos da mesa bósnia",
+      intro: "A cozinha de Sarajevo é otomana na técnica e austro-húngara na hora do café. Come-se sentado em banco de madeira, com pão quente sempre incluído.",
+      meals: [
+        {
+          meal: "Café da manhã", time: "07:00 – 10:00",
+          dishes: [
+            { name: "Burek", pron: "/búrek/", price: "4 – 7 KM", photo: "espiral de burek na bandeja da buregdžinica, massa dourada",
+              desc: "Rolo de massa folhada enrolado em espiral e recheado de carne moída, cortado na hora. Servido com um copo de jogurt salgado.",
+              hist: "Na Bósnia a palavra burek é reservada ao recheio de carne: com queijo chama-se sirnica, com espinafre zeljanica, com batata krompiruša, e o conjunto todo é pita. A massa fina e esticada à mão veio com os padeiros otomanos no século XV e ficou; as buregdžinicas de Sarajevo ainda abrem antes das sete e fecham quando acaba a fornada.",
+              phrase: "Jedan burek, molim.", phraseTr: "Um burek, por favor." },
+            { name: "Kajmak sa somunom", pron: "/káimak sa somúnom/", price: "3 – 5 KM", photo: "pão somun aberto com kajmak espalhado",
+              desc: "Nata fermentada, salgada e densa, passada em pão somun ainda quente.",
+              hist: "O kajmak é feito subindo a nata do leite fervido em camadas, durante dias. Nas aldeias da Bósnia central era a forma de guardar a gordura do leite antes da geladeira, e o sabor levemente ácido vem exatamente dessa espera.",
+              phrase: "Somun i kajmak, molim.", phraseTr: "Somun e kajmak, por favor." }
+          ]
+        },
+        {
+          meal: "Almoço", time: "12:00 – 15:00",
+          dishes: [
+            { name: "Ćevapi", pron: "/tchévapi/", price: "8 – 12 KM", photo: "dez ćevapi em somun com cebola crua, prato de metal",
+              desc: "Dez rolinhos de carne bovina moída grelhados na brasa, dentro de meio somun, com cebola crua picada à parte.",
+              hist: "Vendem-se em porções de cinco ou dez, nunca por peso. A versão de Sarajevo é a mais curta e magra dos Bálcãs e leva só carne de vaca, sem cordeiro e sem porco. A discussão sobre quem faz o melhor ćevap é regional e séria: Sarajevo, Travnik e Banja Luka têm cada uma o seu formato, e um sarajevita pede sempre com kajmak por cima.",
+              phrase: "Deset ćevapa i somun, molim.", phraseTr: "Dez ćevapi e um somun, por favor." },
+            { name: "Begova čorba", pron: "/bégova tchórba/", price: "5 – 8 KM", photo: "tigela funda de sopa branca de frango com quiabo",
+              desc: "Sopa cremosa de frango desfiado, quiabo e legumes, engrossada com gema e farinha.",
+              hist: "Sopa do bei: nasceu nas cozinhas dos governadores otomanos da Bósnia, e a lista de ingredientes era propositalmente caseira, para mostrar que a mesa do bei não precisava de luxo importado. O quiabo seco, trazido do sul, é o que a distingue de qualquer outra sopa de frango da região.",
+              phrase: "Jednu begovu čorbu, molim.", phraseTr: "Uma begova čorba, por favor." },
+            { name: "Klepe", pron: "/klépe/", price: "7 – 10 KM", photo: "klepe cobertos de alho e jogurt em prato branco",
+              desc: "Pequenos pastéis cozidos, recheados de carne, servidos afogados em jogurt com alho.",
+              hist: "Prima direta do manti turco e do pelmeni eslavo, a klepe chegou pelas duas rotas e ficou no meio. Em Sarajevo é comida de casa mais que de restaurante, e o alho cru no jogurt é considerado parte do prato, não tempero opcional.",
+              phrase: "Klepe sa jogurtom, molim.", phraseTr: "Klepe com jogurt, por favor." }
+          ]
+        },
+        {
+          meal: "Jantar", time: "19:00 – 22:00",
+          dishes: [
+            { name: "Bosanski lonac", pron: "/bossánski lónats/", price: "12 – 18 KM", photo: "panela de barro alta com carne e legumes em camadas",
+              desc: "Panela de barro com carne, repolho, batata, cenoura e pimentão em camadas, cozida horas sem mexer.",
+              hist: "A regra do lonac é não misturar: cada camada cozinha no vapor da de baixo, e a panela vai fechada ao forno de lenha por três ou quatro horas. Era comida de dia de trabalho no campo, montada de manhã e comida ao anoitecer, e os restaurantes de Sarajevo mantiveram o horário — quem chega às 21:00 come o que sobrou do tacho, e é o melhor pedaço.",
+              phrase: "Jedan bosanski lonac, molim.", phraseTr: "Um bosanski lonac, por favor." },
+            { name: "Sogan-dolma", pron: "/sógan-dólma/", price: "10 – 15 KM", photo: "cebolas recheadas em molho escuro, tigela rasa",
+              desc: "Cebolas inteiras escavadas e recheadas de carne e arroz, cozidas em molho azedinho.",
+              hist: "Dolma quer dizer recheado, e nos Bálcãs recheia-se o que a estação dá: pimentão no verão, folha de videira na primavera, cebola no inverno. A sogan-dolma é a versão de Sarajevo, e o molho leva um toque de suco de ameixa ou vinagre para cortar a doçura da cebola cozida.",
+              phrase: "Sogan-dolmu, molim.", phraseTr: "Sogan-dolma, por favor." }
+          ]
+        },
+        {
+          meal: "Doce e café", time: "qualquer hora",
+          dishes: [
+            { name: "Tufahija", pron: "/tufahíya/", price: "4 – 6 KM", photo: "maçã cozida clara com nozes e chantilly em copo de vidro",
+              desc: "Maçã descascada e cozida em xarope, recheada de nozes moídas e coberta de chantilly.",
+              hist: "O nome vem do árabe tuffah, maçã. É a sobremesa que se serve em copo alto de vidro, sempre inteira, e que aparece em toda casa bósnia em dia de visita. As maçãs vêm dos pomares do vale do Vrbas, e o xarope é o mesmo dos doces otomanos: água, açúcar e limão, sem especiaria.",
+              phrase: "Jednu tufahiju, molim.", phraseTr: "Uma tufahija, por favor." },
+            { name: "Hurmašice", pron: "/hurmáchitse/", price: "1 – 2 KM cada", photo: "biscoitos ovais escuros empilhados, brilho de xarope",
+              desc: "Biscoito de sêmola em forma de tâmara, encharcado em xarope frio depois de sair quente do forno.",
+              hist: "Hurma é tâmara em turco, e o doce imita a forma da fruta, não o sabor. O choque de temperatura entre biscoito quente e xarope frio é o que faz o interior absorver tudo sem desmanchar — é a técnica que separa a hurmašica boa da pedra doce.",
+              phrase: "Dvije hurmašice, molim.", phraseTr: "Duas hurmašice, por favor." },
+            { name: "Bosanska kafa", pron: "/bossánska káfa/", price: "2 – 4 KM", photo: "džezva de cobre, fildžan e cubo de rahat lokum",
+              desc: "Café moído fino e fervido na džezva de cobre, servido na xícara sem asa com um cubo de rahat lokum.",
+              hist: "Não se mexe e não se coa: o pó assenta no fundo do fildžan e a última metade fica lá. A diferença com o café turco é o preparo — a água ferve primeiro e o pó entra depois, fora do fogo. Recusar o segundo café oferecido é falta de educação; o terceiro é opcional.",
+              phrase: "Jednu bosansku kafu, molim.", phraseTr: "Um café bósnio, por favor." }
+          ]
+        }
+      ]
+    },
+    Mostar: {
+      country: "Bósnia e Herzegovina", currency: "marcos convertíveis (KM)",
+      title: "A mesa da Herzegovina",
+      intro: "Descendo o Neretva a comida muda: menos panela fechada, mais brasa, peixe de rio e o azeite e o vinho que o clima mediterrâneo permite.",
+      meals: [
+        {
+          meal: "Café da manhã", time: "07:00 – 10:00",
+          dishes: [
+            { name: "Uštipci", pron: "/úchtiptsi/", price: "4 – 6 KM", photo: "bolinhos fritos irregulares com queijo fresco ao lado",
+              desc: "Bolinhos de massa salgada fritos, servidos com queijo fresco e kajmak.",
+              hist: "Massa de pão sobrando não se joga fora: fritava-se em bolinhos para o café da manhã de quem ia trabalhar no campo. Na Herzegovina vêm com queijo de cabra curado em pele, mais salgado que o do norte.",
+              phrase: "Uštipci sa sirom, molim.", phraseTr: "Uštipci com queijo, por favor." }
+          ]
+        },
+        {
+          meal: "Almoço", time: "12:00 – 15:00",
+          dishes: [
+            { name: "Japrak", pron: "/yáprak/", price: "9 – 13 KM", photo: "rolinhos de folha de videira alinhados em travessa",
+              desc: "Folhas de videira ou de repolho enroladas com carne e arroz, cozidas devagar em caldo.",
+              hist: "Ao norte o mesmo prato chama-se sarma e usa repolho em conserva; na Herzegovina, terra de vinha, usa-se a folha de videira nova, e o nome vem do turco yaprak, folha. Colhe-se em maio e conserva-se em salmoura para o resto do ano.",
+              phrase: "Japrak, molim.", phraseTr: "Japrak, por favor." },
+            { name: "Hercegovački pršut", pron: "/hertsegováchki prchút/", price: "12 – 20 KM", photo: "fatias finas de presunto curado com queijo e azeitona",
+              desc: "Presunto cru curado ao vento seco do sul, cortado fino, com queijo, azeitona e pão.",
+              hist: "A cura não usa fumaça: depende da bura, o vento frio e seco que desce das montanhas para o vale, e por isso só funciona em certas encostas da Herzegovina. Vem sempre acompanhado de um copo de žilavka, o vinho branco da região.",
+              phrase: "Pršut i sir, molim.", phraseTr: "Presunto e queijo, por favor." }
+          ]
+        },
+        {
+          meal: "Jantar", time: "19:00 – 22:00",
+          dishes: [
+            { name: "Pastrmka sa Neretve", pron: "/pástrmka sa nerétve/", price: "16 – 24 KM", photo: "truta grelhada inteira com blitva e limão",
+              desc: "Truta do Neretva grelhada inteira, com blitva (acelga com batata e alho) e limão.",
+              hist: "A truta do Neretva é uma subespécie local que só existe nesta bacia, e o preparo é deliberadamente simples: sal, brasa, azeite. Os restaurantes debaixo da Stari Most servem de frente para a água de onde ela sai.",
+              phrase: "Pastrmku sa žara, molim.", phraseTr: "Truta na brasa, por favor." },
+            { name: "Jagnjetina ispod peke", pron: "/yagnyétina íspod péke/", price: "22 – 30 KM", photo: "tampa de ferro peka levantada sobre cordeiro e batatas",
+              desc: "Cordeiro e batatas assados sob a peka, tampa de ferro coberta de brasa. Encomenda-se com horas de antecedência.",
+              hist: "A peka é uma técnica, não um prato: a tampa abobadada de ferro é enterrada em brasa e o calor vem de cima, o que assa a carne no próprio vapor. Nenhum restaurante faz sem aviso prévio, e por isso o pedido é feito no almoço para o jantar.",
+              phrase: "Peku za dvije osobe, molim.", phraseTr: "Peka para duas pessoas, por favor." }
+          ]
+        },
+        {
+          meal: "Doce e café", time: "qualquer hora",
+          dishes: [
+            { name: "Smokvenjak", pron: "/smókvenyak/", price: "3 – 6 KM", photo: "barra escura de figo prensado cortada em fatias",
+              desc: "Barra densa de figo seco prensado com amêndoas e ervas, cortada em fatias finas.",
+              hist: "Feito no fim do verão, quando o figo é abundante e não cabe comer tudo fresco. Prensado e enrolado em folha de figueira, dura o inverno inteiro — era a barra de energia dos pastores da Herzegovina antes de existir esse nome.",
+              phrase: "Malo smokvenjaka, molim.", phraseTr: "Um pouco de smokvenjak, por favor." },
+            { name: "Baklava", pron: "/báklava/", price: "3 – 5 KM", photo: "losangos de baklava em tabuleiro de cobre",
+              desc: "Camadas de massa fina com nozes, banhadas em xarope, cortadas em losango.",
+              hist: "A baklava dos Bálcãs leva noz, não pistache, e menos xarope que a do Levante. Em Mostar serve-se em temperatura ambiente, com o café amargo ao lado para equilibrar — nunca com sorvete.",
+              phrase: "Jednu baklavu, molim.", phraseTr: "Uma baklava, por favor." }
+          ]
+        }
+      ]
+    }
+  };
+
+  DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+
+  eatDay(d) {
+    const seg = this.ROUTE.find((r) => d >= r[0] && d <= r[1]) || this.ROUTE[0];
+    const menu = this.MENUS[seg[2]];
+    const shown = menu || this.MENUS.Sarajevo;
+    const dom = 8 + d;
+    const wd = this.DIAS[new Date(2026, 8, dom).getDay()];
+    return {
+      city: seg[2], date: wd + ", " + dom + " de setembro",
+      country: shown.country, currency: shown.currency,
+      count: shown.meals.reduce((n, s2) => n + s2.dishes.length, 0),
+      menu: shown, borrowed: !menu
+    };
+  }
+
+  renderVals() {
+    const d = this.state.eatDay;
+    const eat = this.eatDay(d);
+    const noop = () => {};
+    return {
+      eatCity: eat.city, eatCountry: eat.country, eatCurrency: eat.currency, eatDate: eat.date,
+      eatDayLabel: "Dia " + d + " de 21",
+      eatTitle: eat.menu.title, eatIntro: eat.menu.intro, eatMeals: eat.menu.meals,
+      eatBorrowed: eat.borrowed, eatBorrowedFrom: eat.borrowed ? "Sarajevo" : "",
+      eatCanPrev: d > 1, eatAtStart: d <= 1,
+      eatCanNext: d < 21, eatAtEnd: d >= 21,
+      eatPrev: () => this.setState({ eatDay: Math.max(1, d - 1) }),
+      eatNext: () => this.setState({ eatDay: Math.min(21, d + 1) }),
+      eatSar: () => this.setState({ eatDay: 9 }),
+      eatMos: () => this.setState({ eatDay: 10 }),
+      eatOhr: () => this.setState({ eatDay: 3 }),
+      goHoje: noop
+    };
+  }
+}
+
+</script>
+</body>
+</html>

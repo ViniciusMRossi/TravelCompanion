@@ -167,6 +167,69 @@ object TcType {
         lineHeight = 14.sp,
     )
 
+    /* ----------------------------------------------- screen 20, "Comer aqui" */
+
+    /** Meal heading — "Café da manhã". Fraunces, one step under the page title. */
+    val mealTitle = TextStyle(
+        fontFamily = FrauncesFallback,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
+    )
+
+    /** A dish's own name, in its own language and diacritics. */
+    val dishName = TextStyle(
+        fontFamily = FrauncesFallback,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 24.sp,
+        lineHeight = 30.sp,
+    )
+
+    /** "/tchévapi/" — an approximation for a Portuguese speaker, not IPA. */
+    val pronunciation = TextStyle(
+        fontFamily = FontFamily.Monospace,
+        fontWeight = FontWeight.Normal,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
+    )
+
+    /** Observed price range, in the price pill. */
+    val priceTabular = TextStyle(
+        fontFamily = RobotoFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
+        fontFeatureSettings = tabular,
+    )
+
+    /** The time range beside a meal heading. */
+    val metaTabular = TextStyle(
+        fontFamily = RobotoFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
+        fontFeatureSettings = tabular,
+    )
+
+    /** Why a dish belongs where it is. Sits between [meta] and [body]. */
+    val historyBody = TextStyle(
+        fontFamily = RobotoFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 15.sp,
+        lineHeight = 23.sp,
+    )
+
+    /** Eyebrow inside a card rather than over a section, e.g. "PARA PEDIR". */
+    val eyebrowSmall = eyebrow.copy(fontSize = 11.sp, lineHeight = 15.sp)
+
+    /** The sentence that orders the dish, in the local language. */
+    val orderPhrase = TextStyle(
+        fontFamily = RobotoFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 17.sp,
+        lineHeight = 24.sp,
+    )
+
     /** Placeholder captions describing photography still to be produced. */
     val placeholderCaption = TextStyle(
         fontFamily = FontFamily.Monospace,

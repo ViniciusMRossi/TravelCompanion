@@ -3233,3 +3233,105 @@ rc=0
   Brazil does not, and no `showToSomeone` carries `audioAssetId`;
 - both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`
   — the Bosnian sentence was copied *from* the prototype, never edited there.
+
+## Screen 20 — "Comer aqui": schema, state, screen and route (2026-09-07)
+
+No content. Not one dish is written into any package: the seventeen real dishes
+are their own session, and everything here was developed against Kotlin
+fixtures in `app/src/test/`.
+
+### What was built
+
+| layer | file |
+| --- | --- |
+| schema | `$defs/menu`, `$defs/meal`, `$defs/dish`; `menu` on `$defs/city`; `fallbackMenuCityId` at the top |
+| models | `Menu`, `Meal`, `Dish` in `TripModels.kt`; `City.menu`; `TripPackage.fallbackMenuCityId` |
+| state | `domain/food/MenuState.kt` — `cityOfDay`, `buildMenuState`, `buildFoodState`, `buildFoodShortcut`, `currentDayIndex` |
+| screen | `feature/food/FoodScreen.kt` |
+| icons | `TcIcons.Fork`, `TcIcons.ChevronLeft`, converted 1:1 from the handoff sprite |
+| type | eight screen-20 styles in `TcType` (`mealTitle`, `dishName`, `pronunciation`, `priceTabular`, `metaTabular`, `historyBody`, `eyebrowSmall`, `orderPhrase`) |
+| entry | `ShortcutUi.Kind.Food`, built in `TodayUseCase`, drawn in `TodayScreen` |
+| route | `Routes.FOOD`, `FoodRoute` in `AppNavigation.kt` — `timelineDestination` untouched |
+| tests | `MenuStateTest` (17), `MenuFixtures`; 8 new validator tests |
+
+Signatures, and where the day resolves:
+
+```kotlin
+fun cityOfDay(content: TripContent, day: TripDay): City?          // baseCityId, then cityIds.first (D090)
+fun buildMenuState(content: TripContent, cityId: String?): MenuUiState?
+fun buildFoodState(content: TripContent, dayIndex: Int, locale: Locale): FoodUiState?
+fun buildFoodShortcut(content: TripContent, date: LocalDate): FoodShortcutUi?
+fun currentDayIndex(content: TripContent, date: LocalDate): Int
+```
+
+`buildFoodShortcut` takes a **date** and `buildFoodState` takes an **index**,
+and they are deliberately not the same parameter (D089).
+
+### The three states
+
+1. the day's city has a menu → shown, no notice;
+2. it has none and `fallbackMenuCityId` resolves to a city that does → that
+   menu, with the amber notice, and with **its own** country and currency;
+3. neither → header, working chevrons, and one sentence. The prototype does not
+   draw this one (D129).
+
+### Four corrections that preceded the handoff
+
+- **Screen 20, not 11.** 11 is "Fim do passeio" (D124). `SCREEN-INDEX-v2.md`
+  now lists 20.
+- **No day numbers anywhere in the data.** The handoff's "dia 9", "dias 10–11",
+  "Dia N de 21", Ohrid, MKD and RSD are all from another itinerary. The menu
+  hangs off the city, so none of it needed correcting case by case (D125). The
+  header total is `content.days.size`.
+- **The fallback city is declared** (D126), not the first city that happens to
+  carry a menu.
+- **No photo, no photo area** (D128) — a deviation from the prototype, which
+  always draws one.
+
+### Two other deviations, both stated rather than silent
+
+- **No bottom navigation.** The handoff §1 asks for one with "Explorar" active;
+  in this app `showsBottomNav` is true only for the five root destinations, and
+  screen 20 is a detail route reached from Today exactly like 05, 15, 16 and 17,
+  none of which carry the bar. Adding one here would be a shell change, not a
+  screen. Back returns to Today, which is what §1 actually needs.
+- **Two colour substitutions.** The handoff's `#5C4114` notice text and
+  `#3F6165` translation line have no exact token; the existing `GoldBody` and
+  `TealDark` are used, which is what the brief asked for ("confira contra
+  `FieldCompanionColors` e use os que já existem"). Everything else matched a
+  token exactly, including `#F3E8D0`/`#E4D2AD`/`#684817` and
+  `#E7EDE3`/`#3D5337`.
+
+### Verified
+
+- 6 validators rc=0, output unchanged — the schema only gained **optional**
+  fields, so no existing package can regress;
+- `check_repo.py` PASS, including its first-element guard over the new
+  `domain/food/`;
+- `test_validate_trip.py` **47 tests** (39 + 8 for the menu checks);
+- Kotlin **374 tests, 0 failures** (357 + 17), counted from the 45 XML files in
+  `app/build/test-results/testDebugUnitTest/`;
+- `lintDebug` **0 errors, 33 warnings**, the same eight ids as before. One new
+  hint appeared on the first run — `AutoboxingStateCreation` on the day cursor —
+  and was fixed with `mutableIntStateOf` rather than left;
+- `content_preflight` PASS 3 / PASS 8, unchanged;
+- both APKs still carry **31 entries** under `assets/trip-production/`; release
+  DEX `"Protótipo"` 0 and `"simular chegada"` 0;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+### What is left
+
+- **The content.** Seventeen dishes for Sarajevo and Mostar, and a
+  `fallbackMenuCityId`. Until one is written the screen is unreachable in the
+  app — the shortcut only appears for a city with a menu — and that is the
+  correct behaviour, not a gap.
+- **The seventeen photographs.** Briefs exist in `photoCaption`; no binary
+  does. The layout is already correct with and without them (D128).
+- **The visual pass.** Not this session: with no content there is nothing to
+  photograph on a device, and a screenshot of a fixture would be a picture of a
+  test. It belongs to the content session, against the real menu.
+- **A meal-order check.** The handoff fixes the order Café da manhã / Almoço /
+  Jantar / Doce e café; the screen renders the order the content declares
+  rather than re-sorting it, so the rule currently lives only in the content
+  brief. A validator check is the right home for it and was left out rather
+  than guessed at.

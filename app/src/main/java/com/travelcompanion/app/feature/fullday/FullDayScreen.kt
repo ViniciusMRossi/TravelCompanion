@@ -106,6 +106,9 @@ fun FullDayScreen(
                             when (shortcut.kind) {
                                 ShortcutUi.Kind.Document -> onOpenDocument(shortcut.id)
                                 ShortcutUi.Kind.PlanB -> onOpenPlanB(shortcut.id)
+                                // Both are filtered out upstream; the branches
+                                // exist so adding a kind cannot go missing here.
+                                ShortcutUi.Kind.Food -> Unit
                                 ShortcutUi.Kind.Memory -> Unit
                             }
                         }

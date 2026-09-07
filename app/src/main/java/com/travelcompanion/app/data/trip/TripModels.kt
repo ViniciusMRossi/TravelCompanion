@@ -26,6 +26,12 @@ data class TripPackage(
     val planBs: List<PlanB> = emptyList(),
     val emergencyProfiles: List<EmergencyProfile> = emptyList(),
     val usefulApps: List<UsefulApp> = emptyList(),
+    /**
+     * City whose menu screen 20 borrows for a day whose own city has none.
+     * Declared rather than discovered: taking the first city that happens to
+     * carry a menu is the rule D097 exists to stop.
+     */
+    val fallbackMenuCityId: String? = null,
     val days: List<TripDay> = emptyList(),
 )
 
@@ -137,6 +143,45 @@ data class City(
     val walkIds: List<String> = emptyList(),
     val storyIds: List<String> = emptyList(),
     val restaurants: List<Restaurant> = emptyList(),
+    val menu: Menu? = null,
+)
+
+/**
+ * One city's food page (screen 20).
+ *
+ * [currency] and the owning city's country are what the screen labels the page
+ * with, never the country of the day being viewed: a borrowed menu keeps its
+ * own, or Bosnian food gets filed under someone else's cuisine (D070).
+ */
+@Serializable
+data class Menu(
+    val title: String,
+    val intro: String,
+    val currency: String,
+    val pricesNote: String? = null,
+    val meals: List<Meal> = emptyList(),
+)
+
+@Serializable
+data class Meal(
+    val name: String,
+    val timeRange: String? = null,
+    val dishes: List<Dish> = emptyList(),
+)
+
+@Serializable
+data class Dish(
+    val id: String,
+    val name: String,
+    val pronunciation: String? = null,
+    val priceRange: String? = null,
+    val photoAssetId: String? = null,
+    /** What the photograph should show; survives even when no binary does. */
+    val photoCaption: String? = null,
+    val description: String,
+    val history: String,
+    val phrase: String,
+    val phraseTranslation: String,
 )
 
 @Serializable
