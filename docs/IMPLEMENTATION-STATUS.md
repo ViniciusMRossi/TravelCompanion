@@ -3459,3 +3459,41 @@ pratos"** — D089 held.
   bastasi 2), 20 dishes, `fallbackMenuCityId` = `sarajevo`, exactly 2 dishes
   without a `phrase` — both Bastasi — and 0 `photoAssetId`;
 - both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Menus, phase 2: Amsterdã, Ksamil, Kotor (2026-09-07)
+
+Content only. Three more menus, **26 dishes**, taking the package to 6 menus and
+46 dishes. Same parser, same verbatim check, no schema or code change.
+
+| city | title | dishes | currency | days |
+| --- | --- | --- | --- | --- |
+| `amsterdam` | Oito pratos entre arenque cru e panqueca doce | 8 | euros (€) | Dias 2, 18, 19, 20 |
+| `ksamil` | Nove pratos entre o Jônico e a herança otomana | 9 | lekë (ALL) | Dias 3, 4 |
+| `kotor` | Nove pratos da baía veneziana | 9 | euros (€) | Dias 5, 6, 7 |
+
+### What the screenshots showed
+
+**14/09, Dia 2** — screen 02 draws "Comer em Amsterdã · 8 pratos". The page reads
+"CULINÁRIA LOCAL · PAÍSES BAIXOS", "Oito pratos entre arenque cru e panqueca
+doce", and **"Preços em euros (€) · esta página fica offline"**.
+
+**16/09, Dia 4** — "Comer em Ksamil · 9 pratos"; the page reads "CULINÁRIA LOCAL
+· ALBÂNIA" and **"Preços em lekë (ALL) · esta página fica offline"**, with the
+`ë` intact.
+
+**18/09, Dia 6** — "Comer em Kotor · 9 pratos"; "CULINÁRIA LOCAL · MONTENEGRO",
+"Nove pratos da baía veneziana", **"Preços em euros (€)"**. Diacritics in the
+intro (`pašticada`, `Njeguši`, `Lovćen`) all render.
+
+Three countries, three currency lines, each taken from the menu on screen.
+
+### Verified
+
+- 6 validators rc=0; three copies identical except `contentStatus` (rc=0);
+- `check_repo.py` PASS; `content_preflight` PASS 3 / PASS 8, unchanged;
+- `test_validate_trip.py` **51 tests OK**; Kotlin **376 tests, 0 failures** from
+  45 XML files; `lintDebug` **0 errors, 33 warnings**;
+- both APKs **31 entries** under `assets/trip-production/`; release DEX clean;
+- from inside `app-release.apk`: **6 menus, 46 dishes**, all ids unique, still
+  exactly 2 dishes without a `phrase` (both Bastasi), 0 `photoAssetId`;
+- both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
