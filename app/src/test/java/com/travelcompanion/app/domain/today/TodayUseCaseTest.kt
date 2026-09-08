@@ -1,9 +1,12 @@
 package com.travelcompanion.app.domain.today
 
+import com.travelcompanion.app.data.trip.CriticalItem
 import com.travelcompanion.app.data.trip.PackagedTripTest.Companion.packagedContent
+import com.travelcompanion.app.data.trip.TripContent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -150,6 +153,80 @@ class TodayUseCaseTest {
         assertTrue(kinds.contains(ShortcutUi.Kind.Document))
         assertTrue(kinds.contains(ShortcutUi.Kind.PlanB))
         assertTrue("voice memory is always reachable from Today", kinds.contains(ShortcutUi.Kind.Memory))
+    }
+
+    /* ------------------------------- the order of the deadlines (D180) */
+
+    /**
+     * The packaged content with one critical item's limit rewritten, wherever
+     * it is declared.
+     *
+     * The same item is written twice — once on the day and once on the
+     * transport that owns it — and `mergedWith` takes the first non-null, so
+     * both copies have to move together for the fixture to mean anything.
+     */
+    private fun withLimit(criticalId: String, limit: String?): TripContent {
+        val trip = content.trip
+        fun rewrite(items: List<CriticalItem>): List<CriticalItem> = items.map {
+            if (it.id == criticalId) it.copy(actionByTime = limit) else it
+        }
+        return TripContent(
+            trip.copy(
+                days = trip.days.map { it.copy(criticalItems = rewrite(it.criticalItems)) },
+                transports = trip.transports.map { it.copy(criticalItems = rewrite(it.criticalItems)) },
+                accommodations = trip.accommodations.map {
+                    it.copy(criticalItems = rewrite(it.criticalItems))
+                },
+            ),
+            content.assets,
+        )
+    }
+
+    /**
+     * The hand-built companion to `CriticalOrderPackagedTest`, so the rule
+     * holds on a machine that does not carry the operational package.
+     *
+     * The sample day writes the bus on itself and the reception on its stay,
+     * so merge order puts the bus first whatever the clock says. Give the bus
+     * a limit after the reception's and only a sort by `actionByTime` can put
+     * them right.
+     */
+    @Test
+    fun theDaysDeadlinesArriveInOrderOfTheirLimit() {
+        val flipped = TodayUseCase(withLimit("critical.bus.sarajevo-mostar", "23:30"))
+
+        val state = flipped("vinicius", dayDate, LocalTime.of(12, 0))!!
+
+        assertEquals(
+            "earliest limit first, whatever wrote it",
+            listOf("critical.stay.sarajevo.reception", "critical.bus.sarajevo-mostar"),
+            state.criticalItems.map { it.item.id },
+        )
+        assertEquals(listOf("22:45", "23:30"), state.criticalItems.map { it.item.actionByTime })
+    }
+
+    /**
+     * An item the package gave no limit goes last, and nothing falls over.
+     *
+     * All thirteen deadlines in the trip that ships carry `actionByTime`, so
+     * this case does not arise today; it is written down because the field is
+     * optional in the schema and a sort is exactly where an absent value
+     * becomes a crash or a lie. Last is the honest place for it: an item with
+     * no stated limit is not an item that has the earliest one.
+     */
+    @Test
+    fun aDeadlineWithNoLimitSortsLastAndTakesNothingWithIt() {
+        val unlimited = TodayUseCase(withLimit("critical.bus.sarajevo-mostar", null))
+
+        val state = unlimited("vinicius", dayDate, LocalTime.of(12, 0))!!
+
+        assertEquals(
+            listOf("critical.stay.sarajevo.reception", "critical.bus.sarajevo-mostar"),
+            state.criticalItems.map { it.item.id },
+        )
+        assertNull("and it kept its own absent limit", state.criticalItems.last().item.actionByTime)
+        assertTrue("the rest of the day is untouched", state.timeline.isNotEmpty())
+        assertNotNull("and Today still renders", state.now)
     }
 
     @Test

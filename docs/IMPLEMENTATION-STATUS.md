@@ -6051,3 +6051,115 @@ Both tracked `trip.json` blobs still
 `97627a8c8cda0c1126eacda352aff0b30e6427ce`, before and after. **Automatic
 date and time were restored on the emulator** (`auto_time` back to 1, clock
 back to 08/09).
+
+## The earliest deadline, and the app saying its warnings are approximate (2026-09-08)
+
+Two findings from the pre-QA review, in one commit. The other five of that
+report are for after 02/10 and were not touched.
+
+**Screen 03 announced the wrong deadline on day 16** (D180). `criticalItemsFor`
+merges in declaration order — the day's own items, then its transports', then
+its stays' — and the clock never entered it. Three of the twenty packaged days
+carry two deadlines; **two agreed with the clock by accident and the third did
+not**. The sort went into `TodayUseCase.criticalItems`, where the list is born,
+keyed on **`actionByTime`** — the moment the thing is lost, not `nominalTime`,
+the moment it leaves — with a missing limit sorting last. Screen 03's comment
+was corrected rather than deleted: it now says *the earliest limit of the day*,
+and says why that is not "next to go wrong".
+
+**This is not D156.** That finding was about screen 03's *timeline rows*, which
+were already sorted and still are; `FullDayTimelineOrderPackagedTest` passes
+unchanged. This is `FullDayUiState.critical`, a different field of a different
+list — and it is why the two reviews quote **13:00** and **12:45** for the same
+kayak: `nominalTime` and `actionByTime`, both correct.
+
+| day | before | after |
+|---|---|---|
+| **15/09** · Dia 3 | `ci.gate-corfu` · limit 06:45 | **unchanged** |
+| **17/09** · Dia 5 | `ci.podgorica-conexao` · limit 09:20 | **unchanged** |
+| **28/09** · Dia 16 | `ci.caiaque` · limit 12:45 | **`ci.bus-dubrovnik` · limit 06:30** |
+
+Screen 02's visible order changed on 28/09 only, and now reads 06:30 above
+12:45. The other seventeen days carry at most one deadline.
+
+**The app now says when its warnings are approximate** (D181). With
+`SCHEDULE_EXACT_ALARM` denied — the default from Android 13 for this
+`targetSdk` — every deadline is registered inexact, and the review measured the
+04:45 bag drop failing to arrive **5 min 22 s** after its instant with the
+screen off. The ask itself is unchanged (D093, once and for ever); what was
+added is the **state**, stated on the screen the deadlines live on: a gold row
+under the deadline cards reading **AVISOS APROXIMADOS** and *"O sistema pode
+atrasar os avisos de horário desta viagem. Toque para abrir 'Alarmes e
+lembretes' e permitir o aviso no minuto."* `TodayUseCase` stayed a pure
+function of content and the clock: the answer arrives from `TodayViewModel` by
+the road `dayWeather` already takes, read once per resume rather than per
+frame.
+
+### What the telephone showed
+
+**Galaxy S24, `SM-S921B`, serial `RQCX80441NX`**, signed `app-release.apk`,
+`adb install -r`. Clock moved through Settings → Data e hora; the exact-alarm
+permission flipped with `cmd appops set … SCHEDULE_EXACT_ALARM deny|allow`.
+Screenshots are outside the repository, in this session's scratchpad.
+
+| state | logcat | screen 02 |
+|---|---|---|
+| **denied** | `mode=inexact` · `alarms scheduled total=1 canBeExact=false` | the row is drawn, gold, under the two deadline cards, its sentence whole over three lines |
+| **granted** | `mode=exact` · `alarms scheduled total=1 canBeExact=true` | **no node at all** in that place |
+
+Granting also flipped the registration itself from `mode=inexact` to
+`mode=exact`, which is the remedy the row points at, working.
+
+| date | screen | what it showed |
+|---|---|---|
+| **28/09** · Dia 16 | 03 | "NÃO PODE DAR ERRADO" is **07:00 · Ônibus internacional para Dubrovnik**, limit 06:30. The kayak is still there, as an afternoon row: *"13:00 · Encontro do caiaque, junto ao Portão Pile"* |
+| **28/09** · Dia 16 | 02 | both cards, **bus first then kayak** — 07:00/06:30 above 13:00/12:45 |
+| **17/09** · Dia 5 | 03 | **unchanged**: 09:38 · Segunda perna sai de Podgorica |
+| **15/09** · Dia 3 | 03 | **unchanged**: 07:15 · Portão fecha às 06:45 |
+
+**The device was left as the trip needs it**: `SCHEDULE_EXACT_ALARM` **allow**,
+`auto_time` and `auto_time_zone` back to 1, clock back to the real 08/09, and
+the screen timeout back to 30 s.
+
+### Verified
+
+Kotlin **484 tests, 0 failures, 0 skipped** from **67 XML files** — 475 plus
+nine: three in `CriticalOrderPackagedTest`, two in `TodayUseCaseTest`, four in
+`TodayApproximateAlertsTest`. Nothing skipped, so both packaged tests really
+ran against `assets/trip-production/`.
+
+**Both parts were watched failing first.** Part 1: five red — the packaged
+order over twenty days, the three two-deadline days, day 16 by name, and the
+two hand-built companions. Part 2 needed **two passes**, because no single
+intermediate can fail both halves: with the plumbing in and nothing drawn the
+denied half and the tap went red; with the row drawn unconditionally the
+granted half went red.
+
+6 validators rc=0, the three production packages each `Audio: 50 guide(s)
+timed against a packaged file, 0 not timed`; `check_repo.py` PASS;
+`content_preflight` PASS 8 (`assets/trip`) and PASS 3
+(`trip-package/generated`); `test_validate_trip.py` **60 tests OK**;
+`git diff --check` clean.
+
+`lintDebug` **0 errors, 33 warnings**, the baseline breakdown exactly (11
+GradleDependency, 9 UseTomlInstead, 6 NewerVersionAvailable, 2
+AndroidGradlePluginVersion, 2 UseKtx, 1 InlinedApi, 1 ModifierParameter, 1
+ObsoleteSdkInt). It reached 35 first: naming
+`Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM` a second time added an
+`InlinedApi`, and putting a defaulted callback ahead of `modifier` added a
+`ModifierParameter`. Both were fixed rather than accepted — one private
+`openExactAlarmSettings(context)` that the once-ever ask and the new row both
+call, and a required `onOpenAlarmSettings` so `modifier` stays the first
+optional parameter.
+
+**230** entries under `assets/trip-production/` in both APKs; release DEX
+"Protótipo" 0, "simular chegada" 0, and the two new strings present once each.
+
+**The APK did not change size at all**, which was not what this session
+expected: `app-release.apk` **87,707,586 bytes** and `app-debug.apk`
+**93,077,743 bytes**, both identical to 2908fef. The new strings are in the
+release DEX — grepped, one occurrence each — so the change is in there; the
+compressed archive simply landed on the same byte count.
+
+Both tracked `trip.json` blobs still
+`97627a8c8cda0c1126eacda352aff0b30e6427ce`, before and after.

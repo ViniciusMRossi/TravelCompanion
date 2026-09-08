@@ -80,6 +80,14 @@ fun TodayScreen(
     onOpenTimelineItem: (TimelineRowUi) -> Unit,
     onOpenFullDay: () -> Unit,
     onOpenShortcut: (ShortcutUi) -> Unit,
+    /**
+     * Android's own "Alarmes e lembretes" screen, opened only because the
+     * traveller touched the row that says the warnings are approximate (D181).
+     *
+     * Required rather than defaulted, so that `modifier` stays the first
+     * optional parameter and every caller states what a tap does.
+     */
+    onOpenAlarmSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -123,6 +131,13 @@ fun TodayScreen(
                     onOpenMaps = onOpenMaps,
                     onShowDocument = { onOpenShortcut(documentShortcutFor(critical)) },
                 )
+            }
+
+            // Composed only in the degraded state — not hidden, not an empty
+            // card holding its height. Screen 02 with the permission granted
+            // is the screen that shipped before D181.
+            if (state.alertsAreApproximate) {
+                ApproximateAlertsNote(onOpen = onOpenAlarmSettings)
             }
 
             Row(
@@ -380,6 +395,76 @@ internal fun CriticalCard(
                     TcSecondaryButton(onClick = { onOpenMaps(action.uri) }) { Text(action.label) }
                 }
             }
+        }
+    }
+}
+
+/**
+ * The line that says the packaged warnings are approximate.
+ *
+ * Drawn immediately under the deadline cards, because that is what it is a
+ * fact about. From Android 13 `SCHEDULE_EXACT_ALARM` starts denied; when it
+ * is, `CriticalAlertScheduler` registers every deadline with
+ * `setAndAllowWhileIdle` and the system may hold it until its next
+ * maintenance window. Five of this trip's limits fall before 07:00 and the
+ * earliest is a bag drop at 04:45, so "approximate" is the difference between
+ * a warning and a warning that arrives after the counter has closed.
+ *
+ * Until D181 this state had no witness on any screen — only a line in
+ * logcat — which is the one place the app broke its own habit of stating a
+ * degradation on the row it is true about: the forecast says *"Sem dados ao
+ * vivo"*, a document says its file is not on the device, and D064 keeps a
+ * whole telephone row just to explain why it will not dial.
+ *
+ * **Tapping it does not contradict D093.** That rule is about the *app* not
+ * reopening Android's settings screen of its own accord; this row does
+ * nothing until it is touched, and a row the traveller chooses to touch is
+ * the traveller asking.
+ *
+ * The tone is the degraded-but-usable one the weather card already uses for
+ * its cached and packaged states — gold, not the critical red, because
+ * nothing here has gone wrong yet.
+ */
+@Composable
+private fun ApproximateAlertsNote(onOpen: () -> Unit) {
+    TcCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onOpen),
+        borderColor = FieldCompanionColors.GoldBorder,
+    ) {
+        Row(
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(
+                imageVector = TcIcons.Clock,
+                contentDescription = null,
+                tint = FieldCompanionColors.GoldInk,
+                modifier = Modifier.size(18.dp),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "AVISOS APROXIMADOS",
+                    style = TcType.eyebrow,
+                    color = FieldCompanionColors.GoldInk,
+                )
+                Text(
+                    // The sentence, whole, and the remedy named exactly as
+                    // Android names it, so it can be looked for (D154).
+                    text = "O sistema pode atrasar os avisos de horário desta viagem. " +
+                        "Toque para abrir \"Alarmes e lembretes\" e permitir o aviso no minuto.",
+                    style = TcType.meta,
+                    color = FieldCompanionColors.Neutral700,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+            Icon(
+                imageVector = TcIcons.ChevronRight,
+                contentDescription = null,
+                tint = FieldCompanionColors.Neutral400,
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }

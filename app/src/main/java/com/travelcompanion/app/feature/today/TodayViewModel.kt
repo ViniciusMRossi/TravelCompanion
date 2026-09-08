@@ -23,6 +23,16 @@ class TodayViewModel(
     private val participantId: String?,
     /** Null leaves the card on the packaged forecast, which is what previews want. */
     private val weather: DayWeather? = null,
+    /**
+     * Whether this build can register a deadline at the minute.
+     *
+     * A function rather than a value because the answer changes in Android's
+     * own settings, which this app can point at and never control — the same
+     * posture screen 19 takes for background location. Null leaves screen 02
+     * silent about alarms, which is what previews and the sample build want
+     * (D181).
+     */
+    private val exactAlarms: (() -> Boolean)? = null,
     private val clock: () -> LocalDateTime = LocalDateTime::now,
 ) : ViewModel() {
 
@@ -73,7 +83,17 @@ class TodayViewModel(
 
     private fun compute(): TodayUiState? {
         val now = clock()
-        return today(participantId = participantId, date = now.toLocalDate(), time = now.toLocalTime())
+        val state = today(
+            participantId = participantId,
+            date = now.toLocalDate(),
+            time = now.toLocalTime(),
+        ) ?: return null
+
+        // Read here and nowhere else: `canScheduleExactAlarms()` is a call into
+        // the system, and `compute()` runs once when the screen is built and
+        // once per resume beside `refresh()` — never inside a composition, and
+        // never per frame.
+        return state.copy(alertsAreApproximate = exactAlarms?.let { !it() } ?: false)
     }
 
     companion object {
@@ -81,8 +101,9 @@ class TodayViewModel(
             content: TripContent,
             participantId: String?,
             weather: DayWeather?,
+            exactAlarms: (() -> Boolean)? = null,
         ): ViewModelProvider.Factory = viewModelFactory {
-            initializer { TodayViewModel(content, participantId, weather) }
+            initializer { TodayViewModel(content, participantId, weather, exactAlarms) }
         }
     }
 }

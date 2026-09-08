@@ -87,7 +87,13 @@ class FullDayUseCase(private val content: TripContent) {
             dayLabel = listOfNotNull(state.dayLabel, state.cityName).joinToString(" · "),
             title = state.title,
             // "Resumido": the day may declare several, and the screen opens
-            // with the one that is next to go wrong, not with all of them.
+            // with the earliest limit of the day rather than with all of them.
+            // The list arrives sorted by `actionByTime` from `TodayUseCase`,
+            // so `first` *is* that earliest one (D180). It is deliberately not
+            // "the one next to go wrong": that would be a comparison with the
+            // present, and this screen draws any day of the trip — the one
+            // being lived, the one being planned tonight, and the ones already
+            // behind.
             critical = state.criticalItems.firstOrNull(),
             sections = sectionsOf(state.timeline),
             transports = day.transportIds.mapNotNull { id -> content.transport(id)?.let(::transportCard) },

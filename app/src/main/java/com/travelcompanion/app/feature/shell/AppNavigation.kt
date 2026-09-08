@@ -1,5 +1,6 @@
 package com.travelcompanion.app.feature.shell
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -209,14 +210,7 @@ fun AppNavigation(
     val askForExactAlarms = {
         if (criticalAlertScheduler.shouldAskForExact()) {
             criticalAlertScheduler.markExactAsked()
-            runCatching {
-                context.startActivity(
-                    Intent(
-                        Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
-                        Uri.fromParts("package", context.packageName, null),
-                    ),
-                )
-            }
+            openExactAlarmSettings(context)
         }
         Unit
     }
@@ -315,7 +309,14 @@ fun AppNavigation(
                 startDestination = Routes.TODAY,
             ) {
                 composable(Routes.TODAY) {
-                    TodayRoute(content, participantId, dayWeather, navController, launcher)
+                    TodayRoute(
+                        content,
+                        participantId,
+                        dayWeather,
+                        criticalAlertScheduler,
+                        navController,
+                        launcher,
+                    )
                 }
                 composable(Routes.TRIP) {
                     // The tab and "Ver dia completo" reach the same screen; the
@@ -734,16 +735,45 @@ private fun FullDayRoute(
     )
 }
 
+/**
+ * Android's own exact-alarm settings screen.
+ *
+ * The whole app has two reasons to reach it and one place that names the
+ * constant: the once-ever ask of D093, and the row on screen 02 that the
+ * traveller taps (D181). Which of the two is allowed to run is the caller's
+ * decision and not this function's — it opens the screen and nothing else.
+ */
+private fun openExactAlarmSettings(context: Context) {
+    runCatching {
+        context.startActivity(
+            Intent(
+                Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                Uri.fromParts("package", context.packageName, null),
+            ),
+        )
+    }
+}
+
 @Composable
 private fun TodayRoute(
     content: TripContent,
     participantId: String,
     dayWeather: DayWeather,
+    criticalAlertScheduler: CriticalAlertScheduler,
     navController: NavHostController,
     launcher: ExternalActionLauncher,
 ) {
+    val context = LocalContext.current
     val viewModel: TodayViewModel = viewModel(
-        factory = TodayViewModel.factory(content, participantId, dayWeather),
+        factory = TodayViewModel.factory(
+            content,
+            participantId,
+            dayWeather,
+            // The same road `dayWeather` takes: the shell already holds the
+            // scheduler, so screen 02 learns whether its warnings can be exact
+            // without `TodayUseCase` ever meeting `AlarmManager` (D181).
+            exactAlarms = criticalAlertScheduler::canBeExact,
+        ),
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -779,6 +809,12 @@ private fun TodayRoute(
                 ShortcutUi.Kind.Memory -> navController.navigate(Routes.MEMORY)
             }
         },
+        // Opened because the traveller touched the row, which is the traveller
+        // asking. D093's rule is that the *app* opens this screen once and
+        // never again of its own accord, and that rule is untouched: nothing
+        // here runs without a tap, and `markExactAsked` is never consulted
+        // (D181).
+        onOpenAlarmSettings = { openExactAlarmSettings(context) },
     )
 }
 

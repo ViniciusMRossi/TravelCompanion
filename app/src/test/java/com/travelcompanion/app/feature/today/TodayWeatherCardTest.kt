@@ -61,6 +61,7 @@ class TodayWeatherCardTest {
                 onOpenTimelineItem = {},
                 onOpenFullDay = {},
                 onOpenShortcut = {},
+                onOpenAlarmSettings = {},
             )
         }
     }

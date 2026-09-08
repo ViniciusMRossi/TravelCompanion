@@ -141,4 +141,15 @@ data class TodayUiState(
     val timeline: List<TimelineRowUi>,
     val shortcuts: List<ShortcutUi>,
     val offlineNote: String,
+    /**
+     * True when this build cannot register a deadline at the minute, so every
+     * packaged warning is approximate and the system may hold it.
+     *
+     * **Not computed by [TodayUseCase]**, which is a pure function of content
+     * and the clock and stays one: the answer belongs to `AlarmManager` and
+     * arrives from the ViewModel, by the same road a live weather reading
+     * takes (D164, D181). The default is the good state, so nothing claims a
+     * degradation that was never read.
+     */
+    val alertsAreApproximate: Boolean = false,
 )

@@ -144,14 +144,37 @@ class TodayUseCase(
         )
     }
 
+    /**
+     * The day's deadlines, earliest limit first.
+     *
+     * `criticalItemsFor` merges in declaration order — the day's own items,
+     * then its transports', then its stays' — and the clock never enters that
+     * order. Sorting here rather than in either screen is the point: screen 02
+     * draws the whole list and screen 03 draws `firstOrNull()`, so one order,
+     * decided once, is what makes both of them right (D180).
+     *
+     * The key is **`actionByTime`**, the moment the thing is lost, not
+     * `nominalTime`, the moment it leaves. On day 16 the bus departs at 07:00
+     * and is lost at 06:30, and it is the second number that has to sort
+     * first — a card that ranks deadlines by departure is ranking them by the
+     * wrong end.
+     *
+     * All thirteen limits in the trip that ships are written `HH:mm` with a
+     * leading zero, so comparing the strings is comparing the times. An item
+     * the package gave no limit sorts **last** rather than throwing: it is not
+     * a deadline that comes first, and a missing field must not decide which
+     * warning screen 03 opens on.
+     */
     private fun criticalItems(day: TripDay): List<CriticalItemUi> =
-        content.criticalItemsFor(day).map { critical ->
-            CriticalItemUi(
-                item = critical,
-                documentAction = critical.actionLinks.firstOrNull { it.kind == "document" },
-                mapsAction = critical.actionLinks.firstOrNull { it.kind == "maps" },
-            )
-        }
+        content.criticalItemsFor(day)
+            .sortedWith(compareBy(nullsLast(naturalOrder())) { it.actionByTime })
+            .map { critical ->
+                CriticalItemUi(
+                    item = critical,
+                    documentAction = critical.actionLinks.firstOrNull { it.kind == "document" },
+                    mapsAction = critical.actionLinks.firstOrNull { it.kind == "maps" },
+                )
+            }
 
     private fun weather(fallback: WeatherFallback?): WeatherUi =
         if (fallback == null) {
