@@ -65,6 +65,7 @@ class TcHeroScrimTest {
                         .testTag(heroTag),
                     photograph = photograph,
                     placeholderCaption = caption,
+                    titleOverPhotograph = true,
                 ) {
                     Text(
                         text = "Muralhas da cidade velha",
@@ -121,6 +122,34 @@ class TcHeroScrimTest {
     fun `the veil does not become a second backdrop`() {
         hero(photograph = ImageBitmap(width = 4, height = 4), caption = null)
 
+        compose.onNodeWithTag(TcHeroBackdropTag, useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    /**
+     * A photograph with nothing drawn over it gets no veil.
+     *
+     * Two of the six call sites are shaped like this — screen 01's cover and
+     * screen 04's carousel thumbnail, which is 47 images — and they were being
+     * darkened by a remedy for a disease they do not have: measured on the
+     * same Dubrovnik thumbnail, the top row was identical at 148.3 luminance
+     * and the bottom fell from 100.4 to 55.2, about 45% darker, under nothing.
+     */
+    @Test
+    fun `a photograph with no title over it gets no veil`() {
+        compose.setContent {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                TcHeroWith(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 200.dp)
+                        .testTag(heroTag),
+                    photograph = ImageBitmap(width = 4, height = 4),
+                    titleOverPhotograph = false,
+                )
+            }
+        }
+
+        compose.onNodeWithTag(TcHeroScrimTag, useUnmergedTree = true).assertDoesNotExist()
         compose.onNodeWithTag(TcHeroBackdropTag, useUnmergedTree = true).assertIsDisplayed()
     }
 }

@@ -66,6 +66,8 @@ fun StayScreen(
                     .fillMaxWidth()
                     .height(220.dp)
                     .clip(TcHeroShape),
+                // The lodging's name and its booking chip sit on the photograph.
+                titleOverPhotograph = true,
                 imageAssetPath = state.heroAssetPath,
                 placeholderCaption = state.heroCaption,
             ) {

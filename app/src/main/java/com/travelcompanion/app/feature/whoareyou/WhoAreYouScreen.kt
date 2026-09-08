@@ -61,6 +61,9 @@ fun WhoAreYouScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(262.dp),
+            // Nothing is drawn on the cover: "Quem é você?" and the two names
+            // begin in the `Column` below it (D171).
+            titleOverPhotograph = false,
             imageAssetPath = content.assets.packagedPathIfPresent(content.info.coverAssetId),
             placeholderCaption = coverCaption(content),
         )

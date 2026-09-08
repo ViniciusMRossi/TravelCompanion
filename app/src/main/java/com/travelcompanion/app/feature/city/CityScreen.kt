@@ -202,6 +202,8 @@ private fun Hero(state: CityUiState, onBack: (() -> Unit)?) {
             .fillMaxWidth()
             .height(300.dp)
             .clip(TcHeroShape),
+        // The country, the city and the dates are drawn over the photograph.
+        titleOverPhotograph = true,
         imageAssetPath = state.heroAssetPath,
         placeholderCaption = state.heroCaption,
         // The same placeholder screen 05 uses under hero text: the paper
@@ -371,6 +373,9 @@ private fun AttractionCard(attraction: CityAttractionUi, onOpen: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(132.dp),
+            // The attraction names itself in the `Column` below, never on the
+            // photograph, so there is nothing here for a veil to protect.
+            titleOverPhotograph = false,
             imageAssetPath = attraction.heroAssetPath,
             placeholderCaption = attraction.heroCaption,
             cool = true,

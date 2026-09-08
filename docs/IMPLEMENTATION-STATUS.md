@@ -5723,3 +5723,68 @@ this session touches no Kotlin.
 - the three copies identical except `metadata.contentStatus`;
 - both tracked `trip.json` blobs still
   `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## The veil asks whether there is a title (2026-09-08)
+
+`app/src/main/java/`, `app/src/test/` and `docs/`. No package, no content
+text, no asset: **both APKs are byte-for-byte the same size as the baseline**,
+which is the check that this touched nothing it should not. See D171.
+
+### What changed
+
+`TcHero` and `TcHeroWith` take `titleOverPhotograph: Boolean`, with **no
+default**, and the veil is derived from it. All six call sites answer:
+
+| call site | draws on the photograph | value |
+|---|---|---|
+| `city/CityScreen.kt:200` — city hero | country, name, dates | `true` |
+| `attraction/AttractionScreen.kt:224` | city line, name, subtitle | `true` |
+| `stay/StayScreen.kt:64` | name, booking chip | `true` |
+| `together/ListenTogetherScreen.kt:116` | story title | `true` |
+| `whoareyou/WhoAreYouScreen.kt:60` — the cover | **nothing** | `false` |
+| `city/CityScreen.kt:370` — carousel thumbnail (**47 images**) | **nothing** | `false` |
+
+### Proved by failing
+
+| | before | after |
+|---|---|---|
+| photograph, no title | `assertDoesNotExist` failed — the veil was drawn | absent |
+| photograph **with** title | present | present — **green both times** |
+| striped placeholder | absent | absent — **green both times** |
+| the veil is not a second backdrop | green | green |
+| `TcHeroGeometryTest`, all three | green | green — D051/D056 untouched |
+
+### What the screenshots showed
+
+**Galaxy S24, `SM-S921B`**, signed `app-release.apk`, measured rather than
+eyeballed — same pixels, same scroll position, before and after:
+
+| hero | top row | bottom row before | bottom row now |
+|---|---|---|---|
+| screen 01 cover | 213.7 → 213.7 | 59.2 | **99.5** |
+| carousel thumbnail | 150.3 → 150.3 | 55.1 | **99.7** |
+| city hero (keeps it) | 176.7 → 176.7 | 124.7 | **124.7** |
+| `Muralhas` (keeps it) | 189.8 → 189.8 | 73.2 | **73.2** |
+| Kotor stay (keeps it) | 165.6 → 165.6 | 51.4 | **51.4** |
+
+The top row never moves in any of them, which is the gradient being
+transparent through the upper 45%. The two that lost the veil came back to
+what they measured before D168 — 99.5 and 99.7 against a pre-veil 100.4 on the
+thumbnail — and the three that keep it are identical to the tenth. Screen 06's
+walk card is **byte-identical** to its previous capture.
+
+### Verified
+
+- 6 validators rc=0, `Audio: 50 guide(s) timed against a packaged file, 0 not
+  timed` on the three production copies; `check_repo.py` PASS;
+  `content_preflight` PASS 3 / PASS 8 — all unchanged;
+- `test_validate_trip.py` **60 tests OK**; `git diff --check` clean;
+- Kotlin **463 tests, 0 failures, 0 skipped** from **63 XML files** — 462
+  before, so **+1**, and no existing test changed its result;
+- `lintDebug` **0 errors, 33 warnings**, the same breakdown;
+- `app-release.apk` **87,707,578 bytes** and `app-debug.apk` **93,077,735
+  bytes** — **unchanged to the byte**; 230 entries under
+  `assets/trip-production/` in both; release DEX `Protótipo` 0 and `simular
+  chegada` 0;
+- both tracked `trip.json` blobs still
+  `97627a8c8cda0c1126eacda352aff0b30e6427ce`.

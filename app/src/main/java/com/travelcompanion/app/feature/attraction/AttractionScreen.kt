@@ -225,6 +225,8 @@ private fun HeroBlock(state: AttractionUiState) {
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 200.dp),
+            // The city line, the name and the subtitle sit on the photograph.
+            titleOverPhotograph = true,
             imageAssetPath = state.heroAssetPath,
             placeholderCaption = state.heroCaption,
             cool = true,

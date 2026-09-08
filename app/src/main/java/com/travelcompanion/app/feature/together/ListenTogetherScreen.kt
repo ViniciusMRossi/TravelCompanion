@@ -118,6 +118,8 @@ fun ListenTogetherScreen(
                     .fillMaxWidth()
                     .height(230.dp)
                     .clip(TcHeroShape),
+                // The story's title is drawn on the photograph.
+                titleOverPhotograph = true,
                 imageAssetPath = state.heroAssetPath,
                 placeholderCaption = state.heroCaption,
                 cool = true,

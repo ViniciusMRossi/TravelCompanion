@@ -91,6 +91,7 @@ class TcHeroGeometryTest {
                         .heightIn(min = 200.dp)
                         .testTag(heroTag),
                     placeholderCaption = "foto — teste",
+                    titleOverPhotograph = true,
                 ) {
                     Text(
                         text = "Baščaršija",
@@ -125,6 +126,7 @@ class TcHeroGeometryTest {
                         .heightIn(min = 200.dp)
                         .testTag(heroTag),
                     photograph = ImageBitmap(width = 4, height = 4),
+                    titleOverPhotograph = true,
                 ) {
                     Text(
                         text = "Baščaršija",
@@ -150,6 +152,7 @@ class TcHeroGeometryTest {
                         .heightIn(min = 262.dp, max = 262.dp)
                         .testTag(heroTag),
                     placeholderCaption = "foto — teste",
+                    titleOverPhotograph = false,
                 )
             }
         }

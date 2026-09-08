@@ -507,6 +507,17 @@ private const val HERO_SCRIM_ONSET = 0.45f
  * Renders packaged photography when the binary is present, and otherwise the
  * approved striped placeholder with a mono caption naming the expected image.
  * Swapping in the real photo must not change the surrounding layout.
+ *
+ * [titleOverPhotograph] states a fact about the caller — does it draw text on
+ * the image — and the veil is derived from it. It is deliberately not called
+ * `scrim` or `darken`: a screen knows where it puts its own title and should
+ * not have to know what a veil is for.
+ *
+ * It has **no default**, and that is the point. A default would be right on
+ * four of the six call sites and silently wrong on the other two, and the next
+ * hero would inherit whichever answer happened to be the majority — a value
+ * that is usually correct is a coincidence, not a rule (D089). Six explicit
+ * answers cost one line each and make the question unavoidable (D171).
  */
 @Composable
 fun TcHero(
@@ -514,10 +525,12 @@ fun TcHero(
     imageAssetPath: String? = null,
     placeholderCaption: String? = null,
     cool: Boolean = false,
+    titleOverPhotograph: Boolean,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     TcHeroWith(
         modifier = modifier,
+        titleOverPhotograph = titleOverPhotograph,
         photograph = rememberPackagedImage(imageAssetPath),
         placeholderCaption = placeholderCaption,
         cool = cool,
@@ -539,6 +552,7 @@ internal fun TcHeroWith(
     photograph: ImageBitmap? = null,
     placeholderCaption: String? = null,
     cool: Boolean = false,
+    titleOverPhotograph: Boolean,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     Box(modifier = modifier) {
@@ -562,7 +576,8 @@ internal fun TcHeroWith(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.matchParentSize().testTag(TcHeroBackdropTag),
             )
-            // The veil, and it exists only on this branch.
+            // The veil: only on this branch, and only when something is drawn
+            // on top of the photograph.
             //
             // The placeholder does not get one: its stripes already carry the
             // white title, and darkening them would alter an approved element
@@ -571,6 +586,15 @@ internal fun TcHeroWith(
             // the limestone of screen 05's Muralhas, the white hull behind
             // Kotor's `(Suranj)` — and stops being readable. Nothing was wrong
             // here until there were photographs to be wrong against (D166).
+            //
+            // And two of the six call sites draw no title at all: screen 01's
+            // cover and screen 04's carousel thumbnail, which name their
+            // subject in a `Column` beneath the image rather than over it.
+            // D168 painted those too — measured on one thumbnail, the top row
+            // unchanged at 148.3 luminance and the bottom down from 100.4 to
+            // 55.2 — a remedy applied to forty-eight images that never had the
+            // ailment. So the caller states the fact and the veil is derived
+            // from it (D171).
             //
             // It carries [TcHeroScrimTag] and **not** [TcHeroBackdropTag].
             // D051 and D056 put that tag on the backdrop so a test could ask
@@ -582,20 +606,22 @@ internal fun TcHeroWith(
             // `matchParentSize`, for D051's reason: the veil must cover
             // whatever the hero turns out to be without being the thing that
             // decides it.
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .testTag(TcHeroScrimTag)
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops = arrayOf(
-                                0f to FieldCompanionColors.HeroScrimTop,
-                                HERO_SCRIM_ONSET to FieldCompanionColors.HeroScrimTop,
-                                1f to FieldCompanionColors.HeroScrimBottom,
+            if (titleOverPhotograph) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .testTag(TcHeroScrimTag)
+                        .background(
+                            Brush.verticalGradient(
+                                colorStops = arrayOf(
+                                    0f to FieldCompanionColors.HeroScrimTop,
+                                    HERO_SCRIM_ONSET to FieldCompanionColors.HeroScrimTop,
+                                    1f to FieldCompanionColors.HeroScrimBottom,
+                                ),
                             ),
                         ),
-                    ),
-            )
+                )
+            }
         } else {
             Box(
                 modifier = Modifier
