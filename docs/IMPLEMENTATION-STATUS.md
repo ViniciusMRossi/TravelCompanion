@@ -5097,3 +5097,119 @@ repository, in this session's scratchpad.
   content text of any kind changed; no field removed from `TripModels.kt`;
 - both tracked `trip.json` blobs still
   `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## The Bosnian note stops promising a number the screen has not got (2026-09-08)
+
+A content session. One field, three packages, no code. `generalEmergency.note`
+became visible in D160 six days before departure, and the Bosnian sentence it
+put on screen 17 ended by claiming the screen shows "122, 123 e 124". It shows
+122 and 124. D163 records the change.
+
+### What changed
+
+`emergencyProfiles[BA].generalEmergency.note`, from:
+
+> O 112 ainda está em implantação na Bósnia; as páginas oficiais do país
+> publicam 122, 123 e 124, e são esses que a tela mostra ao lado.
+
+to:
+
+> O 112 ainda está em implantação na Bósnia. A polícia é 122 e a ambulância
+> 124, logo abaixo; os bombeiros são 123, que esta tela não disca.
+
+134 characters to 138. Nothing else in any package moved.
+
+`$defs/emergencyProfile` has **no fire-brigade contact** — `fire`, `bombeiro`
+and `fireBrigade` occur nowhere in `trip.schema.json` — so 123 has nowhere to
+be drawn from in any package. The schema was **not** changed: adding a contact
+across three packages six days out is not the cheap fix; the sentence not
+lying is.
+
+**123 is kept as an unverified assertion of the package, and is not claimed to
+be verified.** There is a versioned source for these numbers —
+`trip-package/source/private/itinerario-detalhado.md:1511-1519`, whose columns
+are *País · Emergência geral · Ambulância · Polícia* — and for Bósnia it reads
+**112 / 124 / 122**, matching the package and the screen exactly. It has no
+fire column, and no versioned source in the repository mentions a fire brigade
+in any language. So the source confirms what the app dials and is silent on
+123.
+
+### The other two notes: checked, not changed
+
+- **Albania** — "A Polícia do Estado integrou polícia, bombeiros e polícia
+  rodoviária no 112; 129, 128 e 126 saíram de uso." The screen draws 112 and
+  the ambulance 127 and has no police row, which the note explains rather than
+  contradicts; the numbers it names are named as withdrawn. No claim about the
+  screen. **Unchanged.**
+- **Brazil** — "No Brasil não há número único: 190 é a Polícia Militar, 192 o
+  SAMU e 193 o Corpo de Bombeiros. De celular, 112 e 911 caem no 190." The
+  screen draws 190 and the SAMU 192. 193 is not on it and the sentence never
+  says it is. **Unchanged**, and the precedent the new Bosnian sentence
+  follows.
+- **Left alone, and not about the screen:** the source table gives Albania's
+  police as 129 while the note says 129 is withdrawn and the package declares
+  no Albanian police contact. The package agrees with the note. A content
+  question about Albania, named for a future session.
+
+### What the screenshots showed
+
+Release APK on **`emulator-5554`, an emulator and not a phone** — the Pixel_10
+AVD on a `google_apis_playstore` API 37.1 image, so `adb root` is refused and
+the clock moved through Settings → Date & time. **D110 stays open: the release
+build has still never run on a real telephone.** Screenshots are outside the
+repository, in this session's scratchpad.
+
+- **25/09, Sarajevo, screen 17.** Transcribed from the screen, not from the
+  file:
+
+  > O 112 ainda está em implantação na Bósnia. A polícia é 122 e a ambulância
+  > 124, logo abaixo; os bombeiros são 123, que esta tela não disca.
+
+  The dialable numbers on the screen are **112** (the 88dp button, "Ligar
+  112"), **122** (Polícia) and **124** (Ambulância) — three, counted off the
+  view hierarchy. **"123" occurs exactly once on the whole screen**, inside the
+  note's own text, in the clause that says the screen does not dial it. The
+  note sits at the same offset the old one did and the police and ambulance
+  buttons are in the same place as before, so the four extra characters cost no
+  line and the block is not dominated;
+- **13/09, São Paulo.** Brazil's note unchanged under **Ligar 190**, still with
+  no "funciona sem crédito" line, which is a property of 112 (D088);
+- **15/09, Ksamil.** Albania's note unchanged under **Ligar 112**, with the
+  ambulance 127 and no police row;
+- **19/09, Kotor.** Montenegro still carries no note: the block runs straight
+  from "Funciona sem crédito e sem chip local." to Polícia/Ambulância, exactly
+  as before.
+
+### ⚠️ Open, and deliberately not fixed here
+
+`app/src/test/java/com/travelcompanion/app/feature/emergency/EmergencyNoteTest.kt`
+holds the **old** sentence as a literal — `private val bosniaNote`, **lines
+36-38** — under a KDoc at **line 35** calling it "the real note on its 112".
+The class KDoc at **lines 20-22** is stale for the same reason: it paraphrases
+the removed clause. **The test does not fail** — it injects its own string and
+never reads the real note, and all 431 tests stayed green — but the constant is
+now a copy of a sentence that exists in no package. This is Kotlin, so a
+content session does not touch it; it needs an implementation session.
+
+### Verified
+
+- 6 validators rc=0, `Audio: 50 guide(s) timed against a packaged file, 0 not
+  timed` on the three production copies, unchanged; `check_repo.py` PASS;
+  `content_preflight` PASS 3 / PASS 8;
+- `test_validate_trip.py` **60 tests OK**, unchanged; `git diff --check` clean;
+- Kotlin **431 tests, 0 failures, 0 skipped** from 56 XML files — the same 431
+  as `b267eaa`. No test guarded the old sentence;
+- `lintDebug` **0 errors, 33 warnings** — the same 33 with the same breakdown
+  (11 GradleDependency, 9 UseTomlInstead, 6 NewerVersionAvailable, 2
+  AndroidGradlePluginVersion, 2 UseKtx, 1 InlinedApi, 1 ModifierParameter, 1
+  ObsoleteSdkInt);
+- both APKs **78 entries** under `assets/trip-production/`; `app-release.apk`
+  **61.8 MiB**, `app-debug.apk` **66.9 MiB**; release DEX `Protótipo` 0 and
+  `simular chegada` 0; the new sentence read back out of
+  `assets/trip-production/trip.json` **inside the release APK**;
+- the three copies are byte-identical to one another apart from
+  `metadata.contentStatus`, proved by command: **IDENTICAS**;
+- no Kotlin, no test and nothing under `tools/` was touched; no other package
+  text changed;
+- both tracked `trip.json` blobs still
+  `97627a8c8cda0c1126eacda352aff0b30e6427ce` — neither file was opened.
