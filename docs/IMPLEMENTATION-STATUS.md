@@ -3844,3 +3844,184 @@ changelog.**
   identical to the source by count and text, 0 stray newlines, 0 bodies holding
   a rule or a heading**;
 - both tracked `trip.json` blobs still `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Two defects from review: an alarm a day early, and a walk that never spoke (2026-09-07)
+
+Content only. No Kotlin, no `tools/`, no schema, no `res/`. Two defects found in
+review, both in the real package, both fixed in the three copies
+(`trip-package/generated/`, `trip-package/production/`,
+`app/src/main/assets/trip-production/`). D140, D141 and D142 record them; D078
+and D116 are corrected in place.
+
+### A1 — the Podgorica alarm rang twenty-four hours early
+
+`ci.podgorica-conexao` (`actionByTime` **09:20**, *"Segunda perna sai de
+Podgorica às 09:38"*) lived on `transport.ksamil-budva.night`. That transport is
+named in `transportIds` of **Dia 4 (16/09) alone**, and
+`TripRepository.criticalItemsFor` collects a day's items from
+`day.criticalItems`, `day.transportIds` and `day.accommodationIds` — so the
+connection was harvested on Dia 4 and `criticalAlerts` built the instant as
+day-date + `actionByTime` + zone: **`2026-09-16T09:20` in `Europe/Tirane`**. The
+boarding is on **17/09 às 09:38**. The critical card also stood on screen 02 of
+the wrong day.
+
+The item moved **whole** into Dia 5's `criticalItems` (`2026-09-17`,
+`Europe/Podgorica`) and left the transport — no copy in both, because D012
+merges duplicates rather than dropping them and the Dia 4 occurrence would have
+survived as the earlier of the two. `ci.nightbus-ksamil` **stays on the
+transport**: its 19:15 is genuinely a Dia 4 deadline. The Dia 5 timeline row
+`d05.podgorica` at 05:00 was **not touched** and keeps its `criticalItemIds`.
+
+### The arithmetic proof, replayed over the package
+
+A script in the scratchpad replays `criticalAlerts`: for every day it unions
+`day.criticalItems` with the items of its `transportIds` and
+`accommodationIds`, merges by id, applies `zoneOverrides`, builds
+`date + actionByTime + zone`, and keeps the earliest occurrence of each id.
+
+Before:
+
+```text
+ci.anne-frank            2026-09-14T15:25+0200[Europe/Amsterdam]   Day(day02)
+ci.gate-corfu            2026-09-15T06:45+0200[Europe/Amsterdam]   Transport(transport.ams-corfu.u2)
+ci.checkin-ksamil        2026-09-15T15:30+0200[Europe/Tirane]      Stay(acc.ksamil.guesthouse)
+ci.podgorica-conexao     2026-09-16T09:20+0200[Europe/Tirane]      Transport(transport.ksamil-budva.night)      <-- wrong day
+ci.nightbus-ksamil       2026-09-16T19:15+0200[Europe/Tirane]      Transport(transport.ksamil-budva.night)
+ci.checkin-kotor         2026-09-17T20:00+0200[Europe/Podgorica]   Stay(acc.kotor.suranj)
+ci.bus-zabljak           2026-09-20T06:40+0200[Europe/Podgorica]   Transport(transport.kotor-zabljak.bus)
+ci.canyoning             2026-09-22T10:15+0200[Europe/Podgorica]   Day(day10)
+ci.train-mostar          2026-09-26T06:50+0200[Europe/Sarajevo]    Transport(transport.sarajevo-mostar.train)
+ci.tour-herzegovina      2026-09-27T09:20+0200[Europe/Sarajevo]    Day(day15)
+ci.bus-dubrovnik         2026-09-28T06:30+0200[Europe/Sarajevo]    Transport(transport.mostar-dubrovnik.bus)
+ci.caiaque               2026-09-28T12:45+0200[Europe/Zagreb]      Day(day16)
+ci.bagdrop-dubrovnik     2026-09-30T04:45+0200[Europe/Zagreb]      Transport(transport.dubrovnik-zagreb.ou661)
+total: 13 prazos
+```
+
+After:
+
+```text
+ci.anne-frank            2026-09-14T15:25+0200[Europe/Amsterdam]   Day(day02)
+ci.gate-corfu            2026-09-15T06:45+0200[Europe/Amsterdam]   Transport(transport.ams-corfu.u2)
+ci.checkin-ksamil        2026-09-15T15:30+0200[Europe/Tirane]      Stay(acc.ksamil.guesthouse)
+ci.nightbus-ksamil       2026-09-16T19:15+0200[Europe/Tirane]      Transport(transport.ksamil-budva.night)
+ci.podgorica-conexao     2026-09-17T09:20+0200[Europe/Podgorica]   Day(day05)                                   <-- right day, target changed
+ci.checkin-kotor         2026-09-17T20:00+0200[Europe/Podgorica]   Stay(acc.kotor.suranj)
+ci.bus-zabljak           2026-09-20T06:40+0200[Europe/Podgorica]   Transport(transport.kotor-zabljak.bus)
+ci.canyoning             2026-09-22T10:15+0200[Europe/Podgorica]   Day(day10)
+ci.train-mostar          2026-09-26T06:50+0200[Europe/Sarajevo]    Transport(transport.sarajevo-mostar.train)
+ci.tour-herzegovina      2026-09-27T09:20+0200[Europe/Sarajevo]    Day(day15)
+ci.bus-dubrovnik         2026-09-28T06:30+0200[Europe/Sarajevo]    Transport(transport.mostar-dubrovnik.bus)
+ci.caiaque               2026-09-28T12:45+0200[Europe/Zagreb]      Day(day16)
+ci.bagdrop-dubrovnik     2026-09-30T04:45+0200[Europe/Zagreb]      Transport(transport.dubrovnik-zagreb.ou661)
+total: 13 prazos
+```
+
+**Twelve of the thirteen keep their date and their minute exactly.** One moved,
+and it is the one that was wrong.
+
+### The cost, recorded rather than hidden
+
+`ownersOf` maps only the items a day's transports and stays declare, so the item
+now has no owner: the alert's target falls from
+`AlertTarget.Transport(transport.ksamil-budva.night)` to
+`AlertTarget.Day(day05)`, and the notification opens **the day** instead of the
+transport sheet. Accepted (D140) — Dia 5 carries the 05:00 row that describes
+the wait, the 4h38 and the second operator — but it is a behaviour change and it
+is written down as one.
+
+### The root cause, which is not a content fix (D142)
+
+`CriticalAlerts.zoneOverrides` reads `timelineItem.criticalItemIds`;
+`TripRepository.criticalItemsFor`, which decides what a day collects at all,
+does not. So a timeline row can correct an item's **zone** and cannot correct
+its **date**, and any deadline belonging to a different day than the entity
+carrying it will repeat this defect silently. Fixing it is Kotlin plus tests —
+an implementation session, not this one, seven days from departure. Named in
+D142 so it is not rediscovered from a wrong alarm on the road.
+
+### A2 — no story played by itself on the real walk
+
+`StoryTriggering.kt:88` plays inside the walk only when
+`walk.automaticStories && chosen.trigger?.autoPlayInWalk == true`. The walk
+declares no `automaticStoriesDefault` and the schema default is **`true`**, so
+the left side held; **no story declared `autoPlayInWalk`** and that field's
+schema default is **`false`**, so the right side never did. Every real arrival
+became a notification — which contradicts *"Walk Mode assumes headphones +
+screen off"*, because a notification has to be taken out of a pocket and read.
+
+`story.sarajevo.sebilj`, `story.sarajevo.encontro-de-culturas` and
+`story.sarajevo.ponte-latina` now carry `"autoPlayInWalk": true` in their
+`trigger`.
+
+**The consequence, named:** with auto-play on, the offered case cannot happen in
+the real package, so **screen 10 is unreachable again** — the content gap of
+D065, and the correct behaviour. Screen 10 is reachable only through D031's
+debug-only arrival scaffold, on an emulator, and never on the trip. **D078 is
+corrected in place**: its "what is not reachable" sentence claimed every
+packaged story declared `autoPlayInWalk`, which described a package that had
+stopped existing — the note-that-describes-a-vanished-state defect, this time
+inside DECISIONS itself. **D116(3) is corrected too**: it reasoned about the Dia
+5 timeline row's zone and never about the critical item, which is the half that
+was wrong.
+
+### The three copies
+
+Unchanged invariant, proved by breaking it: with `production`'s `contentStatus`
+tampered to `"draft"` the comparison reports `MISMATCH` and exits 1; restored,
+it exits 0.
+
+```text
+generated        contentStatus='draft'       expected='draft'       OK
+production       contentStatus='production'  expected='production'  OK
+trip-production  contentStatus='production'  expected='production'  OK
+production       identical to generated (ignoring contentStatus): True
+trip-production  identical to generated (ignoring contentStatus): True
+rc=0
+```
+
+**None of the three is in the commit** — all are gitignored (D027, D028). This
+commit is documentation only; the content changes live in the working copy and
+in the APK built from it.
+
+### What the screenshots showed
+
+`app-release.apk` installed on `emulator-5554` (API 37, 1440×3120), clock driven
+from Settings → Date & time — these images have no root, so `adb shell date` is
+refused, and `cmd time_detector suggest_manual_time` is refused too, for want of
+`SUGGEST_MANUAL_TIME_AND_ZONE`. Both screenshots are outside the repository, in
+this session's scratchpad:
+
+- **16/09/2026, 09:00 — `02-hoje-16set-0900-sem-podgorica.png`.** "Ksamil ·
+  Albânia", *Dia 4 de 20*, "Ksamil → Butrinto → ônibus noturno". Exactly **one**
+  NÃO PODE DAR ERRADO card: **19:30, "Ônibus noturno para Budva às 19:30"**.
+  **No Podgorica card.**
+- **17/09/2026, 09:00 — `02-hoje-17set-0900-com-podgorica.png`.** "Kotor ·
+  Montenegro", *Dia 5 de 20*, "Budva → Kotor", the 05:00 "Troca de ônibus em
+  Podgorica" row in the ink card, and **two** NÃO PODE DAR ERRADO cards — the
+  first **09:38, "Segunda perna sai de Podgorica às 09:38"**, the check-in card
+  below it.
+
+**And the device agreed with the arithmetic.** With the emulator's time zone
+moved to Europe/Podgorica and the clock at 17/09 09:00, D112's scheduler log
+prints the instant itself:
+
+```text
+I TravelCompanion: alarm scheduled id=ci.podgorica-conexao at=2026-09-17T09:20:00+02:00[Europe/Podgorica] mode=exact
+I TravelCompanion: alarms scheduled total=9 canBeExact=true
+```
+
+### Verified
+
+- 6 validators rc=0; three copies identical except `contentStatus` (rc=0), and
+  that check proved by breaking it (rc=1 tampered, rc=0 restored);
+- `check_repo.py` PASS; `content_preflight` PASS 3 / PASS 8, unchanged;
+- `test_validate_trip.py` **51 tests OK**; Kotlin **381 tests, 0 failures** from
+  45 XML files; `lintDebug` **0 errors, 33 warnings**; `git diff --check` clean;
+- both APKs **31 entries** under `assets/trip-production/`; release DEX
+  `"Protótipo"` 0 and `"simular chegada"` 0;
+- read back from inside both APKs: `transport.ksamil-budva.night.criticalItems`
+  is `[ci.nightbus-ksamil]`, `days[4]` (2026-09-17, `Europe/Podgorica`) carries
+  `[ci.podgorica-conexao]`, and all three stories report `autoPlayInWalk: true`;
+- both tracked `trip.json` blobs still
+  `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
