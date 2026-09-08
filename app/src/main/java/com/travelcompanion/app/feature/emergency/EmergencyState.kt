@@ -30,7 +30,8 @@ data class EmergencyUiState(
      * there is no single number at all. Kept out of [general]'s own
      * `PhoneUi.note`, which is already spoken for — that one stands in for a
      * number withheld as mock content, and the two would collide in exactly the
-     * state where both apply (D160).
+     * state where both apply (D160). The contact rows below reach the same
+     * separation through `PhoneUi.contentNote` (D175).
      */
     val generalNote: String?,
     val police: PhoneUi?,
@@ -112,12 +113,9 @@ fun buildEmergencyState(content: TripContent, date: LocalDate): EmergencyUiState
             publicService = true,
         ),
         generalWorksWithoutCredit = profile.generalEmergency.phone == EUROPEAN_EMERGENCY_NUMBER,
-        // Only the general number's note is drawn. `note` does not mean the
-        // same thing on every contact: on the insurer and the consulate of the
-        // sample package it is an authoring instruction — "Substituir pelo
-        // contato real" — which is why those rows have never shown one, and
-        // why this is wired one field at a time rather than for `note` at
-        // large (D160).
+        // Its own field rather than `PhoneUi.note`, which is spoken for by the
+        // withheld-number sentence and would collide with this one exactly
+        // where both apply (D160).
         generalNote = profile.generalEmergency.note?.takeIf { it.isNotBlank() },
         police = profile.police?.let {
             phone(
@@ -139,16 +137,17 @@ fun buildEmergencyState(content: TripContent, date: LocalDate): EmergencyUiState
         },
         contacts = listOfNotNull(
             // The approved row names the policy number beside the insurer.
-            // `emergencyContact` has no field for one — its `note` is an
-            // authoring instruction ("Substituir pelo contato real") and not
-            // something to show a traveller — so the row carries the label
-            // alone rather than inventing a number or a field.
+            // `emergencyContact` has no field for one, so the row carries the
+            // label alone rather than inventing a number or a field; what the
+            // package does say about the contact goes through `contentNote`
+            // like every other contact line (D175).
             profile.insurance?.let {
                 phone(
                     label = it.label,
                     number = it.phone,
                     accessibilityLabel = "Ligar para ${it.label}",
                     isMockContent = mock,
+                    contentNote = it.note,
                 )
             },
             // Everything on this screen is either a number to call or a
@@ -164,12 +163,17 @@ fun buildEmergencyState(content: TripContent, date: LocalDate): EmergencyUiState
                     isMockContent = mock,
                 )
             },
+            // Six days in Montenegro, and its consular telephone answers in
+            // Belgrade because Montenegro has no Brazilian post of its own.
+            // The package carries that sentence and this row is where it is
+            // read; without it the country code looks like a mistake (D175).
             profile.consular?.let {
                 phone(
                     label = it.label,
                     number = it.phone,
                     accessibilityLabel = "Ligar para ${it.label}",
                     isMockContent = mock,
+                    contentNote = it.note,
                 )
             },
         ),

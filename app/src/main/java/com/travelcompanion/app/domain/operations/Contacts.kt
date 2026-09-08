@@ -13,6 +13,16 @@ data class PhoneUi(
     val dialable: Boolean,
     /** Said in place of the number when it is withheld, and null otherwise. */
     val note: String?,
+    /**
+     * What the package says about this contact, when it says anything.
+     *
+     * Distinct from [note] on purpose: that one stands in for a number
+     * withheld as mock content and is written by the app, while this one is
+     * packaged text about the contact itself — why the consular telephone for
+     * Montenegro answers in Belgrade, say. A row can carry one, the other, or
+     * both, which is exactly why they are not the same field (D160, D175).
+     */
+    val contentNote: String? = null,
 )
 
 /**
@@ -43,6 +53,7 @@ fun phone(
     accessibilityLabel: String = label,
     isMockContent: Boolean,
     publicService: Boolean = false,
+    contentNote: String? = null,
 ): PhoneUi {
     val withheldAsMock = isMockContent && !publicService
     val dialable = !withheldAsMock && !number.isNullOrBlank()
@@ -53,6 +64,9 @@ fun phone(
         accessibilityLabel = accessibilityLabel,
         dialable = dialable,
         note = if (withheldAsMock) WITHHELD_NOTE else null,
+        // Blank is the same as absent for packaged prose; the emptiness check
+        // lives here so no caller has to remember it.
+        contentNote = contentNote?.takeIf { it.isNotBlank() },
     )
 }
 

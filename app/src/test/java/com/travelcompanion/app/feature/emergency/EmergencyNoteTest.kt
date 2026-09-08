@@ -2,11 +2,14 @@ package com.travelcompanion.app.feature.emergency
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
 import com.travelcompanion.app.data.trip.EmergencyContact
 import com.travelcompanion.app.data.trip.PackagedTripTest.Companion.packagedContent
 import com.travelcompanion.app.data.trip.TripContent
+import com.travelcompanion.app.domain.operations.WITHHELD_NOTE
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -91,5 +94,58 @@ class EmergencyNoteTest {
         // The block itself is untouched: the button and its own sentence stay.
         compose.onNodeWithText("Ligar 112").assertIsDisplayed()
         compose.onNodeWithText("Funciona sem crédito e sem chip local.").assertIsDisplayed()
+    }
+
+    /**
+     * The packaged Montenegrin consular note, word for word, for the same
+     * reason the Bosnian one above is: injected notes cannot notice when the
+     * real sentence moves underneath them (D163).
+     *
+     * It is the answer to a question the screen otherwise poses and does not
+     * answer — six days in Montenegro, days 5 to 10, and a consular telephone
+     * with a Serbian country code. Without the sentence the number reads as a
+     * mistake (D175).
+     */
+    private val montenegroConsularNote =
+        "Montenegro não tem posto brasileiro próprio; esta embaixada o cobre " +
+            "por jurisdição cumulativa."
+
+    private fun contentWithConsularNote(note: String?): TripContent {
+        val packaged = packagedContent(exists = { false })
+        return TripContent(
+            packaged.trip.copy(
+                emergencyProfiles = packaged.trip.emergencyProfiles.map { profile ->
+                    profile.copy(
+                        consular = profile.consular?.let {
+                            EmergencyContact(label = it.label, phone = it.phone, note = note)
+                        },
+                    )
+                },
+            ),
+            packaged.assets,
+        )
+    }
+
+    @Test
+    fun `the note is drawn under the consular telephone`() {
+        screen(contentWithConsularNote(montenegroConsularNote))
+
+        compose.onNodeWithText(montenegroConsularNote).performScrollTo().assertIsDisplayed()
+    }
+
+    /**
+     * A contact line with no note draws nothing in its place, and the rest of
+     * the row is exactly what it was: the label, and — because the sample
+     * package is mock content — the sentence standing in for the number it
+     * withholds. The two notes are separate fields precisely so this row can
+     * carry one, the other, or both (D160, D175).
+     */
+    @Test
+    fun `a consular line with no note leaves the row as it was`() {
+        screen(contentWithConsularNote(null))
+
+        compose.onNodeWithText(montenegroConsularNote).assertDoesNotExist()
+        compose.onNodeWithText("Representação brasileira").performScrollTo().assertIsDisplayed()
+        compose.onAllNodesWithText(WITHHELD_NOTE).onFirst().assertIsDisplayed()
     }
 }

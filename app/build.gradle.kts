@@ -22,8 +22,17 @@ android {
         applicationId = "com.travelcompanion.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        // Two travellers, two telephones, and no way to tell from the outside
+        // which build each is carrying. `versionCode` is the integer Android
+        // orders installs by; `versionName` is the one a person can read
+        // without a computer, in Configurações → Apps → Bálcãs, which is
+        // where the question actually gets asked — at a border, holding the
+        // other phone. So it carries the date the build was cut: two names
+        // side by side answer both "are these the same?" and "which is
+        // older?" without anything to look them up in. No version line is
+        // added to any screen: the approved sheets draw none (D174).
+        versionCode = 2
+        versionName = "1.0-2026-09-08"
     }
 
     buildTypes {

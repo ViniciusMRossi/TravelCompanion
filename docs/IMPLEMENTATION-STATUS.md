@@ -5835,3 +5835,118 @@ warnings**; `app-release.apk` **87,707,578 bytes**, `app-debug.apk`
 **93,077,735 bytes**; both tracked `trip.json` blobs still
 `97627a8c8cda0c1126eacda352aff0b30e6427ce`. **Automatic date and time were
 restored on the device**, and aeroplane mode is off.
+
+
+## Three small things before the aeroplane (2026-09-08)
+
+One commit. A context file that misinformed every future session, a version
+number that had not moved in nine commits, and a packaged sentence that six
+days in Montenegro depend on. See D173, D174, D175.
+
+### What changed
+
+- **`CLAUDE.md` line 73.** `12 of 13` → **`13 of 13`**, and the sentence after
+  it, which described the open item, rewritten to name the closed one. Nothing
+  else in the file. It is the one file loaded into every session in this
+  repository, and it was telling each of them to build a feature that shipped
+  in `6717f8b` and was seen on a telephone in `f4818d6` (D173).
+- **`app/build.gradle.kts`.** `versionCode` **1 → 2**; `versionName`
+  **`"0.1.0"` → `"1.0-2026-09-08"`**. Two travellers, two telephones, and
+  until now nothing to look at that says which build is on which. The name is
+  what Configurações → Apps → Bálcãs prints, and a date is what a person
+  reads there without a computer (D174). **No version line was added to any
+  screen** — "Versão", "Sobre" and "Ajustes" appear zero times in the two
+  approved artboards.
+- **`PhoneUi.contentNote`, and the two contact rows that can fill it.**
+  `EmergencyState.kt` read only `generalEmergency.note`; the consular line
+  passed label, telephone and accessibility label and dropped the note. One
+  rule now, not a per-field list: **a contact line draws its `note` when it
+  has one**, at the weight and in the place D160 gave the general number's
+  (D175). Kept apart from `PhoneUi.note`, which the withheld-number sentence
+  already owns.
+
+### Proved by failing
+
+- **RED** — `the note is drawn under the consular telephone`, the packaged
+  Montenegrin sentence word for word, injected onto the sample profile:
+  `AssertionError at EmergencyNoteTest.kt:133`. **GREEN** after
+  `contentNote` was wired and drawn.
+- **GREEN from birth, and that is the point** — `a consular line with no note
+  leaves the row as it was`: nothing drawn where the note would go, the label
+  still there, the withheld-number sentence still there. It is the guard that
+  the new field did not displace the old one.
+- **Still GREEN** — both D160 tests: the Bosnian sentence under 112, and a
+  profile with no note drawing nothing in its place. The new rule did not
+  replace the old one; both notes now coexist on the same row in the sample
+  build.
+
+### What the telephone showed
+
+**Galaxy S24, `SM-S921B`**, signed `app-release.apk`, `adb install -r` over
+the previous build (the higher `versionCode` does not block it). Clock moved
+through Settings → Date & time — `adb shell date` and
+`cmd time_detector suggest_manual_time` are both refused without root, as
+recorded before. Screenshots are outside the repository, in this session's
+scratchpad.
+
+| date | screen 17 | consular row |
+|---|---|---|
+| **17/09** · Dia 5, Kotor | "Kotor · Montenegro", 112 with "Funciona sem crédito…", 122 / 124 | **"Plantão consular — Embaixada em Belgrado"** and, underneath, **"Montenegro não tem posto brasileiro próprio; esta embaixada o cobre por jurisdição cumulativa."** |
+| **19/09** · Dia 7, Kotor | identical | same note; the insurer and "Estúdio em Kotor (Suranj) · Onde estão as malas" gained **nothing** |
+| **25/09** · Dia 13, Sarajevo | the Bosnian note under 112 **exactly as it was** | "Plantão consular — Embaixada em Sarajevo", **no note** — Bosnia carries none in production |
+| **13/09** · Dia 1, São Paulo | "Ligar 190", Brazil's note under it, no "sem crédito" line, SAMU 192 | **no consular row at all**; the insurer gained nothing |
+
+**And it still dials.** Tapping the consular row on 17/09 opened the Samsung
+dialer with **`+381 65 3239787`** filled in. The note sits under the row; it
+did not take the row's job.
+
+**Configurações → Apps → Bálcãs** reads **"Versão 1.0-2026-09-08"**, which is
+the whole point of D174 — legible to a person holding the other telephone,
+with no computer in the conversation.
+
+### What the sample build shows, and why it is right
+
+Both APKs carry `trip-production/`, so `TripAssetRoot.resolve` returns
+`Production` on any installed build; the sample package is read only in a
+clone that never promoted content. Its screen 17, printed from
+`buildEmergencyState` at 21/09:
+
+```
+Seguro viagem
+  O número chega com os dados reais da viagem.
+  Substituir pelo contato real
+Hospedagem em Sarajevo — exemplo · Onde estão as malas
+  O número chega com os dados reais da viagem.
+Representação brasileira
+  O número chega com os dados reais da viagem.
+  Substituir por informação verificada
+```
+
+The authoring instructions D160 refused to print **do** appear there, one line
+below the withheld-number sentence — on the only machine that can see them,
+which is a development machine. That is the reminder working, not the
+regression D160 feared, and it is written down here so it is not mistaken for
+one.
+
+### Verified
+
+Kotlin **465 tests, 0 failures, 0 skipped** from **63 XML files** — 463 plus
+the two new ones. 6 validators rc=0, the three production packages each
+`Audio: 50 guide(s) timed against a packaged file, 0 not timed`;
+`check_repo.py` PASS; `content_preflight` PASS 8 (`assets/trip`) and PASS 3
+(`trip-package/generated`); `test_validate_trip.py` **60 tests OK**;
+`git diff --check` clean; `lintDebug` **0 errors, 33 warnings** with the same
+breakdown as the baseline (11 GradleDependency, 9 UseTomlInstead, 6
+NewerVersionAvailable, 2 AndroidGradlePluginVersion, 2 UseKtx, 1 InlinedApi,
+1 ModifierParameter, 1 ObsoleteSdkInt). **230** entries under
+`assets/trip-production/` in both APKs; release DEX "Protótipo" 0, "simular
+chegada" 0.
+
+**The APK sizes moved, as D174 said they would** — the version fields are in
+the manifest, so the baseline below replaces the old numbers rather than
+repeating them: `app-release.apk` **87,707,586 bytes** (was 87,707,578, +8),
+`app-debug.apk` **93,077,743 bytes** (was 93,077,735, +8).
+
+Both tracked `trip.json` blobs still
+`97627a8c8cda0c1126eacda352aff0b30e6427ce`. **Automatic date and time were
+restored on the device** (`auto_time` back to 1, clock back to 08/09).

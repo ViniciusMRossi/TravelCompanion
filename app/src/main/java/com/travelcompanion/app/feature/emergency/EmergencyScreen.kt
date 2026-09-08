@@ -215,6 +215,11 @@ private fun BigButton(phone: PhoneUi, modifier: Modifier, onDial: (String) -> Un
 /**
  * One of the three contacts, at the approved 48dp with its own accessibility
  * label — a screen reader on this screen says who is being called, not "botão".
+ *
+ * A contact line draws its packaged note when it has one, at the same weight
+ * and in the same place D160 gave the general number's: under what it is about,
+ * secondary, no new component and no colour outside the tokens. One rule, no
+ * per-field list of which contacts are allowed a sentence (D175).
  */
 @Composable
 private fun ContactRow(phone: PhoneUi, onDial: (String) -> Unit) {
@@ -271,6 +276,9 @@ private fun ContactRow(phone: PhoneUi, onDial: (String) -> Unit) {
                 Text(it, style = TcType.meta, color = FieldCompanionColors.Neutral600)
             }
             phone.note?.let {
+                Text(it, style = TcType.meta, color = FieldCompanionColors.Neutral600)
+            }
+            phone.contentNote?.let {
                 Text(it, style = TcType.meta, color = FieldCompanionColors.Neutral600)
             }
         }
