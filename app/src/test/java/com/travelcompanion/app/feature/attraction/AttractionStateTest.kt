@@ -1,7 +1,9 @@
 package com.travelcompanion.app.feature.attraction
 
 import com.travelcompanion.app.data.trip.PackagedTripTest.Companion.packagedContent
+import com.travelcompanion.app.data.trip.AssetResolver
 import com.travelcompanion.app.data.trip.EditorialSection
+import com.travelcompanion.app.data.trip.PracticalInfo
 import com.travelcompanion.app.data.trip.TripContent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -114,7 +116,70 @@ class AttractionStateTest {
 
         assertEquals("Se chover forte", state.planBTitle)
         assertEquals(3, state.whatToObserve.size)
-        assertTrue(state.chips.contains("Entrada livre"))
+        // The practical price is a line, not a chip, whatever its length: the
+        // rule turns on who wrote the string, not on how long it is (D154).
+        assertFalse(state.chips.contains("Entrada livre"))
+        assertEquals(
+            listOf(PracticalLineUi("Entrada", "Entrada livre")),
+            state.practicalLines,
+        )
+    }
+
+    /* ------------------------------------------------ practical text (D154) */
+
+    /**
+     * The companion to `AttractionPracticalPackagedTest`, built by hand so it
+     * runs on machines that do not carry the operational package.
+     *
+     * The string is the real one: `attr.dubrovnik.muralhas`, 141 characters,
+     * whose last clause is the part a traveller needs at the gate.
+     */
+    @Test
+    fun `a practical sentence is never truncated into a chip`() {
+        val dubrovnikPass = "Dubrovnik Pass de 1 dia, €40 por pessoa, já pago — inclui as " +
+            "muralhas, os museus municipais e o transporte urbano, mas não cobre o teleférico"
+        val trip = content.trip
+        val withLongPrice = TripContent(
+            trip.copy(
+                attractions = trip.attractions.map { attraction ->
+                    if (attraction.id == "bascarsija") {
+                        attraction.copy(
+                            practical = PracticalInfo(
+                                price = dubrovnikPass,
+                                openingHours = "As guaritas abrem às 7h; antes disso costumam " +
+                                    "estar sem atendente, com os portões abertos",
+                                recommendedDurationMinutes = 60,
+                            ),
+                        )
+                    } else {
+                        attraction
+                    }
+                },
+            ),
+            AssetResolver(trip.assets, exists = { true }),
+        )
+
+        val state = buildAttractionState(withLongPrice, "bascarsija", dayDate)!!
+
+        assertEquals(141, dubrovnikPass.length)
+        assertEquals(
+            "the source's own sentences, whole",
+            listOf(
+                PracticalLineUi("Entrada", dubrovnikPass),
+                PracticalLineUi(
+                    "Horários",
+                    "As guaritas abrem às 7h; antes disso costumam estar sem atendente, " +
+                        "com os portões abertos",
+                ),
+            ),
+            state.practicalLines,
+        )
+        // The duration chip is the app's own composition and stays a chip.
+        assertTrue(state.chips.contains("Visita ~60 min"))
+        assertTrue(
+            "a chip must never carry a sentence: ${state.chips}",
+            state.chips.all { it.length <= 45 },
+        )
     }
 
     /* ------------------------------------------- editorial sections (D133) */

@@ -59,16 +59,16 @@ class CityStateTest {
     /** The badge is earned by a file in this build, never by a promise. */
     @Test
     fun `Offline is a pill only when the audio is really here`() {
-        // "Entrada livre" is the attraction's own practical price, which the
-        // sheet lists among the pills.
-        assertEquals(listOf("Audioguia", "Entrada livre"), state().attractions.first().pills)
+        // The price is no longer among them: a card in a carousel has less
+        // room than screen 05, and the packaged prices are sentences (D154).
+        assertEquals(listOf("Audioguia"), state().attractions.first().pills)
 
         val everything = TripContent(
             content.trip,
             AssetResolver(content.trip.assets, exists = { true }),
         )
         assertEquals(
-            listOf("Audioguia", "Offline", "Entrada livre"),
+            listOf("Audioguia", "Offline"),
             state(everything).attractions.first().pills,
         )
     }

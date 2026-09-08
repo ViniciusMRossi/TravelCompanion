@@ -52,7 +52,15 @@ sealed interface QrState {
 data class DocumentUiState(
     val title: String,
     val subtitle: String?,
-    val journey: JourneyUi?,
+    /**
+     * Every leg the document covers, earliest departure first.
+     *
+     * A list and not one leg: two packaged tickets are named by two transports
+     * each, and reading only the first drew São Paulo → Amsterdã on the day of
+     * the flight home, and the Dubrovnik leg already flown at the Zagreb gate
+     * (D155). Most documents have exactly one and draw exactly one block.
+     */
+    val journey: List<JourneyUi>,
     val passengers: String?,
     val locator: String?,
     val price: String?,
@@ -102,19 +110,27 @@ fun buildDocumentState(
 ): DocumentUiState? {
     val access = documentAccess(content, documentId) ?: return null
     val document = access.document
-    val transport = content.trip.transports.firstOrNull { documentId in it.documentIds }
+    // In departure order, because that is the order a connection is flown and
+    // the only order in which two legs of one ticket can be read.
+    val legs = content.trip.transports
+        .filter { documentId in it.documentIds }
+        .sortedBy { it.origin.dateTime }
 
     val passengers = document.participantIds
         .mapNotNull { content.participant(it)?.name }
         .takeIf { it.isNotEmpty() }
         ?.joinToString(" · ")
 
-    val locator = document.locator ?: transport?.bookingReference
+    // These two describe the document, not a leg of it, so they are taken only
+    // when the legs agree — never one leg's value passed off as the whole
+    // ticket's. Both packaged connections share a booking reference, and no
+    // packaged transport carries a price, so nothing on screen moves.
+    val locator = document.locator ?: legs.mapNotNull { it.bookingReference }.distinct().singleOrNull()
 
     return DocumentUiState(
         title = document.title,
         subtitle = document.subtitle,
-        journey = transport?.let {
+        journey = legs.map {
             JourneyUi(
                 originName = it.origin.name,
                 originTime = clock(it.origin.dateTime),
@@ -126,7 +142,7 @@ fun buildDocumentState(
         },
         passengers = passengers,
         locator = locator,
-        price = transport?.price,
+        price = legs.mapNotNull { it.price }.distinct().singleOrNull(),
         qr = qrState(content, document),
         // The approved sheet's redundancy: the driver takes the locator too,
         // which is the sentence that matters when a screen will not scan.

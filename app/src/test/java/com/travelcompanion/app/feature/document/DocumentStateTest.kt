@@ -24,8 +24,8 @@ class DocumentStateTest {
         val state = buildDocumentState(asShipped, "ticket.sarajevo-mostar")!!
 
         assertEquals("Passagem Sarajevo → Mostar", state.title)
-        assertEquals("19:30", state.journey?.originTime)
-        assertEquals("22:00", state.journey?.destinationTime)
+        assertEquals("19:30", state.journey.single().originTime)
+        assertEquals("22:00", state.journey.single().destinationTime)
         assertEquals("Vinícius · Érika", state.passengers)
         assertEquals("MOCK-ABC123", state.locator)
         assertNotNull("the redundancy line is the point of the ficha", state.locatorNote)
@@ -42,7 +42,7 @@ class DocumentStateTest {
 
         assertFalse(state.isPackaged)
         assertNotNull(state.notPackagedNote)
-        assertEquals("19:30", state.journey?.originTime)
+        assertEquals("19:30", state.journey.single().originTime)
     }
 
     @Test
@@ -136,6 +136,67 @@ class DocumentStateTest {
         val qr = QrState.Embedded("trip/documents/qr.png")
         assertTrue(qr is QrState.Ready)
         assertFalse(qr is QrState.Generated)
+    }
+
+    /* ------------------------------------------------- the two legs (D155) */
+
+    /**
+     * The companion to `DocumentJourneyPackagedTest`, built by hand.
+     *
+     * The packaged connection is copied in shape: one document, two transports
+     * naming it, the second leaving after the first, sharing one booking
+     * reference and declaring no price. Before the fix the state showed only
+     * the earlier leg, which at the connecting gate is the flight already
+     * taken.
+     */
+    private fun withConnection(): TripContent {
+        val trip = whole.trip
+        val first = trip.transports.single { it.id == "transport.sarajevo-mostar.bus" }
+        val second = first.copy(
+            id = "transport.mostar-dubrovnik.bus",
+            origin = first.destination.copy(dateTime = "2026-09-22T08:25", platform = null),
+            destination = first.origin.copy(name = "Dubrovnik", dateTime = "2026-09-22T12:30"),
+        )
+        return TripContent(
+            // Out of order on purpose: the fix sorts by departure, it does not
+            // trust the order the package happens to list them in.
+            trip.copy(transports = listOf(second, first)),
+            whole.assets,
+        )
+    }
+
+    @Test
+    fun `a document named by two transports draws both, in departure order`() {
+        val state = buildDocumentState(withConnection(), "ticket.sarajevo-mostar")!!
+
+        assertEquals(
+            listOf("19:30" to "22:00", "08:25" to "12:30"),
+            state.journey.map { it.originTime to it.destinationTime },
+        )
+        assertEquals("Mostar · Bus Station", state.journey[1].originName)
+        assertEquals("Dubrovnik", state.journey[1].destinationName)
+    }
+
+    /** The 25 documents with one transport or none are untouched. */
+    @Test
+    fun `a document named by one transport still draws exactly one leg`() {
+        val state = buildDocumentState(whole, "ticket.sarajevo-mostar")!!
+
+        assertEquals(1, state.journey.size)
+        assertEquals("19:30", state.journey.single().originTime)
+    }
+
+    @Test
+    fun `a document no transport names draws none`() {
+        assertEquals(emptyList<JourneyUi>(), buildDocumentState(whole, "voucher.sarajevo")!!.journey)
+    }
+
+    @Test
+    fun `a connection shows one locator and no price of its own`() {
+        val state = buildDocumentState(withConnection(), "ticket.sarajevo-mostar")!!
+
+        assertEquals("MOCK-ABC123", state.locator)
+        assertNull("no packaged transport declares a price", state.price)
     }
 
     @Test

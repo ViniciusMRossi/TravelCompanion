@@ -4792,3 +4792,147 @@ repository, in this session's scratchpad.
   text of any kind changed;
 - both tracked `trip.json` blobs still
   `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## The sentence that did not fit the pill, and the wrong leg of the ticket (2026-09-08)
+
+Three findings from a review. Two were real and are fixed; the third was
+measured and did not exist, and the measuring is recorded so nobody repairs it
+later. No content text changed — not a price, not an hour, not a package.
+
+### D154 — ten practical strings were being cut, and the cut half was the instruction
+
+`AttractionState` put `price`, `openingHours` and the derived duration into one
+chip list, and `TcChip` draws one line with `TextOverflow.Ellipsis`. The clause
+is right (D055) and was not touched; what was wrong is what was put inside it.
+
+Counted over `assets/trip-production/trip.json`: **22 practical strings on 47
+attractions — 17 `price` and 5 `openingHours` — of which 10 run past 45
+characters**, the longest at **141**. In a one-line pill each became forty-odd
+letters and an ellipsis, and the half that got cut was always the second, which
+is the instruction. Screen 05 drew `practical` in exactly one place, so there
+was no full-text strip underneath: the truncated sentence was all a traveller
+got at the ticket window.
+
+The rule now: **the pill keeps what the app derives, the source's text gets a
+line.** Screen 05's chips are `Audioguia N min`, `Salvo offline`, `Visita ~N
+min` — three strings the app composes from a number, none over twenty
+characters. `price` and `openingHours` are drawn whole in a `TcCard` in the
+operational layer, labelled **ENTRADA** (the plate's own word) and **HORÁRIOS**.
+Screen 04's carousel card loses the price and keeps `Audioguia` / `Offline`.
+No length threshold decides anything anywhere; the rule turns on which side
+wrote the string. Recorded as a deliberate addition to screens 04 and 05, the
+way D153 was — the plate is not wrong, it was drawn before the source supplied
+a 141-character sentence for a field it had drawn as `Entrada livre`.
+
+### D155 — the ticket home drew the flight out, and the connection drew the leg already flown
+
+`DocumentState.kt:105` took the first transport naming the document, with no
+criterion — D097's shape. **Two of the 27 documents are named by two transports
+each, and the element it happened to return was the wrong one in both.** The
+LATAM ticket holds LA 8078 (13/09 18:00, Guarulhos → Schiphol, index 0) and LA
+8079 (02/10 13:10, Schiphol → Guarulhos, index 8), so on **02/10** it drew the
+outbound. The Croatia ticket holds OU 661 (30/09 06:15, Dubrovnik → Zagreb,
+index 6) and OU 450 (30/09 08:25, Zagreb → Amsterdã, index 7) — **1h15 apart on
+one morning**, so at the Zagreb gate it drew the flight already flown.
+
+`journey` is now the list of transports naming the document, sorted by
+`origin.dateTime`, and screen 14 draws one block per leg. **The other 25
+documents are untouched**: 5 are named by one transport and draw one block, 20
+are named by none and draw none. `price` and `locator` were not repaired,
+because they were not broken — all four transports declare a null price and each
+pair shares one booking reference, which the document's own locator already
+carries. Nothing picks a leg by today's date: that needs date plumbing screen 14
+does not have, and it gets 30/09 wrong, where both legs are relevant.
+
+### D156 — measured, and it was not there
+
+The review recorded that screen 03 hides day 16's 06:30 bus behind the 13:00
+kayak. Four measurements say otherwise, and all four were re-checked here:
+
+1. `TodayUseCase.kt:38` already sorts the timeline by `startTime`, and
+   `FullDayUseCase` builds from that state;
+2. `sectionsOf` groups by `periodOf(it.item.startTime)` and `filter` preserves
+   order inside each period;
+3. all **61 timeline rows over the 20 packaged days are already in ascending
+   order, and none omits `startTime`**;
+4. day 16 is **06:30 · 07:00 · 11:00 · 13:00 · 16:00**, and the kayak is 13:00,
+   not 12:45.
+
+Nothing in the sort, `sectionsOf` or `periodOf` was touched. The test written
+for this **starts green on purpose** and guards against the repair rather than
+the defect: the cheapest way for day 16 to break is for someone to take this
+review at its word and re-sort a sorted list.
+
+### Proved by failing, three times
+
+- **the chips.** A test walking all 47 attractions of the real package asserted
+  no chip over 45 characters. **Red, naming 10 offenders by id and length**, the
+  worst at 141. Green after. A second test asserts all 22 practical strings
+  reach the state character for character, and a hand-built companion in
+  `AttractionStateTest` carries the real 141-character Dubrovnik Pass string so
+  the guarantee holds on machines without the package;
+- **the legs.** Against the real package, the Croatia ticket's destination read
+  `Zagreb · aeroporto` where `Amsterdã · Schiphol` was expected, and the LATAM
+  ticket's departure read `18:00` where `13:10` was expected. **Both red**, both
+  green after. A third case asserts the leg-count split across all 27 documents
+  as 20 with none, 5 with one and 2 with two, which is the guarantee that the
+  other 25 did not move;
+- **the order.** `FullDayTimelineOrderPackagedTest` asserts all 61 rows of the
+  20 days leave `FullDayUseCase` in clock order, and day 16 by the hour. **Born
+  green, and said so in its own comment.**
+
+### What the screenshots showed
+
+Release APK on **`emulator-5554`, an emulator and not a phone** — a Pixel_10 AVD
+on a `google_apis_playstore` API 37.1 image, so `adb root` is refused and the
+clock was moved through Settings → Date & time, as in the previous pass.
+**D110 therefore stays open: the release build has still never run on a real
+telephone.** Screenshots are outside the repository, in this session's
+scratchpad.
+
+- **28/09, Dia 16, Dubrovnik, screen 04.** Every card in the carousel draws
+  `Audioguia` and `Offline` and nothing else — including **Muralhas da cidade
+  velha** and **Caiaque pelas muralhas e Lokrum**, whose prices are 141 and 60
+  characters;
+- **28/09, screen 05, Muralhas da cidade velha.** Chips are `Audioguia 2 min`,
+  `Salvo offline`, `Visita ~120 min`. **ENTRADA** carries the whole 141
+  characters, ending in *mas não cobre o teleférico*;
+- **25/09, Dia 13, Butmir, Túnel da Guerra.** **ENTRADA** *20 marcos por pessoa,
+  só em dinheiro: não aceitam cartão nem euro* and **HORÁRIOS** *8h30 às 17h, de
+  1º de abril a 31 de outubro; última entrada às 16h30*, both legible to the
+  end. *(The review placed this attraction in Kotor on 17/09; it is Butmir's, on
+  day 13.)*
+- **17/09, Dia 5, Kotor, Muralhas de Kotor e forte de São João.** **ENTRADA**
+  the 122-character *As fontes divergem entre €8 e €15…* and **HORÁRIOS** the
+  89-character *As guaritas abrem às 7h…*, both whole;
+- **30/09, Carteira, Voos Dubrovnik → Zagreb → Amsterdã.** Two blocks, one over
+  the other: **06:15 Dubrovnik · aeroporto → 07:10 Zagreb · aeroporto** and
+  **08:25 Zagreb · aeroporto → 10:30 Amsterdã · Schiphol**, Croatia Airlines on
+  each, one **LOCALIZADOR 96LE2K**, and no **VALOR** field;
+- **02/10, Carteira, Voos São Paulo ⇄ Amsterdã.** **18:00 Guarulhos → 11:00
+  Schiphol** and **13:10 Schiphol → 20:15 Guarulhos**. On the day of the flight
+  home the leg home is on screen, which is the whole of the defect;
+- **28/09, screen 03, Dia completo.** **MANHÃ 06:30 · 07:00 · 11:00**, **TARDE
+  13:00 · 16:00**, in order — exactly as it already was.
+
+### Verified
+
+- 6 validators rc=0, `Audio: 50 guide(s) timed against a packaged file, 0 not
+  timed` on the three production copies, unchanged; `check_repo.py` PASS;
+  `content_preflight` PASS 3 / PASS 8;
+- `test_validate_trip.py` **60 tests OK** — unchanged, no validator was touched;
+  `git diff --check` clean;
+- Kotlin **427 tests, 0 failures, 0 skipped** from 54 XML files — 412 before,
+  **15 new**. Nothing skipped means `assumeTrue` did not fire and the three
+  package-reading tests really ran;
+- `lintDebug` **0 errors, 33 warnings** — the same 33 with the same breakdown
+  (11 GradleDependency, 9 UseTomlInstead, 6 NewerVersionAvailable, 2
+  AndroidGradlePluginVersion, 2 UseKtx, 1 InlinedApi, 1 ModifierParameter, 1
+  ObsoleteSdkInt). No new warning; `ModifierParameter` is still the one it was;
+- both APKs **78 entries** under `assets/trip-production/`; `app-release.apk`
+  **61.8 MiB**, `app-debug.apk` **66.9 MiB**; release DEX `Protótipo` 0 and
+  `simular chegada` 0;
+- no file under `trip-package/`, `app/src/main/assets/` or `tools/` changed; no
+  content text of any kind changed;
+- both tracked `trip.json` blobs still
+  `97627a8c8cda0c1126eacda352aff0b30e6427ce`.

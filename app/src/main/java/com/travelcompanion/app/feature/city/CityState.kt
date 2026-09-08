@@ -150,7 +150,10 @@ fun buildCityState(
                     // The badge is earned by a file in this build, never by a
                     // promise in the package (D013).
                     if (content.assets.isAvailableOffline(attractionGuide?.audioAssetId)) add("Offline")
-                    attraction.practical?.price?.let(::add)
+                    // The price is not a pill and does not belong on a card in
+                    // a carousel, which has less room than screen 05 and not
+                    // more. It is one tap away, whole, in that screen's
+                    // operational block (D154).
                 },
             )
         },

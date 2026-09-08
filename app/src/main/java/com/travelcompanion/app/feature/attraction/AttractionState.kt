@@ -29,6 +29,21 @@ data class EditorialSectionUi(
     val paragraphs: List<String>,
 )
 
+/**
+ * One line of the package's own practical text, printed whole.
+ *
+ * The label is the app's and the value is the source's sentence, drawn without
+ * a limit on its length. It is deliberately not a chip: a chip is a qualifier
+ * the app composes and can therefore keep short, while `practical.price` is a
+ * sentence — up to 141 characters in the package that ships — whose second
+ * half is the instruction ("mas não cobre o teleférico", "só em dinheiro").
+ * Inside a one-line pill exactly that half is what the ellipsis eats (D154).
+ */
+data class PracticalLineUi(
+    val label: String,
+    val value: String,
+)
+
 data class AttractionUiState(
     val id: String,
     val name: String,
@@ -36,7 +51,10 @@ data class AttractionUiState(
     val cityLine: String,
     val heroAssetPath: String?,
     val heroCaption: String,
+    /** Only what the app itself composes, and therefore knows to be short. */
     val chips: List<String>,
+    /** What the source wrote, whole, in the operational layer. */
+    val practicalLines: List<PracticalLineUi>,
     val summary: String,
     /** Long-form narration, between the summary and the operational strip. */
     val historySections: List<EditorialSectionUi>,
@@ -87,12 +105,22 @@ fun buildAttractionState(
         cityLine = listOfNotNull(city?.name, city?.countryName).joinToString(" · "),
         heroAssetPath = content.assets.packagedPathIfPresent(attraction.heroAssetId),
         heroCaption = heroCaption(content, attraction),
+        // The pill keeps what the app derives; the source's own text gets a
+        // line. All three of these are written here, from a number, and none
+        // reaches twenty characters — which is what makes D055's one-line
+        // chip the right container for them and the wrong one for a sentence.
         chips = buildList {
             audioGuide?.let { add("Audioguia ${it.durationMinutes} min") }
             if (audioOffline) add("Salvo offline")
-            attraction.practical?.price?.let(::add)
-            attraction.practical?.openingHours?.let(::add)
             attraction.practical?.recommendedDurationMinutes?.let { add("Visita ~$it min") }
+        },
+        // "Entrada" is the plate's own word for the price. The rule is the
+        // same for all 47 and turns on which side wrote the string, never on
+        // how long the string happens to be: a threshold would be a branch
+        // that agrees with the intent almost always, which is D089's shape.
+        practicalLines = buildList {
+            attraction.practical?.price?.let { add(PracticalLineUi("Entrada", it)) }
+            attraction.practical?.openingHours?.let { add(PracticalLineUi("Horários", it)) }
         },
         summary = attraction.summary,
         historySections = attraction.historySections.map { section ->

@@ -105,6 +105,10 @@ fun AttractionScreen(
 
             state.departure?.let { departure -> DepartureStrip(departure) }
 
+            if (state.practicalLines.isNotEmpty()) {
+                PracticalBlock(state.practicalLines)
+            }
+
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 AudioGuideAction(state = state, onPlayAudioGuide = onPlayAudioGuide)
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -300,6 +304,40 @@ private fun EditorialSectionBlock(section: EditorialSectionUi) {
                 style = TcType.editorialBody,
                 color = FieldCompanionColors.Neutral700,
             )
+        }
+    }
+}
+
+/**
+ * What the ticket costs and when the gate opens, in the source's own words.
+ *
+ * It sits in the operational layer, beside the departure strip and the map
+ * buttons and after the editorial sections, because it is what gets read
+ * standing at a counter. Nothing here is truncated: these strings run to 141
+ * characters in the packaged trip and the instruction is always in the tail
+ * — "mas não cobre o teleférico", "Levem os €10", "só em dinheiro: não
+ * aceitam cartão nem euro". Screen 05 draws `practical` here and nowhere
+ * else, so a cut here is a cut with no second chance (D154).
+ */
+@Composable
+private fun PracticalBlock(lines: List<PracticalLineUi>) {
+    TcCard(modifier = Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            lines.forEach { line ->
+                Column {
+                    Text(
+                        text = line.label.uppercase(),
+                        style = TcType.eyebrow,
+                        color = FieldCompanionColors.Neutral600,
+                    )
+                    Text(
+                        text = line.value,
+                        style = TcType.meta,
+                        color = FieldCompanionColors.Neutral800,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
         }
     }
 }

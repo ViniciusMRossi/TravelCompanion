@@ -138,7 +138,11 @@ fun DocumentScreen(
                         }
                     }
 
-                    state.journey?.let { Journey(it) }
+                    // One block per leg. A ticket titled "Voos São Paulo ⇄
+                    // Amsterdã" promises two, and the Zagreb connection needs
+                    // both on screen at once — its legs are 1h15 apart on the
+                    // same morning (D155).
+                    state.journey.forEach { Journey(it) }
 
                     // The two fields share the row rather than one taking
                     // what it likes; the label gives way before the value
@@ -149,7 +153,10 @@ fun DocumentScreen(
                         state.passengers?.let {
                             Field("Passageiros", it, modifier = Modifier.weight(1f))
                         }
-                        state.journey?.platform?.let {
+                        // A platform belongs to a leg, so this field speaks
+                        // only when the document leaves no doubt which leg it
+                        // means. No packaged transport declares one.
+                        state.journey.mapNotNull { it.platform }.distinct().singleOrNull()?.let {
                             Field("Plataforma", it, modifier = Modifier.weight(1f))
                         }
                     }
@@ -198,46 +205,55 @@ fun DocumentScreen(
     }
 }
 
+/**
+ * One leg: two ends, and who runs it.
+ *
+ * The operator line is grouped with its own leg rather than left as a sibling
+ * of the card's 14dp column — with two legs on screen, an operator floating
+ * halfway between them belongs to neither.
+ */
 @Composable
 private fun Journey(journey: JourneyUi) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = journey.originTime,
-                style = TcType.clockLarge.copy(fontSize = 28.sp, fontWeight = FontWeight.Bold),
-                color = FieldCompanionColors.Ink,
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = journey.originTime,
+                    style = TcType.clockLarge.copy(fontSize = 28.sp, fontWeight = FontWeight.Bold),
+                    color = FieldCompanionColors.Ink,
+                )
+                Text(
+                    text = journey.originName,
+                    style = TcType.meta,
+                    color = FieldCompanionColors.Neutral600,
+                )
+            }
+            Icon(
+                imageVector = TcIcons.AltRoute,
+                contentDescription = null,
+                tint = FieldCompanionColors.Neutral400,
+                modifier = Modifier.size(20.dp),
             )
-            Text(
-                text = journey.originName,
-                style = TcType.meta,
-                color = FieldCompanionColors.Neutral600,
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = journey.destinationTime,
+                    style = TcType.clockLarge.copy(fontSize = 28.sp, fontWeight = FontWeight.Bold),
+                    color = FieldCompanionColors.Ink,
+                )
+                Text(
+                    text = journey.destinationName,
+                    style = TcType.meta,
+                    color = FieldCompanionColors.Neutral600,
+                )
+            }
         }
-        Icon(
-            imageVector = TcIcons.AltRoute,
-            contentDescription = null,
-            tint = FieldCompanionColors.Neutral400,
-            modifier = Modifier.size(20.dp),
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = journey.destinationTime,
-                style = TcType.clockLarge.copy(fontSize = 28.sp, fontWeight = FontWeight.Bold),
-                color = FieldCompanionColors.Ink,
-            )
-            Text(
-                text = journey.destinationName,
-                style = TcType.meta,
-                color = FieldCompanionColors.Neutral600,
-            )
+        journey.operator?.let {
+            Text(it, style = TcType.meta, color = FieldCompanionColors.Neutral500)
         }
-    }
-    journey.operator?.let {
-        Text(it, style = TcType.meta, color = FieldCompanionColors.Neutral500)
     }
 }
 
