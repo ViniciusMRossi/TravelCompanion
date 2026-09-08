@@ -5621,3 +5621,105 @@ measures the corner's inset at the first line's middle — the number that broke
 **This is the D110 lesson again.** The layout was provable in Robolectric and
 was proved there; what was still wrong was a shape against a padding, and only
 an eye sees that.
+
+## The cover arrives and the walk's photograph leaves (2026-09-08)
+
+Content only. `trip-package/` and `app/src/main/assets/trip-production/`;
+`app/src/main/java/`, `app/src/test/`, `tools/`, the schema and the two tracked
+`trip.json` files were not touched, and no existing package text changed. See
+D170.
+
+### What changed
+
+- **`images/cover.jpg` enters.** `cover.png`, 1672x941, converted with the same
+  command as the other 152 — `ffmpeg -vf "scale='min(1080,iw)':-2" -q:v 4` —
+  to **1080x608, even height, 211.2 KiB** from 3.0 MiB, **zero EXIF and zero
+  GPS**. The `.png` never entered a package.
+- **`assets[]` gains `image.trip.cover`** with `description` = `Mochilão
+  Bálcãs 2026`, which is `trip.title` and not new text, and no `sensitive`.
+- **`trip.coverAssetId` is wired**, so screen 01 stops drawing the placeholder.
+- **The walk's photograph leaves, all three of it** (D169): `walk.heroAssetId`,
+  the `assets[]` entry `image.walk.sarajevo.bazar-ao-rio`, and the file. The
+  now-empty `images/walks/` went with them.
+
+### The count proves nothing here, so the paths do
+
+One in and one out: `assets/trip-production/` is still **230** entries and
+`assets[]` still **229**, and both numbers would look right after half the
+work. Checked inside **both** APKs instead:
+
+| | release | debug |
+|---|---|---|
+| `images/cover.jpg` | present | present |
+| `images/walks/sarajevo-bazar-ao-rio.jpg` | absent | absent |
+| files under `images/walks/` | 0 | 0 |
+| `trip.coverAssetId` | `image.trip.cover` | `image.trip.cover` |
+| `image.trip.cover` in `assets[]` | present | present |
+| `image.walk.sarajevo.bazar-ao-rio` | absent | absent |
+| any `walk.heroAssetId` | absent | absent |
+
+And D166's full cross-check re-run over the new set: **152 declared image
+paths, 152 image files in the zip, 0 declared-but-absent, 0
+present-but-undeclared**, with all 152 image-bearing fields resolving — the
+walk's place in that tally taken by the trip's cover.
+
+### What the screenshots showed
+
+**Galaxy S24, `SM-S921B`**, signed `app-release.apk`, uninstalled and
+installed clean. Before wiping, the memory screen was checked: **"Nenhuma
+memória gravada nesta viagem"**, so nothing was lost.
+
+- **Screen 01** — the watercolour is there, the striped placeholder and its
+  `foto — Mochilão Bálcãs 2026` caption are both gone. **The crop is benign**:
+  the hero is 411x262dp against an image of 1.776, so the full height is kept
+  and about **5.9% is trimmed from each side**; the couple on the path sits
+  well inside the left edge and the stone bridge well inside the right, and
+  neither is touched. `Quem é você?` and both names read cleanly below it;
+- **25/09, screen 06** — the walk's dark card is unchanged and there is no gap
+  where the photograph never was. The only pixel difference against the
+  screenshot taken before is the eyebrow gaining `· COMEÇA ÀS 09:00`, which is
+  the clock being on the walk's own day, not this change.
+
+**One thing to know for any future first-launch test.** `adb uninstall`
+followed by `install` was **not** enough to reach screen 01: Android Auto
+Backup restored the DataStore and the app went straight to Hoje with the
+participant already chosen. `pm clear` after installing is what actually
+reaches a first launch on this device. This is the `allowBackup="true"`
+behaviour recorded in the D166 session, and it survives an uninstall.
+
+### ⚠️ Found, not fixed: the veil reaches two heroes that carry no title
+
+D168's veil is inside the photograph branch of `TcHero` and applies to every
+call site. Two of the six draw **no text over the image** — the name sits in a
+`Column` below it:
+
+- `whoareyou/WhoAreYouScreen.kt:60`, the cover this entry adds;
+- `city/CityScreen.kt:370`, the attraction thumbnail of screen 04's carousel,
+  which is **47 images** across the package.
+
+Measured on the same Dubrovnik thumbnail, same pixels, before and after the
+veil: the top row is **identical** (luminance 148.3 both), and the bottom row
+falls from **100.4 to 55.2** — about 45% darker, under nothing. On the cover
+the artwork's own shaded foreground absorbs it and it reads as depth rather
+than as a defect, which is why this is a finding and not an alarm.
+
+The veil's justification was the white title's contrast, and these two have no
+title. Whether the remedy is to make the veil conditional on content or to
+leave it as a deliberate vignette is a design decision, not a content one, and
+this session touches no Kotlin.
+
+### Verified
+
+- 6 validators rc=0, `Audio: 50 guide(s) timed against a packaged file, 0 not
+  timed` on the three production copies; `check_repo.py` PASS;
+  `content_preflight` PASS 3 / PASS 8 — all unchanged;
+- `test_validate_trip.py` **60 tests OK**; `git diff --check` clean;
+- Kotlin **462 tests, 0 failures, 0 skipped** from **63 XML files** —
+  unchanged, as expected: no Kotlin was touched;
+- `lintDebug` **0 errors, 33 warnings**, the same breakdown;
+- `app-release.apk` **87,707,578 bytes (83.64 MiB)**, `app-debug.apk`
+  **93,077,735 bytes (88.77 MiB)** — the 211 KiB of cover against the 146 KiB
+  of walk photograph; release DEX `Protótipo` 0 and `simular chegada` 0;
+- the three copies identical except `metadata.contentStatus`;
+- both tracked `trip.json` blobs still
+  `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
