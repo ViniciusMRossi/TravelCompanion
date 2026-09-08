@@ -48,6 +48,7 @@ import com.travelcompanion.app.design.TcOnInkSecondaryButton
 import com.travelcompanion.app.design.TcPillShape
 import com.travelcompanion.app.design.TcSecondaryButton
 import com.travelcompanion.app.design.TcType
+import com.travelcompanion.app.domain.editorial.EditorialSectionUi
 import com.travelcompanion.app.domain.explore.ExploreCityChip
 
 /**
@@ -100,6 +101,12 @@ fun CityScreen(
                 style = TcType.editorialBody,
                 color = FieldCompanionColors.Neutral800,
             )
+
+            // Narration sits directly after the intro, the way screen 05 puts
+            // it after the summary. Nothing is drawn for a city with no
+            // sections — no heading, no reserved space — which is all 19 of
+            // them today (D157).
+            state.historySections.forEach { section -> CityEditorialSection(section) }
 
             state.guide?.let { guide -> GuideCard(guide, onPlayGuide, onSeekToChapter) }
 
@@ -503,6 +510,35 @@ private fun StoryCard(story: CityStoryUi, onPlay: (String) -> Unit) {
             TcSecondaryButton(onClick = { open = !open }) {
                 Text(if (open) "Fechar" else "Ler")
             }
+        }
+    }
+}
+
+/**
+ * One titled stretch of city narration.
+ *
+ * Each paragraph is its own `Text`: the body arrives as a single field and
+ * would otherwise be one slab. The title is drawn as screen 05 draws the twin
+ * of this field — `TcType.sectionTitle`, in the case it was written in — and
+ * deliberately not with this screen's `SectionTitle`, which upper-cases. That
+ * eyebrow labels the structure ("O QUE VER", "ONDE COMER"); an editorial
+ * heading is prose, and "A CIDADE SOB O IMPÉRIO" is a different register from
+ * the one the author wrote in.
+ */
+@Composable
+private fun CityEditorialSection(section: EditorialSectionUi) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            text = section.title,
+            style = TcType.sectionTitle,
+            color = FieldCompanionColors.Ink,
+        )
+        section.paragraphs.forEach { paragraph ->
+            Text(
+                text = paragraph,
+                style = TcType.editorialBody,
+                color = FieldCompanionColors.Neutral700,
+            )
         }
     }
 }

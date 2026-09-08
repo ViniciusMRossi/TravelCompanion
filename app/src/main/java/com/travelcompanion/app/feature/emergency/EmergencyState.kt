@@ -21,6 +21,18 @@ data class EmergencyUiState(
      * (D088).
      */
     val generalWorksWithoutCredit: Boolean,
+    /**
+     * What the country says about its own emergency number.
+     *
+     * Three of the seven packaged profiles carry one and it is operational, not
+     * editorial: Bosnia's says 112 is still being rolled out and that the
+     * numbers drawn beside it are what the country publishes, and Brazil's says
+     * there is no single number at all. Kept out of [general]'s own
+     * `PhoneUi.note`, which is already spoken for — that one stands in for a
+     * number withheld as mock content, and the two would collide in exactly the
+     * state where both apply (D160).
+     */
+    val generalNote: String?,
     val police: PhoneUi?,
     val ambulance: PhoneUi?,
     /** Insurance, the hotel where the bags are, the consulate. */
@@ -100,6 +112,13 @@ fun buildEmergencyState(content: TripContent, date: LocalDate): EmergencyUiState
             publicService = true,
         ),
         generalWorksWithoutCredit = profile.generalEmergency.phone == EUROPEAN_EMERGENCY_NUMBER,
+        // Only the general number's note is drawn. `note` does not mean the
+        // same thing on every contact: on the insurer and the consulate of the
+        // sample package it is an authoring instruction — "Substituir pelo
+        // contato real" — which is why those rows have never shown one, and
+        // why this is wired one field at a time rather than for `note` at
+        // large (D160).
+        generalNote = profile.generalEmergency.note?.takeIf { it.isNotBlank() },
         police = profile.police?.let {
             phone(
                 label = it.label,

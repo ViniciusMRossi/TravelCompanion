@@ -63,7 +63,13 @@ class CityChapterTest {
 
         compose.onNode(hasClickAction() and hasText("Capítulos")).performClick()
         val third = state.guide!!.chapters[2]
-        compose.onNodeWithText(third.title, useUnmergedTree = true).performClick()
+        // Scoped to the clickable row rather than to the words. Since D157 the
+        // city's own `historySections` are drawn on this screen, and in the
+        // sample package two of them are titled exactly as two of the guide's
+        // chapters are — "Período otomano" and "Século XX" — so the title
+        // alone no longer names one node. A chapter row is clickable and an
+        // editorial heading is not, which is what tells them apart.
+        compose.onNode(hasClickAction() and hasText(third.title)).performClick()
 
         // The row reads "3" and the player is asked for index 2.
         assertEquals(listOf(2), sought)

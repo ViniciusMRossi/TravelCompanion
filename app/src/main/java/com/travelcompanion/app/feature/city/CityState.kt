@@ -2,6 +2,8 @@ package com.travelcompanion.app.feature.city
 
 import com.travelcompanion.app.data.trip.ActionLink
 import com.travelcompanion.app.data.trip.TripContent
+import com.travelcompanion.app.domain.editorial.EditorialSectionUi
+import com.travelcompanion.app.domain.editorial.editorialSectionsOf
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
@@ -70,6 +72,15 @@ data class CityUiState(
     val heroAssetPath: String?,
     val heroCaption: String,
     val intro: String,
+    /**
+     * Long-form narration about the city, between the intro and the guide.
+     *
+     * The same `$defs/editorialSection` screen 05 has drawn since D133, and
+     * built by the same `editorialSectionsOf`. No packaged city fills it today
+     * — 0 of 19 — so it draws nothing, and drawing nothing is the point: an
+     * empty list is no heading and no reserved space (D157).
+     */
+    val historySections: List<EditorialSectionUi>,
     val guide: CityGuideUi?,
     val attractions: List<CityAttractionUi>,
     val walk: CityWalkUi?,
@@ -112,6 +123,7 @@ fun buildCityState(
         heroAssetPath = content.assets.packagedPathIfPresent(city.heroAssetId),
         heroCaption = "foto — ${city.name}",
         intro = city.intro,
+        historySections = editorialSectionsOf(city.historySections),
         guide = guide?.let {
             CityGuideUi(
                 id = it.id,

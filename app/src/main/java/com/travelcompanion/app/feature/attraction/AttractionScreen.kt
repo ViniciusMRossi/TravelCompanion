@@ -39,6 +39,7 @@ import com.travelcompanion.app.design.TcPlanBCard
 import com.travelcompanion.app.design.TcPrimaryButton
 import com.travelcompanion.app.design.TcSecondaryButton
 import com.travelcompanion.app.design.TcType
+import com.travelcompanion.app.domain.editorial.EditorialSectionUi
 
 /**
  * Screen 05 — Atração.

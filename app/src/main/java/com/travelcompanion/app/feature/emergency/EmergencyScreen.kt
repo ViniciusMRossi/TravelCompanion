@@ -81,7 +81,12 @@ fun EmergencyScreen(
 
             // 88dp, the largest touch target in the app, because it is the one
             // that gets pressed with shaking hands.
-            PrimaryEmergencyButton(state.general, state.generalWorksWithoutCredit, onDial)
+            PrimaryEmergencyButton(
+                phone = state.general,
+                worksWithoutCredit = state.generalWorksWithoutCredit,
+                note = state.generalNote,
+                onDial = onDial,
+            )
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 state.police?.let { BigButton(it, Modifier.weight(1f), onDial) }
@@ -101,6 +106,13 @@ fun EmergencyScreen(
 private fun PrimaryEmergencyButton(
     phone: PhoneUi,
     worksWithoutCredit: Boolean,
+    /**
+     * What the country says about this number — that 112 is still being rolled
+     * out in Bosnia, that Brazil has no single number. Secondary weight, inside
+     * this block rather than beside it, because it is read by someone who has
+     * just looked at the number it is about (D160).
+     */
+    note: String?,
     onDial: (String) -> Unit,
 ) {
     val number = phone.number
@@ -146,6 +158,15 @@ private fun PrimaryEmergencyButton(
                 style = TcType.meta,
                 color = FieldCompanionColors.White,
                 textAlign = TextAlign.Center,
+            )
+        }
+        note?.let {
+            Text(
+                text = it,
+                style = TcType.meta,
+                color = FieldCompanionColors.White.copy(alpha = 0.85f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 20.dp),
             )
         }
     }

@@ -4936,3 +4936,164 @@ scratchpad.
   content text of any kind changed;
 - both tracked `trip.json` blobs still
   `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Six declared fields nothing reads, decided one at a time (2026-09-08)
+
+Six fields the package declares and no screen reads. The work was not to wire
+six things: it was to decide each one and write the decision down, because an
+undecided dead field gets rediscovered every six weeks. **Two wired, four
+closed with a reason.** All six counts were re-measured against
+`assets/trip-production/trip.json` before anything was touched, and all six
+matched. No content text changed; nothing under `trip-package/`,
+`app/src/main/assets/` or `tools/` was touched.
+
+| field | filled | read | decision |
+|---|---|---|---|
+| `city.historySections` | 0 / 19 cities | nowhere | **wired** (D157) |
+| `generalEmergency.note` | 3 / 7 profiles | nowhere | **wired** (D160) |
+| `attraction.interestingFacts` | 0 / 47 | nowhere | closed (D158) |
+| `showToSomeone.audioAssetId` | 0 / 7 profiles | nowhere | closed (D159) |
+| `audioGuide.transcriptAssetId` | 0 / 50 guides | nowhere | closed (D161) |
+| `document.sensitive` / `asset.sensitive` | 27 / 27 and 27 / 77 | nowhere | **reserved** (D162) |
+
+The 27 sensitive assets are exactly the 27 of type `document`. "Read: nowhere"
+was checked rather than assumed: each of the six appears only in
+`TripModels.kt` and in no state builder or composable.
+
+### D157 — the city's editorial sections, on the surface that already existed
+
+The twin of this field has been drawn since D133. `paragraphsOf` and
+`EditorialSectionUi` moved to `domain/editorial/EditorialSections.kt` so both
+screens call one copy — the blank-line split is the fix from `8e66bc3`, and a
+second copy would drift the day either is corrected. The precedent is
+`domain/operations/Contacts.kt`, shared by screens 17 and 19.
+
+It draws zero rows in this build, which is acceptable **only** because the cost
+is five lines onto a surface that exists. The same argument does not carry to
+D159, and that difference is the point of the pair.
+
+**Wiring it found a collision in the sample package.** `assets/trip/` gives
+Sarajevo two `historySections` titled **"Período otomano"** and **"Século
+XX"** — word for word two of the three chapter titles of `ag.sarajevo.city`.
+Drawn, they put the same strings on screen 04 twice, and `CityChapterTest`
+went red because "Século XX" stopped naming one node. That test now selects
+the chapter by its click action, since a chapter row is a control and an
+editorial heading is not. **Nothing ships with the collision** — no production
+city fills the field — but it is the obvious shape for a real package to take,
+and it is named in D157 for whoever fills these 19.
+
+### D160 — the emergency note, and why `note` is wired one field at a time
+
+Three profiles carry `generalEmergency.note` and it is operational, not
+commentary: in Bosnia 112 may not answer, and the note is what sends the
+traveller to the 122 and 124 drawn below it. It now sits inside the general
+emergency block, under the number, at secondary weight, no new component and
+no colour outside the tokens. It is kept out of `PhoneUi.note`, which already
+carries the sentence shown *in place of* a number withheld as mock content —
+the two would collide exactly where both apply — so `EmergencyUiState` gained
+its own `generalNote`.
+
+**`note` does not mean the same thing on every contact**, which is why only
+this one field was wired. In `trip-production` the notes are traveller-facing;
+in the sample package at `assets/trip/` the insurer's reads **"Substituir pelo
+contato real"** and the consulate's **"Substituir por informação verificada"**
+— instructions to an author. Wiring `note` generically would have printed one
+of those on screen 17. Montenegro's consular note is traveller-facing and
+still unread; named in D160 rather than left to be rediscovered.
+
+🚨 **Open content dependency, before the release goes on a telephone.** See
+"What the screenshots showed" below: Bosnia's note asserts the screen shows
+"122, 123 e 124" and the screen shows 122 and 124. `$defs/emergencyProfile`
+declares no fire-brigade contact and `EmergencyProfile` matches it, so 123 has
+nowhere to come from. This session did not touch the text — it is content,
+under `trip-package/`, and belongs to a content session.
+
+### D162 — `sensitive` is reserved, not dead
+
+The only one of the six that is full, at both levels, coherently. Before
+deciding, the question was whether anything leaks today, because a leak would
+make it a defect. Four things were searched and the search is recorded in
+D162 so it is not repeated: **outbound paths** (only `FirebaseGroupSyncRepository`,
+which writes `seenAt` and a playback node of `mediaId`, `positionMs`,
+`isPlaying`, `anchorServerMs`, `updatedBy` — no document data); **the
+FileProvider** (`exported="false"`, exposing only `files/memories/` and
+`cache/documents/`); **how a document reaches a viewer**
+(`PackagedDocumentFile.materialise` copies one file into `cacheDir/documents/`
+after wiping the directory, and `openDocument` hands it over with `ACTION_VIEW`
+and an expiring read grant — no chooser, no `ACTION_SEND`); and **logging**
+(five `Log.i` calls in all of `main`, all geofence and alarm, none touching a
+document, locator or QR). **Nothing leaks.** The field has two named future
+consumers — the `dataExtractionRules` that `allowBackup="true"` still lacks,
+and any approved "ocultar documentos pessoais" — and a field with a named
+consumer waiting is reserved rather than dead.
+
+### Proved by failing, twice
+
+- **the city sections.** A test composing screen 04 with two sections of two
+  paragraphs each: **red** — "could not find any node that satisfies … 'A
+  cidade sob o império'" — because the state did not carry the field. Green
+  after. Its companion asserts a city with no sections draws no heading and no
+  reserved space, which is all 19 packaged cities and therefore the guarantee
+  that nothing moved for anybody;
+- **the emergency note.** A test composing screen 17 with Bosnia's real note:
+  **red** — "could not find any node that satisfies … 'O 112 ainda está em
+  implantação na Bósnia…'". Green after. Its companion asserts that a profile
+  with no note draws nothing in its place while the button and its own
+  sentence stay.
+
+The four closed fields have **no tests**, deliberately: they change no
+behaviour. Their product is the four entries in `docs/DECISIONS.md`.
+
+### What the screenshots showed
+
+Release APK on **`emulator-5554`, an emulator and not a phone** — the Pixel_10
+AVD on a `google_apis_playstore` API 37.1 image, so `adb root` is refused and
+the clock moved through Settings → Date & time. **D110 stays open: the release
+build has still never run on a real telephone.** Screenshots are outside the
+repository, in this session's scratchpad.
+
+- **25/09, Sarajevo, screen 17.** The note is drawn under the 112 button and
+  under "Funciona sem crédito e sem chip local.", transcribed from the screen
+  word for word:
+
+  > O 112 ainda está em implantação na Bósnia; as páginas oficiais do país
+  > publicam 122, 123 e 124, e são esses que a tela mostra ao lado.
+
+  **The sentence is wrong, and drawing it is what makes that visible.** The
+  only dialable three-digit numbers on the screen are **122** (Polícia) and
+  **124** (Ambulância); the sole occurrence of "123" anywhere on screen 17 is
+  inside the note's own text. There is no fire-brigade field in the schema, so
+  123 cannot be drawn. A traveller reading this in Sarajevo would look for a
+  third number that is not there. Needs a content session — either the
+  sentence names only the two numbers, or the schema gains a contact, and the
+  second is not a seven-days-out change;
+- **13/09, São Paulo, screen 17.** Brazil's note under **Ligar 190**, and
+  correctly no "Funciona sem crédito" line, which is a property of 112 (D088);
+- **19/09, Kotor, screen 17.** Montenegro carries no note and nothing is drawn
+  in its place: the block is the one it always was, and Polícia/Ambulância sit
+  at y=1113 against Bosnia's y=1300 — the note's own height, and nothing else;
+- **28/09, Dubrovnik, screen 04.** No city editorial block, because no
+  packaged city has one. The intro sits at y=1471 and "O QUE VER" at y=1671 —
+  the same coordinates as before the change, so there is no empty heading and
+  no reserved gap.
+
+### Verified
+
+- 6 validators rc=0, `Audio: 50 guide(s) timed against a packaged file, 0 not
+  timed` on the three production copies, unchanged; `check_repo.py` PASS;
+  `content_preflight` PASS 3 / PASS 8;
+- `test_validate_trip.py` **60 tests OK** — unchanged, no validator was
+  touched; `git diff --check` clean;
+- Kotlin **431 tests, 0 failures, 0 skipped** from 56 XML files — 427 before,
+  **4 new**;
+- `lintDebug` **0 errors, 33 warnings** — the same 33 with the same breakdown
+  (11 GradleDependency, 9 UseTomlInstead, 6 NewerVersionAvailable, 2
+  AndroidGradlePluginVersion, 2 UseKtx, 1 InlinedApi, 1 ModifierParameter, 1
+  ObsoleteSdkInt). No new warning;
+- both APKs **78 entries** under `assets/trip-production/`; `app-release.apk`
+  **61.8 MiB**, `app-debug.apk` **66.9 MiB**; release DEX `Protótipo` 0 and
+  `simular chegada` 0;
+- no file under `trip-package/`, `app/src/main/assets/` or `tools/` changed; no
+  content text of any kind changed; no field removed from `TripModels.kt`;
+- both tracked `trip.json` blobs still
+  `97627a8c8cda0c1126eacda352aff0b30e6427ce`.

@@ -4,6 +4,8 @@ import com.travelcompanion.app.data.trip.ActionLink
 import com.travelcompanion.app.data.trip.Attraction
 import com.travelcompanion.app.data.trip.TripContent
 import com.travelcompanion.app.data.trip.TripDay
+import com.travelcompanion.app.domain.editorial.EditorialSectionUi
+import com.travelcompanion.app.domain.editorial.editorialSectionsOf
 import java.net.URLEncoder
 import java.time.LocalDate
 
@@ -14,19 +16,6 @@ data class WalkDepartureUi(
     val title: String,
     val meetingPoint: String?,
     val storyCount: Int,
-)
-
-/**
- * One titled stretch of narration on screen 05.
- *
- * [paragraphs] and not one string: `editorialSection.body` is a single field in
- * the schema, and written narration carries several paragraphs inside it. The
- * split happens here rather than in the composable so that "three paragraphs
- * stay three" is a fact a unit test can hold (D133).
- */
-data class EditorialSectionUi(
-    val title: String,
-    val paragraphs: List<String>,
 )
 
 /**
@@ -123,9 +112,7 @@ fun buildAttractionState(
             attraction.practical?.openingHours?.let { add(PracticalLineUi("Horários", it)) }
         },
         summary = attraction.summary,
-        historySections = attraction.historySections.map { section ->
-            EditorialSectionUi(section.title, paragraphsOf(section.body))
-        },
+        historySections = editorialSectionsOf(attraction.historySections),
         departure = departure,
         audioGuideId = audioGuide?.id,
         audioLabel = audioGuide?.let { "Ouvir audioguia · ${it.durationMinutes} min" },
@@ -137,22 +124,6 @@ fun buildAttractionState(
         planBBody = planB?.reassurance,
     )
 }
-
-/**
- * A section's body, broken where its author broke it.
- *
- * The schema keeps the body in one string and the written content separates
- * paragraphs with a blank line. Handing that whole string to a single `Text`
- * is three hundred words in one slab, so it is split on the blank line and
- * each piece is drawn on its own. Blank runs of any length count as one break,
- * and `
-` breaks exactly as `
-` does.
- */
-private fun paragraphsOf(body: String): List<String> =
-    body.split(Regex("(\r?\n){2,}"))
-        .map(String::trim)
-        .filter(String::isNotEmpty)
 
 /**
  * "Como chegar" is walking directions, not the same thing as opening the pin.
