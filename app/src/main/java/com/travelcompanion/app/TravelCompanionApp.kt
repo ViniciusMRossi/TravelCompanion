@@ -14,6 +14,9 @@ import com.travelcompanion.app.data.sync.GroupSyncRepository
 import com.travelcompanion.app.data.trip.AssetTripRepository
 import com.travelcompanion.app.data.trip.TripRepository
 import com.travelcompanion.app.data.walk.DataStoreStoryTriggerStore
+import com.travelcompanion.app.data.weather.DataStoreWeatherCache
+import com.travelcompanion.app.data.weather.OpenMeteoWeatherRepository
+import com.travelcompanion.app.domain.today.DayWeather
 import com.travelcompanion.app.service.location.FusedLocationSource
 import com.travelcompanion.app.service.location.PassiveStoryDiscovery
 import com.travelcompanion.app.service.location.PlayServicesStoryGeofences
@@ -38,6 +41,10 @@ private val Context.playbackDataStore: DataStore<Preferences> by preferencesData
 
 private val Context.walkDataStore: DataStore<Preferences> by preferencesDataStore(
     name = "walk_state",
+)
+
+private val Context.weatherDataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "weather_cache",
 )
 
 /**
@@ -174,6 +181,19 @@ class AppContainer(context: Context) {
         // The running walk owns the decision, and holds the record in memory
         // from its start. Passive discovery keeps quiet while it does (D105).
         isWalkRunning = { walkModeController.state.value.isRunning },
+    )
+
+    /**
+     * Live weather for screen 02 (D164).
+     *
+     * Not application-scoped for any lifetime reason — it holds no state and
+     * no coroutine. It is built here because the cache is a DataStore and
+     * because the provider is the one thing in this app that opens a socket,
+     * and both belong where every other dependency is named.
+     */
+    val dayWeather = DayWeather(
+        repository = OpenMeteoWeatherRepository(),
+        cache = DataStoreWeatherCache(appContext.weatherDataStore),
     )
 
     /**

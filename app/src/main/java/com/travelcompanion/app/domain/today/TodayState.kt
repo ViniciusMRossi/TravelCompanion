@@ -74,11 +74,39 @@ data class CriticalItemUi(
 /**
  * Weather never blocks Today.
  *
- * V1 has no live provider yet (Phase 7), so the only reachable states are the
- * packaged trip fallback and "no data at all". Freshness is always stated
- * rather than implied.
+ * The four states of brief §14, in the order they degrade in: a live
+ * reading, the last successful one, the forecast the package carries, and
+ * nothing at all. Screen 02 draws the packaged forecast on its first frame and
+ * only ever swaps it for something better, so no card and no other part of the
+ * screen ever waits for a network (D164).
+ *
+ * **Freshness is always stated rather than implied.** [Live] and [Cached] both
+ * carry the hour the reading arrived and both say it on screen; that is what
+ * keeps a reading taken two hours ago from passing for one taken now.
  */
 sealed interface WeatherUi {
+    /** A reading that arrived just now, at [readAtLabel]. */
+    data class Live(
+        val minC: Double?,
+        val maxC: Double?,
+        val rainNote: String?,
+        val readAtLabel: String,
+    ) : WeatherUi
+
+    /**
+     * The last successful reading, for this same day and place.
+     *
+     * It is only ever shown with [readAtLabel] beside it. A cached forecast
+     * drawn as though it were live is the failure this state exists to avoid,
+     * not a smaller version of [Live].
+     */
+    data class Cached(
+        val minC: Double?,
+        val maxC: Double?,
+        val rainNote: String?,
+        val readAtLabel: String,
+    ) : WeatherUi
+
     data class FallbackFromTrip(
         val summary: String?,
         val minC: Double?,

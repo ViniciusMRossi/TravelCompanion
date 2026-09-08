@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.travelcompanion.app.design.FieldCompanionColors
 import com.travelcompanion.app.design.TcType
+import com.travelcompanion.app.domain.today.DayWeather
 import com.travelcompanion.app.feature.shell.AppNavigation
 import com.travelcompanion.app.service.location.PassiveStoryDiscovery
 import com.travelcompanion.app.service.notification.CriticalAlertScheduler
@@ -37,6 +38,8 @@ fun TravelCompanionRoot(
     walkModeController: WalkModeController,
     groupSessionController: (String, () -> String?) -> GroupSessionController,
     memoryController: MemoryController,
+    /** Live weather for screen 02; the rest of the app has no network (D164). */
+    dayWeather: DayWeather,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val content = state.content
@@ -92,6 +95,7 @@ fun TravelCompanionRoot(
                     content.info.sync.groupId,
                 ) { state.participantId },
                 memoryController = memoryController,
+                dayWeather = dayWeather,
                 criticalAlertScheduler = criticalAlertScheduler,
                 passiveStoryDiscovery = passiveStoryDiscovery,
                 requestedRoute = requestedRoute,

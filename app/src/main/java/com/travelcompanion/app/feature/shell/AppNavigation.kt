@@ -66,6 +66,7 @@ import com.travelcompanion.app.feature.attraction.AttractionScreen
 import com.travelcompanion.app.feature.attraction.AttractionViewModel
 import com.travelcompanion.app.feature.placeholder.PlaceholderScreen
 import com.travelcompanion.app.feature.today.TodayScreen
+import com.travelcompanion.app.domain.today.DayWeather
 import com.travelcompanion.app.feature.today.TodayViewModel
 import com.travelcompanion.app.feature.document.DocumentRoute
 import com.travelcompanion.app.feature.emergency.EmergencyScreen
@@ -184,6 +185,7 @@ fun AppNavigation(
     walkModeController: WalkModeController,
     groupSessionController: GroupSessionController,
     memoryController: MemoryController,
+    dayWeather: DayWeather,
     criticalAlertScheduler: CriticalAlertScheduler,
     passiveStoryDiscovery: PassiveStoryDiscovery,
     requestedRoute: String?,
@@ -313,7 +315,7 @@ fun AppNavigation(
                 startDestination = Routes.TODAY,
             ) {
                 composable(Routes.TODAY) {
-                    TodayRoute(content, participantId, navController, launcher)
+                    TodayRoute(content, participantId, dayWeather, navController, launcher)
                 }
                 composable(Routes.TRIP) {
                     // The tab and "Ver dia completo" reach the same screen; the
@@ -736,11 +738,12 @@ private fun FullDayRoute(
 private fun TodayRoute(
     content: TripContent,
     participantId: String,
+    dayWeather: DayWeather,
     navController: NavHostController,
     launcher: ExternalActionLauncher,
 ) {
     val viewModel: TodayViewModel = viewModel(
-        factory = TodayViewModel.factory(content, participantId),
+        factory = TodayViewModel.factory(content, participantId, dayWeather),
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
 

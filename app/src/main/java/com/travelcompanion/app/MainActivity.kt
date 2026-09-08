@@ -61,6 +61,7 @@ class MainActivity : ComponentActivity() {
                     walkModeController = container.walkModeController,
                     groupSessionController = container::groupSessionController,
                     memoryController = container.memoryController,
+                    dayWeather = container.dayWeather,
                 )
             }
         }

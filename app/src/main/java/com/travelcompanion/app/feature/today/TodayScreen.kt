@@ -26,6 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -384,63 +386,50 @@ internal fun CriticalCard(
 
 /**
  * Weather never blocks Today, and freshness is always stated rather than
- * implied: a packaged forecast says so instead of posing as live data.
+ * implied.
+ *
+ * A live reading carries the hour it arrived, the last successful one carries
+ * its own, and a packaged forecast says that it is packaged. **No state of
+ * this card is a spinner**: the packaged forecast is drawn on the first frame
+ * and a reading only ever replaces it, so nothing on screen 02 waits for a
+ * network that is absent on thirteen of the fifteen European nights (D164).
  */
 @Composable
 private fun WeatherCard(weather: WeatherUi, modifier: Modifier = Modifier) {
     TcCard(modifier = modifier) {
         when (weather) {
-            is WeatherUi.FallbackFromTrip -> {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = TcIcons.Sun,
-                        contentDescription = null,
-                        tint = FieldCompanionColors.Gold,
-                        modifier = Modifier.size(24.dp),
-                    )
-                    weather.maxC?.let {
-                        Text(
-                            text = "${it.toInt()}°",
-                            style = TcType.clockMedium.copy(fontSize = 28.sp),
-                            color = FieldCompanionColors.Ink,
-                        )
-                    }
-                }
-                val lines = listOfNotNull(
+            is WeatherUi.Live -> WeatherReadingBody(
+                maxC = weather.maxC,
+                lines = listOfNotNull(range(weather.minC, weather.maxC), weather.rainNote),
+                sourceIcon = TcIcons.Clock,
+                // Teal is the live tone, but the sentence says so on its own:
+                // this card is never distinguished by hue alone.
+                sourceLabel = "Ao vivo · ${weather.readAtLabel}",
+                sourceColor = FieldCompanionColors.Teal,
+            )
+
+            is WeatherUi.Cached -> WeatherReadingBody(
+                maxC = weather.maxC,
+                lines = listOfNotNull(range(weather.minC, weather.maxC), weather.rainNote),
+                sourceIcon = TcIcons.Clock,
+                // The hour is the whole point of this state. Without it the
+                // card would be a stale forecast wearing a live one's face.
+                sourceLabel = "Última leitura · ${weather.readAtLabel}",
+                sourceColor = FieldCompanionColors.GoldInk,
+            )
+
+            is WeatherUi.FallbackFromTrip -> WeatherReadingBody(
+                maxC = weather.maxC,
+                lines = listOfNotNull(
                     weather.summary,
                     range(weather.minC, weather.maxC),
                     weather.rainNote,
                     weather.windNote,
-                )
-                if (lines.isNotEmpty()) {
-                    Text(
-                        text = lines.joinToString("\n"),
-                        style = TcType.meta,
-                        color = FieldCompanionColors.Neutral700,
-                        modifier = Modifier.padding(top = 6.dp),
-                    )
-                }
-                Row(
-                    modifier = Modifier.padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = TcIcons.Offline,
-                        contentDescription = null,
-                        tint = FieldCompanionColors.GoldInk,
-                        modifier = Modifier.size(14.dp),
-                    )
-                    Text(
-                        text = "Sem dados ao vivo · previsão salva na viagem",
-                        style = TcType.label,
-                        color = FieldCompanionColors.GoldInk,
-                    )
-                }
-            }
+                ),
+                sourceIcon = TcIcons.Offline,
+                sourceLabel = "Sem dados ao vivo · previsão salva na viagem",
+                sourceColor = FieldCompanionColors.GoldInk,
+            )
 
             WeatherUi.Unavailable -> {
                 Text(
@@ -456,6 +445,66 @@ private fun WeatherCard(weather: WeatherUi, modifier: Modifier = Modifier) {
                 )
             }
         }
+    }
+}
+
+/**
+ * The three states that actually carry a forecast, drawn identically.
+ *
+ * Only the line at the bottom differs, and it is the only thing that may
+ * differ: the same numbers from a different source must not look like
+ * different numbers.
+ */
+@Composable
+private fun WeatherReadingBody(
+    maxC: Double?,
+    lines: List<String>,
+    sourceIcon: ImageVector,
+    sourceLabel: String,
+    sourceColor: Color,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = TcIcons.Sun,
+            contentDescription = null,
+            tint = FieldCompanionColors.Gold,
+            modifier = Modifier.size(24.dp),
+        )
+        maxC?.let {
+            Text(
+                text = "${it.toInt()}°",
+                style = TcType.clockMedium.copy(fontSize = 28.sp),
+                color = FieldCompanionColors.Ink,
+            )
+        }
+    }
+    if (lines.isNotEmpty()) {
+        Text(
+            text = lines.joinToString("\n"),
+            style = TcType.meta,
+            color = FieldCompanionColors.Neutral700,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+    }
+    Row(
+        modifier = Modifier.padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = sourceIcon,
+            contentDescription = null,
+            tint = sourceColor,
+            modifier = Modifier.size(14.dp),
+        )
+        Text(
+            text = sourceLabel,
+            style = TcType.label,
+            color = sourceColor,
+        )
     }
 }
 

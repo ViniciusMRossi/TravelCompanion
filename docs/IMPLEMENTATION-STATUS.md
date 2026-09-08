@@ -1866,7 +1866,19 @@ guide's title moved: `story.latin-bridge` keeps its own, which
 ## Later
 
 - [x] **All nineteen canonical screens exist.**
-- [ ] Weather (live/cached states; only the trip fallback exists today)
+- [x] **Weather — live and cached (D164).** All four states of §14 exist:
+      `Live`, `Cached`, `FallbackFromTrip`, `Unavailable`, degrading in that
+      order and never stepping backwards. Open-Meteo, **no key and no
+      registration**, and **no dependency added** — `HttpURLConnection` and
+      `kotlinx.serialization`, both already on the classpath, with `INTERNET`
+      already in the manifest. The coordinate is the **centroid of the
+      attractions of the city the day happens in**, which is 19 of the 20
+      days; day 1, São Paulo, packages no attraction, so it makes no call and
+      keeps its packaged forecast. The last successful reading is stored in
+      DataStore with its coordinate and its instant, and is **refused when the
+      day's coordinate differs** (D089). **This closes §32's Definition of
+      Done at 13 of 13.** Not yet seen on a device — see the session entry at
+      the end of this file.
 - [x] **Notifications — operational.** §32's "critical notifications are
       scheduled locally" is true: the twelve packaged deadlines are registered
       with `AlarmManager`, exact where the permission allows, rescheduled
@@ -5180,7 +5192,7 @@ repository, in this session's scratchpad.
   from "Funciona sem crédito e sem chip local." to Polícia/Ambulância, exactly
   as before.
 
-### ⚠️ Open, and deliberately not fixed here
+### ⚠️ Open, and deliberately not fixed here *(closed 2026-09-08 — see D165)*
 
 `app/src/test/java/com/travelcompanion/app/feature/emergency/EmergencyNoteTest.kt`
 holds the **old** sentence as a literal — `private val bosniaNote`, **lines
@@ -5213,3 +5225,167 @@ content session does not touch it; it needs an implementation session.
   text changed;
 - both tracked `trip.json` blobs still
   `97627a8c8cda0c1126eacda352aff0b30e6427ce` — neither file was opened.
+
+## Live weather, and two sentences that had fallen behind — 2026-09-08
+
+Five days before departure. Three things, one commit: the last unbuilt item of
+§32, and two pieces of prose that stopped being true in the two commits before
+this one. **No content text changed and no package was opened.**
+
+### Live weather (D164)
+
+`Live · Cached · FallbackFromTrip · Unavailable`, degrading in that order.
+Before this the app had **two** of the four and no network call in it at all.
+
+- **Open-Meteo, no key, no registration.** That property decided the provider:
+  a key belongs either in a versioned file, which this repository will not
+  carry, or in a `local.properties` outside git, which is one more thing to
+  keep working five days out. The request is
+  `…/v1/forecast?latitude=&longitude=&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=<the day's zone>&forecast_days=1`,
+  and `OpenMeteoRequestTest` asserts that string **without sending it**;
+- **no dependency was added**, and this was checked rather than assumed:
+  `app/build.gradle.kts` and `gradle/libs.versions.toml` are byte-identical to
+  `74d8cf8`. `HttpURLConnection`, `kotlinx.serialization`,
+  `kotlinx-coroutines-android` and `datastore-preferences` were already there,
+  and `INTERNET` was already declared at `AndroidManifest.xml:4`;
+- **the coordinate is the centroid of the attractions of the city the day
+  happens in** — `exploreCitiesOf(...).openAtCityId`, the same answer D152
+  already built and tested, and not the base: day 17 sleeps in Čilipi and is
+  spent inside Dubrovnik's walls. It is the mean and not the first element,
+  because weather is regional and `attractionIds.first()` is the unearned
+  choice D097 names;
+- **nothing is logged.** The app still has exactly five `Log.i` calls, none of
+  them in the new code and none touching traveller data.
+
+#### The twenty days, and what each one asks about
+
+Computed from `assets/trip-production/trip.json`; rounded to four decimals,
+about eleven metres.
+
+| Dia | Cidade | Atrações no centroide | Coordenada |
+|----:|--------|----------------------:|------------|
+| 1  | sao-paulo | 0  | — sem atração, sem chamada |
+| 2  | amsterdam | 6  | 52.3669, 4.8925 |
+| 3  | ksamil    | 1  | 39.7717, 20.0122 |
+| 4  | butrinto  | 1  | 39.7444, 20.0241 |
+| 5  | kotor     | 5  | 42.4236, 18.7714 |
+| 6  | kotor     | 5  | 42.4236, 18.7714 |
+| 7  | kotor     | 5  | 42.4236, 18.7714 |
+| 8  | zabljak   | 4  | 43.1620, 19.0506 |
+| 9  | zabljak   | 4  | 43.1620, 19.0506 |
+| 10 | zabljak   | 4  | 43.1620, 19.0506 |
+| 11 | bastasi   | 2  | 43.2580, 18.9640 |
+| 12 | bastasi   | 2  | 43.2580, 18.9640 |
+| 13 | sarajevo  | 7  | 43.8595, 18.4285 |
+| 14 | mostar    | 3  | 43.3378, 17.8151 |
+| 15 | blagaj    | 1  | 43.2531, 17.8908 |
+| 16 | dubrovnik | 13 | 42.6400, 18.1109 |
+| 17 | dubrovnik | 13 | 42.6400, 18.1109 |
+| 18 | amsterdam | 6  | 52.3669, 4.8925 |
+| 19 | amsterdam | 6  | 52.3669, 4.8925 |
+| 20 | amsterdam | 6  | 52.3669, 4.8925 |
+
+**Nineteen of twenty.** All forty-seven packaged attractions carry
+`location.geo`; cities and accommodations carry none. Day 1's city packages no
+attraction, so there is no coordinate, so there is no call — the right answer
+for a day that starts at home and ends on a night flight.
+
+#### The trap, and the guard
+
+A reading taken in Kotor and drawn in Dubrovnik is a wrong forecast wearing a
+right one's face, and it would look right nearly always, because consecutive
+days are usually spent in one city. So the cache stores the coordinate and the
+instant beside the reading and refuses itself when the day's coordinate is not
+the same. Run without that guard, the test accepts Kotor's 27° for a Dubrovnik
+day — which is what was watched happening before the guard was written.
+
+#### Proved failing first, three times
+
+1. **The four states.** With `Live` and `Cached` drawing the packaged badge
+   instead of their own hour: `a live reading says it is live and says when`
+   and `a cached reading says when it was taken and is never called live` both
+   FAILED — *There are no existing nodes for that selector*;
+2. **The cache refuses another place.** With the coordinate half of `isAbout`
+   removed: `aCachedReadingTakenSomewhereElseIsRefused` FAILED —
+   *expected same:<FallbackFromTrip(…)> was not:<Cached(minC=19.0, maxC=27.0,
+   …)>*, which is Kotor's forecast being drawn in Dubrovnik;
+3. **Offline disturbs nothing.** With the orchestrator's failure guard removed:
+   `neitherAnExceptionNorATimeoutDisturbsThePackagedForecast` and `with the
+   provider failing, the whole of screen 02 still draws` both FAILED. This one
+   is nearly green the day it is written and says so in its own comment — it is
+   there to fail out loud the day somebody makes the card block on an answer.
+
+### The test that guarded a sentence that no longer exists (D165)
+
+`EmergencyNoteTest` still carried the pre-`74d8cf8` Bosnian note as a literal.
+It never failed, because it injects the string it asserts. The constant now
+carries the packaged sentence **word for word** — compared against
+`emergencyProfiles[BA].generalEmergency.note` in the operational package,
+character for character identical — and both KDocs describe what the sentence
+says now.
+
+### D163's "versioned source" (corrected in place)
+
+D163 called `trip-package/source/private/itinerario-detalhado.md` *a versioned
+source*. It is not: `git ls-files trip-package/source/private/` returns exactly
+one path, its own `.gitignore`. The file is on the packaging machine and in no
+commit, deliberately — `source/private/` holds personal documents. The
+correction is written in place with the `*(Corrected: …)*` marker D037 and
+D142 use, with the original text kept: the *Saúde e emergência* table is a
+**local, untracked** source, nobody who clones this repository has it, and so
+**123 still has no versioned verification of any kind** — which is exactly why
+the new note does not claim it was verified.
+
+### Verified
+
+- 6 validators rc=0, `Audio: 50 guide(s) timed against a packaged file, 0 not
+  timed` on the three production copies, unchanged; `check_repo.py` PASS;
+  `content_preflight` PASS 3 / PASS 8, unchanged;
+- `test_validate_trip.py` **60 tests OK**, unchanged; `git diff --check` clean;
+- Kotlin **451 tests, 0 failures, 0 skipped** from **60 XML files** — 431 from
+  56 before, so **+20 tests in 4 new classes**, and no existing test changed
+  its result;
+- `lintDebug` **0 errors, 33 warnings** — the same 33 with the same breakdown
+  (11 GradleDependency, 9 UseTomlInstead, 6 NewerVersionAvailable, 2
+  AndroidGradlePluginVersion, 2 UseKtx, 1 InlinedApi, 1 ModifierParameter, 1
+  ObsoleteSdkInt). **New networking woke nothing**;
+- both APKs **78 entries** under `assets/trip-production/`; `app-release.apk`
+  **61.8 MiB**, `app-debug.apk` **66.9 MiB**; release DEX `Protótipo` 0 and
+  `simular chegada` 0, with `api.open-meteo.com` present exactly once;
+- `app/build.gradle.kts` and `gradle/libs.versions.toml` **unchanged**;
+- both tracked `trip.json` blobs still
+  `97627a8c8cda0c1126eacda352aff0b30e6427ce`; no package and nothing under
+  `tools/` was touched.
+
+### ⚠️ Not verified: this has never been on a screen
+
+**No device and no emulator was attached to this machine** — `adb devices`
+listed none — so the release APK was built and never installed, and **no
+screenshot was taken**. What *was* proved is narrower and is stated as such:
+the endpoint was called once from the packaging machine with Dubrovnik's
+centroid and answered **HTTP 200, 29.8° / 24.6°, 0.0 mm for 2026-09-08**, in
+the exact shape the parser expects. That proves the URL and the parse. It does
+not prove the card.
+
+The five checks that still want an eye, in order:
+
+1. **wi-fi, clock at 28/09** — the card shows a live reading for Dubrovnik;
+   note the maximum and the minimum;
+2. **aeroplane mode, back to screen 02** — the card becomes `Cached` with the
+   hour of that earlier reading on it, and the rest of screen 02 is intact;
+3. **clear the app's data, still in aeroplane mode** — the card shows the day's
+   `weatherFallback` with the packaged text;
+4. **clock at 13/09 (day 1), wi-fi on** — São Paulo has no attraction, so no
+   call is made; the card shows the fallback and nothing hangs;
+5. **clock at 25/09** — the whole Sarajevo walk, confirming audio and the
+   geofence are unchanged.
+
+**D110 remains open**, and this is now the item that most wants a real
+telephone.
+
+### Also open, and outside this session's files
+
+`CLAUDE.md` still says "§32's Definition of Done stands at 12 of 13". With
+D164 it is 13 of 13. This session's scope was `app/src/main/java/`,
+`app/src/test/` and `docs/`, so the root file was not touched; named here so
+it is corrected deliberately rather than found as a contradiction.

@@ -19,9 +19,15 @@ import java.time.LocalDate
  *
  * Three of the seven packaged profiles carry `generalEmergency.note`, and it is
  * operational rather than editorial: Bosnia's says 112 is still being rolled
- * out there and that the numbers beside it are what the country publishes.
- * Keeping that in the package and not drawing it puts the explanation out of
- * reach of the moment it is for (D160).
+ * out there, names the police and the ambulance that this screen does dial,
+ * and names the fire brigade as the one it does not. Keeping that in the
+ * package and not drawing it puts the explanation out of reach of the moment
+ * it is for (D160).
+ *
+ * The note is injected rather than read off the package, so this test cannot
+ * tell when the real sentence changes underneath it — which is exactly what
+ * happened once (D163). The constant below is kept word for word identical to
+ * the packaged one for that reason.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w411dp-h891dp-xhdpi")
@@ -32,10 +38,17 @@ class EmergencyNoteTest {
 
     private val date: LocalDate = LocalDate.parse("2026-09-21")
 
-    /** The packaged Bosnian profile, with the real note on its 112. */
+    /**
+     * The packaged Bosnian note, word for word.
+     *
+     * Every clause of it is checkable against the screen this test composes:
+     * 122 and 124 are drawn immediately below, and 123 is named as a number
+     * this screen does not dial — which is why it can be trusted the next time
+     * somebody reads it (D163).
+     */
     private val bosniaNote =
-        "O 112 ainda está em implantação na Bósnia; as páginas oficiais do país " +
-            "publicam 122, 123 e 124, e são esses que a tela mostra ao lado."
+        "O 112 ainda está em implantação na Bósnia. A polícia é 122 e a ambulância " +
+            "124, logo abaixo; os bombeiros são 123, que esta tela não disca."
 
     private fun contentWithNote(note: String?): TripContent {
         val packaged = packagedContent(exists = { false })
