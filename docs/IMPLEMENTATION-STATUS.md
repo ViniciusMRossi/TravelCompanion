@@ -5788,3 +5788,50 @@ walk card is **byte-identical** to its previous capture.
   chegada` 0;
 - both tracked `trip.json` blobs still
   `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## The weather, finally on a telephone (2026-09-08)
+
+**No code changed.** `docs/` only. D164 built the four states and closed with
+"this has not been on a telephone"; nothing in the 463 tests touches a network,
+by design, so nothing in the suite could ever have answered this. See D172.
+
+**Galaxy S24, `SM-S921B`**, signed `app-release.apk` carrying D171, one
+install for all four steps. `api.open-meteo.com` reachable at about 230 ms.
+
+| step | condition | card | numbers |
+|---|---|---|---|
+| 1 · Live | 28/09, wi-fi | **"Ao vivo · 21:04"** | 29°, **24° / 29°**, "Sem chuva prevista." |
+| 2 · Cached | aeroplane, off screen 02 and back | **"Última leitura · 21:04"** | same reading, **same hour** — not the present one |
+| 3 · Fallback | aeroplane, `pm clear`, re-chosen | **"Sem dados ao vivo · previsão salva na viagem"** | 26°, 19° / 26°, the packaged text |
+| 4 · No coordinate | 13/09 São Paulo, wi-fi | fallback, no call | 25°, 15° / 25°, screen opened at once |
+
+Nothing hung, nothing span, and the chain never stepped backwards. Step 2 is
+the one that matters most: the hour is the hour of the reading, so a two-hour
+old number cannot pass for a new one, which is what D164 built the freshness
+labels for.
+
+### The hour looks wrong and is right
+
+At step 1 the telephone read **16:05 in `-03`** and the card said **21:04** —
+five hours ahead. That is the reading's instant in the **day's** time zone,
+Dubrovnik's `+02`, which follows from D164 sending the day's `timeZone` in the
+request. It is correct for a card that says what the weather is *at the place*,
+and in the field the two agree because the telephone will be in that zone.
+Written down because, read from São Paulo in September, it looks like a bug.
+
+### §32
+
+The weather item moves from **built** to **seen**. D110's remaining question —
+what the release binary actually does on a real telephone — is now answered for
+this feature as well.
+
+### Verified
+
+Nothing to verify beyond the baseline, since no code changed: Kotlin **463
+tests, 0 failures, 0 skipped** from **63 XML files**; 6 validators rc=0;
+`check_repo.py` PASS; `content_preflight` PASS 3 / PASS 8;
+`test_validate_trip.py` **60 tests OK**; `lintDebug` **0 errors, 33
+warnings**; `app-release.apk` **87,707,578 bytes**, `app-debug.apk`
+**93,077,735 bytes**; both tracked `trip.json` blobs still
+`97627a8c8cda0c1126eacda352aff0b30e6427ce`. **Automatic date and time were
+restored on the device**, and aeroplane mode is off.
