@@ -58,6 +58,7 @@ import com.travelcompanion.app.design.TcHairline
 import com.travelcompanion.app.design.TcIcons
 import com.travelcompanion.app.design.TcType
 import com.travelcompanion.app.design.formatPlaybackTime
+import com.travelcompanion.app.domain.explore.exploreCitiesOf
 import com.travelcompanion.app.domain.food.buildFoodState
 import com.travelcompanion.app.domain.food.currentDayIndex
 import com.travelcompanion.app.domain.today.ShortcutUi
@@ -72,6 +73,7 @@ import com.travelcompanion.app.feature.food.FoodScreen
 import com.travelcompanion.app.feature.fullday.FullDayScreen
 import com.travelcompanion.app.feature.city.CityScreen
 import com.travelcompanion.app.feature.city.buildCityState
+import com.travelcompanion.app.feature.city.rememberExploreCityCursor
 import com.travelcompanion.app.feature.more.MoreScreen
 import com.travelcompanion.app.domain.more.buildMoreState
 import com.travelcompanion.app.domain.fullday.FullDayUseCase
@@ -620,7 +622,15 @@ private fun AttractionRoute(
  * else is a pure function of that date and the clock.
  */
 /**
- * Screen 04, for the city the traveller is in today.
+ * Screen 04, for the city the day is spent in — which is not always the city
+ * the traveller sleeps in.
+ *
+ * The band of chips above the hero is an addition to the approved plate, made
+ * with approval, and it is drawn only when the day carries two cities with
+ * something to read (D152, D153). Its cursor is local to this screen and
+ * starts over on every entry: screens 02, 03, 17 and 20 keep reading the base,
+ * and they agree with this one on sixteen days of twenty, which is exactly the
+ * coincidence D089 warns about.
  *
  * The city guide and the stories play through the same `PlaybackController`
  * every other screen uses, and the chapter list drives `seekToChapter`, which
@@ -634,8 +644,11 @@ private fun CityRoute(
     launcher: ExternalActionLauncher,
 ) {
     val today = LocalDate.now()
-    val cityId = content.dayFor(today)?.let { it.baseCityId ?: it.cityIds.firstOrNull() }
-    val state = buildCityState(content, cityId, today)
+    // Explorar resolves its city from the day's timeline, and not from the
+    // base the way screens 02, 03, 17 and 20 do — different question, D152.
+    val cities = remember(content, today) { exploreCitiesOf(content, content.dayFor(today)) }
+    val cursor = rememberExploreCityCursor(cities)
+    val state = buildCityState(content, cursor.value, today)
 
     if (state == null) {
         PlaceholderScreen(
@@ -678,6 +691,8 @@ private fun CityRoute(
             )?.let(playbackController::playAudioGuide)
         },
         onOpenAction = { action -> launcher.open(action.uri, action.fallbackUri) },
+        cities = cities.chips,
+        onSelectCity = { cityId -> cursor.value = cityId },
     )
 }
 

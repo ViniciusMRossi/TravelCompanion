@@ -4464,3 +4464,176 @@ that two of them decode and play on a device.
   session and is untouched;
 - both tracked `trip.json` blobs still
   `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Explorar follows the day, not the bed (2026-09-07)
+
+Kotlin and tests only. No package touched, no content written, and the six
+validators say the same thing they said this morning.
+
+### The defect
+
+`Routes.EXPLORE` built screen 04 for `baseCityId ?: cityIds.first()` — the
+resolution D090 fixed for screens 02, 03, 17 and 20, where the base is right
+because it is where the traveller sleeps. Explorar asks a different question
+and got the same answer:
+
+| dia | dorme em | o dia é | Explorar mostrava |
+| ---: | --- | --- | --- |
+| 17 | Čilipi (0 atrações) | Dubrovnik, 13 atrações e as muralhas | Čilipi |
+| 15 | Mostar | Blagaj, Kravice e Počitelj | Mostar |
+| 12 | Sarajevo | o rafting no Tara, em Bastasi | Sarajevo |
+
+**Twelve of the twenty days carry more than one city with content**, and
+`cityIds` cannot break the tie: it includes the city the day *left* — day 3
+lists `amsterdam` first, and Amsterdam is behind by the time the day lands.
+
+### The rule
+
+The timeline is the only field in the package that says where a day *happens*.
+So, stopping at the first that resolves:
+
+1. the city of the first timeline row whose `refId` names an attraction or a
+   walk, if that city has content;
+2. the base, if it has content;
+3. the first city of the day that has any;
+4. the base regardless — the floor, and what the screen did before.
+
+A city "has content" when it declares any of `attractionIds`, `storyIds`,
+`walkIds` or a `menu`. Corfu, Sarandë and Zagreb declare none and appear
+nowhere. **Below two such cities no band is drawn at all** (D153).
+
+### The whole trip, as the implementation resolves it
+
+Asserted row by row in `ExplorePackagedDaysTest`, against the operational
+package:
+
+| dia | data | chips | abre em | dorme em | por qual regra |
+| ---: | --- | ---: | --- | --- | --- |
+| 1 | 13/09 | — | `sao-paulo` | `sao-paulo` | **piso** (nenhuma cidade com conteúdo) |
+| 2 | 14/09 | — | `amsterdam` | `amsterdam` | timeline |
+| 3 | 15/09 | 2 | `ksamil` | `ksamil` | base (nenhuma linha cita atração) |
+| 4 | 16/09 | 2 | **`butrinto`** | `ksamil` | **timeline** |
+| 5 | 17/09 | 2 | `kotor` | `kotor` | base |
+| 6 | 18/09 | — | `kotor` | `kotor` | timeline |
+| 7 | 19/09 | — | `kotor` | `kotor` | base |
+| 8 | 20/09 | 2 | `zabljak` | `zabljak` | base |
+| 9 | 21/09 | — | `zabljak` | `zabljak` | base |
+| 10 | 22/09 | — | `zabljak` | `zabljak` | base |
+| 11 | 23/09 | 2 | `bastasi` | `bastasi` | base |
+| 12 | 24/09 | 2 | **`bastasi`** | `sarajevo` | **timeline** (09:00, o rafting) |
+| 13 | 25/09 | 2 | `sarajevo` | `sarajevo` | timeline |
+| 14 | 26/09 | 2 | `mostar` | `mostar` | base |
+| 15 | 27/09 | 4 | **`blagaj`** | `mostar` | **timeline** (11:00, a primeira parada) |
+| 16 | 28/09 | 2 | `dubrovnik` | `dubrovnik` | timeline |
+| 17 | 29/09 | 2 | **`dubrovnik`** | `cilipi` | **timeline** (08:00, as muralhas) |
+| 18 | 30/09 | 2 | `amsterdam` | `amsterdam` | base |
+| 19 | 01/10 | — | `amsterdam` | `amsterdam` | base |
+| 20 | 02/10 | — | `amsterdam` | `amsterdam` | base |
+
+*chips* is what the band draws; **—** means no band at all. Eight days have
+one city with content and get none.
+
+Four days move: **4, 12, 15 and 17** — the ones that sleep somewhere other
+than where they are spent. The other sixteen open exactly where they opened
+before, which is what the table is for.
+
+### Proved by failing, three times
+
+**1 · The choice.** `exploreCitiesOf` was written first with today's rule —
+the base, and nothing else — so the six cases could fail for the right reason
+rather than fail to compile:
+
+```text
+FAIL  the timeline decides, and it outranks the base
+      expected:<[dubrovnik]> but was:<[cilipi]>
+FAIL  the first row that points at a place wins, not the first row
+      expected:<[blagaj]> but was:<[mostar]>
+FAIL  a walk row counts as a place, the same as an attraction row
+      expected:<[butmir]> but was:<[sarajevo]>
+FAIL  a base with nothing and no timeline falls to the first city with content
+      expected:<[dubrovnik]> but was:<[cilipi]>
+FAIL  the six days resolve the way the package says they should
+      day 12 opens at expected:<[bastasi]> but was:<[sarajevo]>
+FAIL  Explorar leaves the base on four days, and the other screens do not
+      expected:<[4, 12, 15, 17]> but was:<[]>
+9 of 17 failed
+```
+
+With the timeline rule in place: **17 of 17 pass.**
+
+**2 · The cursor does not leak.** The regression this guards is someone
+unifying the four resolvers later, so the red was produced by doing exactly
+that — pointing `cityOfDay`, `TodayUseCase` and `buildEmergencyState` at
+`exploreCitiesOf`:
+
+```text
+FAIL  ExploreCityBandTest > moving the cursor moves Explorar and nothing else
+      expected:<[mostar]> but was:<[sarajevo]>
+FAIL  ExploreCitiesTest > Explorar and the base disagree on purpose, and cityOfDay keeps the base
+      expected:<[cilipi]> but was:<[dubrovnik]>
+FAIL  ExplorePackagedDaysTest > Explorar leaves the base on four days, and the other screens do not
+      expected:<[4, 12, 15, 17]> but was:<[]>
+FAIL  MenuStateTest > walking the day cursor does not move screen 02's shortcut
+      expected:<Comer em [Mostar]> but was:<Comer em [Sarajevo]>
+FAIL  MenuStateTest > a borrowed menu keeps the country and currency of the menu, not of the day
+FAIL  MenuStateTest > no shortcut on a day whose city has no menu, even with a fallback
+FAIL  MenuStateTest > with no declared fallback the screen says the menu is not written
+FAIL  MenuStateTest > a city with its own menu shows no notice
+8 of 402 failed
+```
+
+Three of those are new and five were already there since D089 — the older
+guard and the new one catch the same unification. The three files were
+restored to their exact bytes (`git diff` empty on all three), never with
+`git checkout --`.
+
+**3 · One city, no band.** Loosening the threshold to `>= 1`, in the state and
+in the composition:
+
+```text
+FAIL  one city with content draws no band at all           expected:<[]> but was:<[zabljak]>
+FAIL  an unknown city id in cityIds is not a chip …        expected:<[]> but was:<[sarajevo]>
+FAIL  twelve of the twenty days carry more than one city   expected:<12> but was:<19>
+FAIL  the six days resolve the way the package says …      day 9 chips expected:<0> but was:<1>
+FAIL  a day with one city draws no band at all             Failed to assert count of nodes.
+5 failed
+```
+
+Restored to `>= 2`: green. The composition test also asserts that the rest of
+screen 04 is untouched on those days — hero, intro, **O QUE VER** and
+**HISTÓRIAS CURTAS** all still drawn.
+
+### What the screenshots showed
+
+Release APK on `emulator-5554` (API 37, 1440×3120), clock moved from Settings
+→ Date & time. Screenshots are outside the repository, in this session's
+scratchpad.
+
+- **29/09, Dia 17.** Screen 02 reads **Čilipi · Croácia** — the base, unmoved.
+  Explorar opens on **Dubrovnik**, the band under the hero holding **Dubrovnik**
+  in teal and **Čilipi** neutral with its 1dp border, and the thirteen cards
+  below. Before this change the same screen was Čilipi and its zero attractions.
+- **The chip works, and it works alone.** Tapping **Čilipi** switches screen 04
+  to Čilipi; going back to **Hoje** still reads **Čilipi · Croácia, Dia 17 de
+  20**; returning to Explorar **restarts on Dubrovnik** — the cursor did not
+  survive the trip through another tab, which is the whole point of using
+  `remember` rather than `rememberSaveable`.
+- **27/09, Dia 15.** Screen 02 reads **Mostar**. Explorar opens on **Blagaj**,
+  with four chips: **Mostar · Blagaj · Kravice · Počitelj**.
+- **21/09, Dia 9.** Screen 02 and Explorar both read **Žabljak**, and there is
+  **no band**: the intro starts at y=1149 where day 17's starts at y=1359,
+  which is the band's own height. The eight single-city days are untouched.
+
+### Verified
+
+- 6 validators rc=0, `Audio: 50 guide(s) timed against a packaged file, 0 not
+  timed`, unchanged; `check_repo.py` PASS; `content_preflight` PASS 3 / PASS 8;
+- `test_validate_trip.py` **51 tests OK**; `git diff --check` clean;
+- Kotlin **403 tests, 0 failures** from 48 XML files — 381 before, **22
+  new**; `lintDebug` **0 errors, 33 warnings**;
+- both APKs **78 entries** under `assets/trip-production/`; `app-release.apk`
+  **61.8 MB**, `app-debug.apk` **66.9 MB**; release DEX `"Protótipo"` 0 and
+  `"simular chegada"` 0;
+- no file under `trip-package/`, `app/src/main/assets/` or `tools/` changed;
+- both tracked `trip.json` blobs still
+  `97627a8c8cda0c1126eacda352aff0b30e6427ce`.

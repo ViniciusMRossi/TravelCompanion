@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,6 +48,7 @@ import com.travelcompanion.app.design.TcOnInkSecondaryButton
 import com.travelcompanion.app.design.TcPillShape
 import com.travelcompanion.app.design.TcSecondaryButton
 import com.travelcompanion.app.design.TcType
+import com.travelcompanion.app.domain.explore.ExploreCityChip
 
 /**
  * Screen 04 — Cidade.
@@ -70,6 +73,8 @@ fun CityScreen(
     onPlayStory: (String) -> Unit,
     onOpenAction: (ActionLink) -> Unit,
     modifier: Modifier = Modifier,
+    cities: List<ExploreCityChip> = emptyList(),
+    onSelectCity: (String) -> Unit = {},
 ) {
     Column(
         modifier = modifier
@@ -79,6 +84,12 @@ fun CityScreen(
         verticalArrangement = Arrangement.spacedBy(22.dp),
     ) {
         Hero(state, onBack)
+
+        // The band is an approved addition to the plate, not a layout fix, and
+        // it draws nothing below two cities (D153).
+        if (cities.size >= 2) {
+            CityBand(cities, state.cityId, onSelectCity)
+        }
 
         Column(
             modifier = Modifier.padding(horizontal = 20.dp),
@@ -130,6 +141,48 @@ fun CityScreen(
                     SectionTitle("Histórias curtas")
                     state.stories.forEach { story -> StoryCard(story, onPlayStory) }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * The cities of the day, the one being read first among them.
+ *
+ * Chips, not tabs: the row scrolls because day 15 carries four, and a tab bar
+ * that has to fit four names would shrink them. `TcChip` supplies the shape
+ * and both tones; the only thing added here is the 48dp target the row needs
+ * to be tappable with a thumb, since a chip is otherwise a label.
+ */
+@Composable
+private fun CityBand(
+    cities: List<ExploreCityChip>,
+    selectedCityId: String,
+    onSelectCity: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp)
+            .testTag("city-band"),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        cities.forEach { city ->
+            val selected = city.cityId == selectedCityId
+            Box(
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .clip(TcPillShape)
+                    .clickable(onClick = { onSelectCity(city.cityId) })
+                    .semantics { if (selected) this.selected = true },
+                contentAlignment = Alignment.Center,
+            ) {
+                TcChip(
+                    text = city.name,
+                    tone = if (selected) TcChipTone.Teal else TcChipTone.Neutral,
+                    border = !selected,
+                )
             }
         }
     }
