@@ -4025,3 +4025,135 @@ I TravelCompanion: alarms scheduled total=9 canBeExact=true
   `[ci.podgorica-conexao]`, and all three stories report `autoPlayInWalk: true`;
 - both tracked `trip.json` blobs still
   `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Audio guide, phase 5.1: the fifty are converted and measured (2026-09-07)
+
+Content only, and no `trip.json` touched in this phase — conversion and
+measurement alone. 50 WAVs of authoring input (mono, 24 kHz, 16 bit, 194 MB,
+70.6 min) became 50 `.m4a` under `trip-package/generated/audio/`: **47** in
+`attractions/`, **3** in `stories/`, over the three that were there.
+
+```text
+ffmpeg -i <in>.wav -c:a aac -b:a 64k -ac 1 -movflags +faststart <out>.m4a
+```
+
+**The bitrate is reported as measured, not as requested.** `-b:a 64k` is the
+ask; FFmpeg's native AAC encoder overshoots it on this material, and the result
+is **68.1–68.5 kbps of AAC stream, 68.6–70.0 kbps of file** (D143). The three
+files being replaced were ~69 kbps too, so nothing about the package's audio
+weight changes in kind.
+
+**Every duration below was read from the final `.m4a`**, from its `mvhd` atom,
+through `validate_trip.audio_duration_seconds` — the same reader the validator
+uses to check the number back. Nothing estimated from the WAV, the word count,
+or ffmpeg's own console line. WAV and m4a agree to **0.000 s on all fifty**, so
+the conversion neither trimmed nor padded.
+
+Filenames are `<cidade>-<slug>.m4a`, not `<slug>.m4a`: the bare slug yields 45
+names for 47 attractions — `casco-antigo` in Budva and Kotor, `muralhas` in
+Kotor and Dubrovnik — and would have silently overwritten two guides (D144).
+The ids are unaffected and are exactly `ag.<cidade>.<slug>`.
+
+### The fifty, measured
+
+| # | destino | wav s | m4a s | kB |
+| ---: | --- | ---: | ---: | ---: |
+| 1 | `ag.amsterdam.jordaan` | 109.25 | 109.25 | 925 |
+| 2 | `ag.amsterdam.anne-frank` | 124.65 | 124.65 | 1049 |
+| 3 | `ag.amsterdam.rijksmuseum` | 97.28 | 97.28 | 825 |
+| 4 | `ag.amsterdam.museu-holocausto` | 95.12 | 95.12 | 802 |
+| 5 | `ag.amsterdam.museu-resistencia` | 87.28 | 87.28 | 737 |
+| 6 | `ag.amsterdam.museu-van-gogh` | 83.78 | 83.78 | 707 |
+| 7 | `ag.ksamil.ilhotas` | 99.88 | 99.88 | 845 |
+| 8 | `ag.butrinto.sitio` | 101.15 | 101.15 | 859 |
+| 9 | `ag.budva.casco-antigo` | 80.78 | 80.78 | 676 |
+| 10 | `ag.kotor.muralhas` | 100.75 | 100.75 | 861 |
+| 11 | `ag.kotor.forte-sao-joao` | 86.10 | 86.10 | 734 |
+| 12 | `ag.kotor.casco-antigo` | 96.88 | 96.88 | 819 |
+| 13 | `ag.kotor.ladder` | 89.58 | 89.58 | 763 |
+| 14 | `ag.kotor.teleferico-lovcen` | 97.78 | 97.78 | 829 |
+| 15 | `ag.zabljak.lago-negro` | 86.00 | 86.00 | 726 |
+| 16 | `ag.zabljak.ledena-pecina` | 71.40 | 71.40 | 608 |
+| 17 | `ag.zabljak.bobotov-kuk` | 107.80 | 107.80 | 909 |
+| 18 | `ag.zabljak.nevidio` | 94.42 | 94.42 | 799 |
+| 19 | `ag.bastasi.rafting-tara` | 100.38 | 100.38 | 849 |
+| 20 | `ag.bastasi.sipcanica` | 65.92 | 65.92 | 557 |
+| 21 | `ag.sarajevo.bascarsija` | 101.40 | 101.40 | 857 |
+| 22 | `story.sarajevo.sebilj` | 67.38 | 67.38 | 576 |
+| 23 | `ag.sarajevo.morica-han` | 66.95 | 66.95 | 567 |
+| 24 | `story.sarajevo.encontro-de-culturas` | 75.05 | 75.05 | 632 |
+| 25 | `ag.sarajevo.chama-eterna` | 71.80 | 71.80 | 608 |
+| 26 | `ag.sarajevo.catedral` | 70.75 | 70.75 | 604 |
+| 27 | `ag.sarajevo.rosas` | 81.15 | 81.15 | 688 |
+| 28 | `story.sarajevo.ponte-latina` | 95.47 | 95.47 | 811 |
+| 29 | `ag.sarajevo.war-childhood` | 63.92 | 63.92 | 542 |
+| 30 | `ag.butmir.tunel` | 99.20 | 99.20 | 844 |
+| 31 | `ag.sarajevo.vijecnica` | 99.22 | 99.22 | 842 |
+| 32 | `ag.mostar.stari-most` | 103.58 | 103.58 | 875 |
+| 33 | `ag.mostar.kujundziluk` | 65.75 | 65.75 | 557 |
+| 34 | `ag.mostar.koski-mehmed-pasha` | 55.45 | 55.45 | 470 |
+| 35 | `ag.blagaj.tekke` | 88.08 | 88.08 | 742 |
+| 36 | `ag.kravice.cachoeiras` | 75.78 | 75.78 | 641 |
+| 37 | `ag.pocitelj.vila` | 94.17 | 94.17 | 790 |
+| 38 | `ag.dubrovnik.portao-pile` | 66.65 | 66.65 | 566 |
+| 39 | `ag.dubrovnik.lokrum` | 85.17 | 85.17 | 720 |
+| 40 | `ag.dubrovnik.caiaque` | 56.67 | 56.67 | 475 |
+| 41 | `ag.dubrovnik.cidade-velha` | 84.97 | 84.97 | 720 |
+| 42 | `ag.dubrovnik.porto-velho` | 87.40 | 87.40 | 742 |
+| 43 | `ag.dubrovnik.muralhas` | 107.35 | 107.35 | 908 |
+| 44 | `ag.dubrovnik.forte-lovrijenac` | 73.28 | 73.28 | 614 |
+| 45 | `ag.dubrovnik.palacio-do-reitor` | 72.58 | 72.58 | 611 |
+| 46 | `ag.dubrovnik.museu-maritimo` | 45.90 | 45.90 | 389 |
+| 47 | `ag.dubrovnik.mosteiro-franciscano` | 67.47 | 67.47 | 572 |
+| 48 | `ag.dubrovnik.museu-rupe` | 50.92 | 50.92 | 432 |
+| 49 | `ag.dubrovnik.teleferico-srd` | 74.42 | 74.42 | 627 |
+| 50 | `ag.dubrovnik.forte-imperial` | 110.22 | 110.22 | 930 |
+
+**50 files · 34.99 MB · 70.6 min.** Shortest 45.90 s
+(`ag.dubrovnik.museu-maritimo`), longest 124.65 s
+(`ag.amsterdam.anne-frank`).
+
+Entries **22, 24 and 28** are the three the document marks `**Não usar:** já
+existe como história com áudio`; their audio replaces the three Sarajevo story
+guides and creates no attraction. The new lengths — **67.38 s, 75.05 s,
+95.47 s** against the 141/149/162 the package declares — are the whole point:
+the old voice narrated at 70–81 words a minute, the new one at 130–180.
+
+### The guard fired, with real data, for the first time
+
+Overwriting `generated/audio/stories/` while `generated/trip.json` still
+declares the old lengths is exactly the case D095 exists for, and it did not
+have to be contrived:
+
+```text
+FAIL: 3 audio duration/chapter error(s) in trip-package/generated/trip.json
+- audioGuide 'ag.sarajevo.sebilj': declares durationSeconds 141 but audio/stories/sarajevo-sebilj.m4a is 67.4s (off by 73.6s, tolerance 2s)
+- audioGuide 'ag.sarajevo.encontro-de-culturas': declares durationSeconds 149 but audio/stories/sarajevo-encontro-de-culturas.m4a is 75.0s (off by 74.0s, tolerance 2s)
+- audioGuide 'ag.sarajevo.ponte-latina': declares durationSeconds 162 but audio/stories/sarajevo-ponte-latina.m4a is 95.5s (off by 66.5s, tolerance 2s)
+rc=1
+```
+
+`production` and `assets/trip-production` still hold the old files and still
+pass; phase 5.2 promotes the new ones, watches all three go red, and then
+closes them. **This is the expected state at the end of this phase, not a
+regression** — the phase was defined as conversion without touching any
+`trip.json`, and the only honest way to end it is with the validator saying so.
+
+### Verified
+
+- `check_repo.py` PASS; **5 of 6 validators rc=0**, `generated` rc=1 by design
+  (above);
+- `content_preflight` PASS 3 / PASS 8, unchanged; `test_validate_trip.py`
+  **51 tests OK**; `git diff --check` clean;
+- Kotlin **381 tests, 0 failures**; `lintDebug` **0 errors, 33 warnings**;
+- both APKs **28 entries** under `assets/trip-production/` (27 PDF +
+  `trip.json`); `app-release.apk` **26.8 MB**, `app-debug.apk` **31.9 MB** —
+  unchanged from the start of the phase, because no audio is promoted yet and
+  `assets/trip-production/audio/stories/` is still empty. *(The 31.8 MB this
+  session was handed as the starting size is the **debug** APK; the release one
+  has always been smaller. Both are measured here rather than carried over.)*
+- release DEX `"Protótipo"` 0;
+- `source-wav/` untouched: **50 WAVs**, and **no `.wav` anywhere under
+  `production/` or `assets/trip-production/`**;
+- both tracked `trip.json` blobs still
+  `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
