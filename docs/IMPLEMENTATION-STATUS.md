@@ -5497,3 +5497,127 @@ Vinícius and Érika. The gate itself is sound.
    also on both accommodation heroes — `(Suranj)` over a white yacht in Kotor,
    `na cidade velha` over bright rock in Dubrovnik. The city heroes are fine.
    A design decision, not a content one.
+
+## Three defects only the photographs could reveal (2026-09-08)
+
+`app/src/main/java/`, `app/src/test/` and `docs/`. No package, no content
+text, no asset: the APK's size and its 230 entries are unchanged, which is the
+check that this session touched nothing it was not meant to. See D167, D168,
+D169.
+
+### What changed
+
+- **The dish price stops crushing the dish name** (D167). `FoodScreen`'s card
+  header now measures the price pill against a ceiling — half of what it and
+  the name have between them, the row less the 12dp gap — and the pill wraps
+  inside it instead of measuring first and taking whatever it wants. One
+  constraint over all seventy-five dishes; no branch turns on length.
+- **`TcHeroWith` gains a veil under the photograph** (D168), a vertical
+  gradient from transparent through the upper 45% to `HeroScrimBottom` at the
+  foot, both stops derived from `Ink`. The placeholder branch is untouched.
+- **`walk.heroAssetId` is deliberately still unread** (D169). The approved
+  plate draws no photograph on screen 06, so nothing was wired.
+
+### What the plate says about screen 06
+
+`SCREEN-INDEX-v2.md` line 13 makes screen 06 "Iniciar passeio". Its artboard
+in `Travel Companion - Fluxo Principal.dc.html` contains **zero** occurrences
+of `<img`, `background-image`, `url(`, `photo`, `foto` or `hero`. What it
+draws, in order: the status bar; a back arrow beside **"Passeio"**; a dark
+`#16232E` section with **"CAMINHADA GUIADA · começa às 11:00"**, the title in
+Fraunces, `2,4 km` / `75 min` / `7 histórias`, and a **"Rota"** sub-block; a
+white card of three rows; **"Quem vai ouvir"**; and a footer with **"Começar
+passeio"**. The dark card is the header, and the app already draws it.
+
+**Consequence for a content session, not for code**: the `heroAssetId`, the
+`assets[]` entry `image.walk.sarajevo.bazar-ao-rio` and the file itself should
+come out, taking `assets/trip-production/` from 230 to 229 and 146 KiB with it.
+
+### Proved by failing, three times
+
+| | before | after |
+|---|---|---|
+| Peka's name beside a 65-character price | **0.0dp** wide, price **317.0dp** | name **163.5dp**, price **141.5dp** |
+| the 65 characters themselves | pill 33.0dp tall, one clipped line | wrapped, whole sentence laid out |
+| the veil, with a photograph | `TestTag = 'tc-hero-scrim' is not displayed` | present, and exactly the hero |
+| the veil, with the placeholder | absent | absent — **green both times, deliberately** |
+| `Kava na Stradun`, 4 characters | correct already | unchanged — **green both times, deliberately** |
+| `TcHeroGeometryTest`, all three | green | green — the D051/D056 guard never moved |
+
+The two rows that are green on both sides are the point of them: the short
+price and the striped placeholder are the things this change had to *not*
+touch, and a test that was red first would have meant the fix had reached
+somewhere it should not.
+
+**A note on the harness, because it will catch the next person.** Robolectric's
+legacy graphics shadow cannot measure text: under it every `Text` on screen 20
+comes out about one character wide — the 65-character price and the
+4-character one alike — so a width assertion is green on a number that means
+nothing. `DishPriceLayoutTest` runs `@GraphicsMode(NATIVE)`, and composes
+inside a `requiredWidth` box because this compose rule's host measures 0.5dp
+wide and a plain `Modifier.width` is clamped by it.
+
+### Verified
+
+- 6 validators rc=0, `Audio: 50 guide(s) timed against a packaged file, 0 not
+  timed` on the three production copies; `check_repo.py` PASS;
+  `content_preflight` PASS 3 / PASS 8 — all unchanged;
+- `test_validate_trip.py` **60 tests OK**; `git diff --check` clean;
+- Kotlin **462 tests, 0 failures, 0 skipped** from **63 XML files** — 451 from
+  60 before, so **+11 tests in 3 new classes**, and no existing test changed
+  its result;
+- `lintDebug` **0 errors, 33 warnings**, the same breakdown (11
+  GradleDependency, 9 UseTomlInstead, 6 NewerVersionAvailable, 2
+  AndroidGradlePluginVersion, 2 UseKtx, 1 InlinedApi, 1 ModifierParameter, 1
+  ObsoleteSdkInt) — `BoxWithConstraints`, the gradient and the custom `CornerSize` woke nothing;
+- both APKs still **230 entries** under `assets/trip-production/`;
+  `app-release.apk` still **83.6 MiB**, `app-debug.apk` **88.7 MiB**; release
+  DEX `Protótipo` 0 and `simular chegada` 0;
+- `app/build.gradle.kts` and `gradle/libs.versions.toml` **unchanged**; no
+  package and nothing under `tools/` was touched;
+- both tracked `trip.json` blobs still
+  `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+### What the screenshots showed
+
+**Real telephone, not an emulator**: Galaxy S24, `SM-S921B`, serial
+`RQCX80441NX`, running the signed `app-release.apk`. The clock was moved in
+the device's own settings to reach 28/09 and 17/09 — `adb shell date` is
+refused here — and **auto time was restored afterwards**. Before/after pairs
+are outside the repository.
+
+- **28/09, screen 20, `Peka (carne ou polvo)`** — before, the name was
+  `o l v o )` and `/ p é - k a /` running one character per line down the side
+  of the card. After, the name sits on two ordinary lines with its
+  pronunciation beneath, and all sixty-five characters of the price are inside
+  the pill, over four lines, nothing cut;
+- **the same screen, `Kava na Stradun`** — the name-and-pill row is
+  **pixel-identical** to the screenshot taken before the change: the same
+  SHA-256 over the crop, and `ImageChops.difference` returns no bounding box at
+  all. That is the strongest form of "the short ones do not move";
+- **28/09, screen 05, `Muralhas da cidade velha`** — the title and, more
+  visibly, the subtitle over the pale limestone now read; the sky and the
+  buildings at the top of the frame are untouched;
+- **17/09, screen 16, Kotor** — `(Suranj)`, which was lost against a white
+  hull, reads;
+- **13/09, screen 04, São Paulo** — a hero that already read well: the veil
+  firms up the title and the date without touching the sky or the bridge;
+- **first launch, `Quem é você?`** — the one screen still drawing the striped
+  placeholder, because `trip.coverAssetId` is absent from the package. Its hero
+  crop is **byte-identical** before and after. The veil did not reach it.
+
+### What the telephone found that the tests could not
+
+The ceiling fixed the name and left the price sitting outside its own pill:
+wrapped to four lines the box passed 100dp, `CircleShape`'s radius became over
+50dp, and the corner cut further in than the 11dp of horizontal padding. The
+opening glyphs of the top and bottom lines were painted outside the fill.
+
+Capped at 24dp (`CappedCornerSize`, `min(minDimension / 2, cap)`), which is
+exactly `CircleShape` below the cap, so no pill that fits on a line moved.
+`DishPriceShapeTest` now asserts that arithmetic in both directions and
+measures the corner's inset at the first line's middle — the number that broke.
+
+**This is the D110 lesson again.** The layout was provable in Robolectric and
+was proved there; what was still wrong was a shape against a padding, and only
+an eye sees that.

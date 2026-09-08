@@ -78,4 +78,22 @@ object FieldCompanionColors {
     val PlaceholderCoolB = Color(0xFF7F948F)
     val PlaceholderCaptionScrim = Color(0x6B16232E)
     val PlaceholderCaptionInk = Color(0xFFF2EFE7)
+
+    /**
+     * The veil under a hero's photograph, and only under a photograph.
+     *
+     * The hero's title is white and sits at the bottom of the frame. Against
+     * the striped placeholder it always had contrast, because the stripes
+     * supply their own; against a photograph it can land on pale limestone or
+     * a white hull and stop being readable, which is what the 152 photographs
+     * of D166 exposed on screens 05 and 16.
+     *
+     * Both stops are [Ink], the same ink as [PlaceholderCaptionScrim], so the
+     * veil is the app's own dark rather than a grey of its own. It runs
+     * transparent to opaque *downwards* because the title is bottom-anchored:
+     * the top of the photograph is what the traveller is looking at, and it is
+     * left alone.
+     */
+    val HeroScrimTop = Color(0x0016232E)
+    val HeroScrimBottom = Color(0xB316232E)
 }

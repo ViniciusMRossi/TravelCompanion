@@ -482,6 +482,26 @@ fun TcNumberedNotes(
 const val TcHeroBackdropTag: String = "tc-hero-backdrop"
 
 /**
+ * The veil between a hero's photograph and the white title on top of it.
+ *
+ * Present on the photograph branch and absent on the placeholder branch, which
+ * is the whole of what it promises — so it is named, and a test asserts both
+ * halves. Deliberately **not** [TcHeroBackdropTag]: that tag answers "was a
+ * backdrop drawn at all", is read with `onNodeWithTag`, and a second node
+ * wearing it would break the D051/D056 guard rather than extend it.
+ */
+const val TcHeroScrimTag: String = "tc-hero-scrim"
+
+/**
+ * Where the veil starts, as a fraction of the hero's height.
+ *
+ * The top of a photograph is what the traveller is looking at; the title is
+ * bottom-anchored on every hero that draws one. So the upper half is left
+ * exactly as photographed and the gradient runs from there.
+ */
+private const val HERO_SCRIM_ONSET = 0.45f
+
+/**
  * Editorial hero.
  *
  * Renders packaged photography when the binary is present, and otherwise the
@@ -541,6 +561,40 @@ internal fun TcHeroWith(
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.matchParentSize().testTag(TcHeroBackdropTag),
+            )
+            // The veil, and it exists only on this branch.
+            //
+            // The placeholder does not get one: its stripes already carry the
+            // white title, and darkening them would alter an approved element
+            // that is not broken. A photograph carries nothing, so the same
+            // white title lands wherever the photograph happens to be pale —
+            // the limestone of screen 05's Muralhas, the white hull behind
+            // Kotor's `(Suranj)` — and stops being readable. Nothing was wrong
+            // here until there were photographs to be wrong against (D166).
+            //
+            // It carries [TcHeroScrimTag] and **not** [TcHeroBackdropTag].
+            // D051 and D056 put that tag on the backdrop so a test could ask
+            // whether a background was drawn at all, and that test reads it
+            // with `onNodeWithTag`, which demands exactly one node. A second
+            // node wearing the same tag would not be a new guarantee, it would
+            // be the old one broken.
+            //
+            // `matchParentSize`, for D051's reason: the veil must cover
+            // whatever the hero turns out to be without being the thing that
+            // decides it.
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .testTag(TcHeroScrimTag)
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0f to FieldCompanionColors.HeroScrimTop,
+                                HERO_SCRIM_ONSET to FieldCompanionColors.HeroScrimTop,
+                                1f to FieldCompanionColors.HeroScrimBottom,
+                            ),
+                        ),
+                    ),
             )
         } else {
             Box(

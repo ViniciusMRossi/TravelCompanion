@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -15,8 +16,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -25,11 +29,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.travelcompanion.app.design.FieldCompanionColors
 import com.travelcompanion.app.design.TcCardShape
@@ -45,6 +52,51 @@ import com.travelcompanion.app.domain.food.MenuUiState
 
 /** 18dp on the dish card, 14 inside it (handoff tokens). */
 private val DishCardShape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+
+/**
+ * The gap between the dish name and its price.
+ *
+ * Named because it is used twice and the two uses have to agree: it is the
+ * row's arrangement, and it is subtracted before the price's ceiling is halved.
+ */
+private val DishHeaderGap = 12.dp
+
+/**
+ * The price pill's shape: the plate's stadium while it is one line, and a
+ * rounded block once it wraps.
+ *
+ * `TcPillShape` is `CircleShape`, whose radius is **half the smaller side**. On
+ * a one-line price that is half of 30dp — 18sp of line plus 6dp of padding
+ * above and below — and it draws the stadium the plate specifies. On a price
+ * that wraps to four lines the box is over 100dp tall, the radius becomes 50dp
+ * or more, and the corner eats inwards further than the 11dp of horizontal
+ * padding: the first glyphs of the top and bottom lines are drawn outside the
+ * fill. The telephone found that, on `Peka (carne ou polvo)`, after the ceiling
+ * had already fixed the name.
+ *
+ * So the radius is capped. Below the cap the expression is `minDimension / 2`,
+ * character for character what `CircleShape` computes, so every pill that fits
+ * on a line is the same pixels it was — including at the larger font scales,
+ * where 30dp grows but stays under 48. Above it, the block stops curving.
+ */
+private val DishPriceShape = RoundedCornerShape(CappedCornerSize(24.dp))
+
+/**
+ * `CircleShape`'s corner until it reaches [cap], and [cap] after that.
+ *
+ * A `Shape` cannot ask how many lines its text took, and it does not need to:
+ * a pill that wraps is a pill that grew taller than a line, and the height is
+ * what the radius is read from either way. One expression, no branch on
+ * content.
+ *
+ * `internal` for the same reason `TcHeroWith` is: it is the seam a test needs,
+ * and the property it has to prove — identical below the cap, clamped above it
+ * — is arithmetic, not pixels (D056).
+ */
+internal data class CappedCornerSize(private val cap: Dp) : CornerSize {
+    override fun toPx(shapeSize: Size, density: Density): Float =
+        minOf(shapeSize.minDimension / 2f, with(density) { cap.toPx() })
+}
 
 /**
  * Screen 20 — Comer aqui.
@@ -314,44 +366,80 @@ private fun DishCard(dish: DishUi) {
             .background(FieldCompanionColors.Surface)
             .border(1.dp, FieldCompanionColors.Neutral200, DishCardShape),
     ) {
-        // No photograph reached this build, so the card starts at the name.
-        // There is no empty photo area and no placeholder: seventeen striped
-        // rectangles would be seventeen apologies (D128).
+        // All seventy-five dishes now package a photograph (D166), so this is
+        // drawn. The `let` stays as the contract it always was: a dish without
+        // one starts at the name, with no empty photo area and no placeholder,
+        // because striped rectangles here would be apologies (D128).
         dish.photoPath?.let { DishPhoto(it, dish.photoCaption) }
 
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = dish.name,
-                        style = TcType.dishName,
-                        color = FieldCompanionColors.Ink,
-                    )
-                    dish.pronunciation?.let {
+            // The price pill is measured against a ceiling: half of what it
+            // and the name have between them.
+            //
+            // `priceRange` is the source's own sentence, not a string the app
+            // composed from a number, so nothing bounds its length: 68 of the
+            // 75 dishes are under twenty characters, and `Peka (carne ou
+            // polvo)` carries sixty-five. Left unweighted in a `Row`, the pill
+            // measured first and at whatever width it liked, and the name's
+            // `weight(1f)` got the remainder — which for sixty-five characters
+            // was almost nothing, so `Peka (carne ou polvo)` came out one
+            // letter per line. That is D154's defect in the family D154 missed,
+            // because the field is `priceRange` and D154 searched `price`.
+            //
+            // The remedy is not a length test. "Past N characters, draw it
+            // differently" is a branch whose condition agrees with the intent
+            // almost always, which is D089's shape. The rule here is one
+            // constraint applied to all seventy-five: **a qualifier may not
+            // take more room than the thing it qualifies** — D055's clause,
+            // measured. An even split is where that turns over. The pill wraps
+            // inside the ceiling instead of truncating, because the half of
+            // these sentences that an ellipsis eats is the instruction —
+            // "mínimo 2 pessoas", "encomendar com antecedência", "vendido por
+            // kg" — which is exactly what D154 found on screen 05.
+            //
+            // The sixty-eight short ones never reach the ceiling, so they
+            // measure exactly as they did and the name keeps exactly the width
+            // it had. `€2–3` is untouched.
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                // Half of what the two of them actually have, which is the row
+                // less the gap between them — so at the ceiling the pill and
+                // the name come out equal, and the qualifier never ends up the
+                // wider of the two.
+                val priceCeiling = (maxWidth - DishHeaderGap) / 2
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(DishHeaderGap),
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = dish.name,
+                            style = TcType.dishName,
+                            color = FieldCompanionColors.Ink,
+                        )
+                        dish.pronunciation?.let {
+                            Text(
+                                text = it,
+                                style = TcType.pronunciation,
+                                color = FieldCompanionColors.Neutral600,
+                                modifier = Modifier.padding(top = 3.dp),
+                            )
+                        }
+                    }
+                    dish.priceRange?.let {
                         Text(
                             text = it,
-                            style = TcType.pronunciation,
-                            color = FieldCompanionColors.Neutral600,
-                            modifier = Modifier.padding(top = 3.dp),
+                            style = TcType.priceTabular,
+                            color = FieldCompanionColors.MossInk,
+                            modifier = Modifier
+                                .widthIn(max = priceCeiling)
+                                .clip(DishPriceShape)
+                                .background(FieldCompanionColors.MossSoft)
+                                .padding(horizontal = 11.dp, vertical = 6.dp),
                         )
                     }
-                }
-                dish.priceRange?.let {
-                    Text(
-                        text = it,
-                        style = TcType.priceTabular,
-                        color = FieldCompanionColors.MossInk,
-                        modifier = Modifier
-                            .clip(TcPillShape)
-                            .background(FieldCompanionColors.MossSoft)
-                            .padding(horizontal = 11.dp, vertical = 6.dp),
-                    )
                 }
             }
 
