@@ -4637,3 +4637,158 @@ scratchpad.
 - no file under `trip-package/`, `app/src/main/assets/` or `tools/` changed;
 - both tracked `trip.json` blobs still
   `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+
+## The doubled line, and the reference nobody checks (2026-09-08)
+
+Two defects of very different size. One prints the same words twice on the
+screen the app is actually used through; the other turned out, when measured,
+not to be a defect at all.
+
+### D151 — the lock screen printed one line twice, on forty of forty-seven
+
+`AttractionViewModel` passed `subtitle = state?.name` into `audioGuideRequest`,
+which sets `title = guide.title`. Counted over the package that ships: **47**
+attractions carry an `audioGuideId`, and in **40** of them `guide.title` **is**
+`attraction.name`, word for word. Only seven differed — Muralhas de Kotor,
+Casco antigo de Kotor, Lago Negro, Túnel da Guerra, Koski Mehmed Pasha,
+Caverna Betina, Stradun. So the lock screen — headphones in, screen dark, the
+whole interface by this app's own invariant — read:
+
+```
+Muralhas de Kotor
+Muralhas de Kotor
+```
+
+This is D102's defect through the door D102 never guarded: that one watched
+story against guide, this is attraction against guide. D148 found it and named
+the slot; it is closed now.
+
+**Two fixes, deliberately separate.**
+
+- **The floor, in `audioGuideRequest`.** A subtitle equal to the title is
+  dropped there, once, for all **six** call sites that hand one in (screen 05;
+  screen 04's city guide at `AppNavigation.kt:667` and `:674`; the story at
+  `:690`; `TogetherRoute.kt:61`; `WalkModeController.kt:231`) and for the city
+  guides still to come. Compared **trimmed and case-insensitively**, because
+  the package carries story titles ending in a space.
+- **The information, in `AttractionViewModel`.** Dropping alone leaves 40
+  second lines blank, and blank is only *less wrong* than repeated. The
+  subtitle is now `cityLine`, which is what the lock screen was missing:
+  `Muralhas de Kotor` over `Kotor · Montenegro`.
+
+**One rule for all forty-seven.** The seven that already differed lose their
+old pair and gain the city line like everybody else. The alternative is an `if`
+whose branch turns on two strings happening to be equal — the D089 shape.
+
+**No content moved.** Not one guide, attraction, city or story was renamed.
+The story↔guide guard in `validate_trip.py` **stays**; the matching
+attraction↔guide guard is **deliberately not added**, because after these two
+fixes equal titles no longer print twice and a new guard would fail all six
+validators on content that is correct.
+
+### D142 — measured, and it was not a runtime defect
+
+D142 stood recorded as "`criticalItemsFor` does not read
+`timelineItem.criticalItemIds`", which reads as critical items being lost.
+Counted over `assets/trip-production/trip.json` by replaying `criticalItemsFor`
+in full:
+
+| | |
+|---|---|
+| critical items declared | **13** |
+| orphans (declared, never reached) | **0** |
+| references in `timelineItem.criticalItemIds` | **13** |
+| of those, not reaching `criticalItemsFor` | **0** |
+
+And it is structural, not luck: `trip.schema.json` declares `criticalItems` in
+exactly three places — `$defs/day`, `$defs/transport`, `$defs/accommodation` —
+and there is **no global array**. `criticalItemIds` is a list of ids, not of
+objects, so an id none of those three declares has no object behind it and no
+change to `criticalItemsFor` could materialise one. **`criticalItemsFor` was
+not touched.**
+
+The real risk is a **dangling reference**: a timeline row naming an id its own
+day cannot reach. It would vanish silently in two places —
+`TodayUseCase.kt:189` would leave the row without its critical emphasis, and
+`WalkFinishedState.kt:80` would stop filtering the row it should hide. So the
+fix became an **authoring guard**, not a runtime change:
+`validate_trip.dangling_critical_reference_problems` requires every id in
+`timelineItem.criticalItemIds` to be declared on that **same day**, or on a
+`transport` or `accommodation` that day lists. Reported through
+`content_checks` — a warning while the package is being authored, a hard error
+once `contentStatus` is `production`. The rule of D095, for the reason of D095.
+All six packages stay `rc=0`, exactly as the four numbers predicted.
+
+### Proved by failing, three times
+
+```
+AttractionLockScreenPackagedTest > no attraction of the real trip prints the same line twice FAILED
+AttractionLockScreenPackagedTest > the second line names the city and the country FAILED
+AttractionLockScreenTest > a guide named after its attraction still gets two different lines FAILED
+AttractionLockScreenTest > a guide named differently gets the same second line FAILED
+AudioGuideSubtitleTest > aSubtitleThatDiffersOnlyBySpacingOrCaseIsAlsoDiscarded FAILED
+AudioGuideSubtitleTest > aSubtitleEqualToTheTitleIsDiscarded FAILED
+9 tests completed, 6 failed
+```
+
+The packaged test names every collision it finds, and the red run listed
+**exactly 40** — the number counted from the package, counted back out of the
+app. After both fixes: **9 tests, 0 failed.**
+
+1. **The 40.** `AttractionLockScreenPackagedTest` walks all 47 attractions
+   through the real `AttractionViewModel` into
+   `FakeAudioEngine.preparedTitle/preparedSubtitle` — the exact strings the
+   media session receives — and asserts each pair differs. `assumeTrue` like
+   `ExplorePackagedDaysTest`, since `trip-production/` is not in the
+   repository; `AttractionLockScreenTest` builds the same collision by hand and
+   runs everywhere.
+2. **The subtitle says where.** The packaged test asserts
+   `"Muralhas de Kotor"` over `"Kotor · Montenegro"`, and a third case asserts
+   no attraction is left with a blank second line — which is what the discard
+   alone would have produced 40 times.
+3. **The dangling reference.** `tools/test_validate_trip.py` gains a fixture
+   naming an id nobody declares: **rc=1** with `contentStatus: "production"`,
+   **rc=0 with a WARNING** without it, and a control run proves the extra
+   finding is the guard's and not the sample's two unpackaged documents. With
+   the guard unwired the same fixture passed **completely silently**, which is
+   the point.
+
+### What the screenshots showed
+
+Release APK on `emulator-5554` (API 37), clock moved from Settings → Date &
+time, a PIN set so the real lock screen draws. Screenshots are outside the
+repository, in this session's scratchpad.
+
+- **28/09, Dia 16, Dubrovnik.** **Muralhas da cidade velha** over **Dubrovnik ·
+  Croácia** — one of the 40, which before this printed its own name twice.
+- **Palácio do Reitor** over **Dubrovnik · Croácia** — also one of the 40.
+- **Caiaque pelas muralhas**, one of the seven, whose guide is titled *Caverna
+  Betina*: **Caverna Betina** over **Dubrovnik · Croácia**. Title and subtitle
+  still differ, and the second line now names the city.
+- **25/09, Dia 13, Sarajevo.** The story keeps the pair it always had:
+  **Sebilj, Baščaršija** over **O Sebilj tem 1891; a praça tem 1462**. All
+  three packaged story titles differ from their guide's, so the discard fires
+  on none of them and nothing on that path moved.
+
+### Verified
+
+- 6 validators rc=0, `Audio: 50 guide(s) timed against a packaged file, 0 not
+  timed` on the three production copies, unchanged; `check_repo.py` PASS;
+  `content_preflight` PASS 3 / PASS 8;
+- `test_validate_trip.py` **60 tests OK** — 51 before, **9 new**;
+  `git diff --check` clean;
+- Kotlin **412 tests, 0 failures, 0 skipped** from 51 XML files — 403 before,
+  **9 new**. Nothing skipped means `assumeTrue` did not fire and the
+  47-attraction walk really ran;
+- `lintDebug` **0 errors, 33 warnings** — the same 33, with the same breakdown
+  (11 GradleDependency, 9 UseTomlInstead, 6 NewerVersionAvailable, 2
+  AndroidGradlePluginVersion, 2 UseKtx, 1 InlinedApi, 1 ModifierParameter, 1
+  ObsoleteSdkInt). No new warning;
+- both APKs **78 entries** under `assets/trip-production/`; `app-release.apk`
+  **61.8 MiB**, `app-debug.apk` **66.9 MiB**; release DEX `"Protótipo"` 0 and
+  `"simular chegada"` 0;
+- no file under `trip-package/` or `app/src/main/assets/` changed; no content
+  text of any kind changed;
+- both tracked `trip.json` blobs still
+  `97627a8c8cda0c1126eacda352aff0b30e6427ce`.

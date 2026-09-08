@@ -34,6 +34,15 @@ sealed interface AudioGuideRequest {
  * Resolves an audioguide to something the player can act on.
  *
  * Returns null only when the trip has no such audioguide at all.
+ *
+ * A [subtitle] equal to the guide's own title is dropped rather than passed
+ * on: it is not a second line, it is the first one printed twice on the lock
+ * screen, which is the whole interface once the screen goes dark. Forty of the
+ * trip's forty-seven attraction guides are titled exactly after their
+ * attraction, so the collision is the common case and not the exception
+ * (D151, and D102 in the family it did not cover). It is dropped here, once,
+ * because six call sites hand a subtitle in and the city guides still to come
+ * would each have to remember.
  */
 fun audioGuideRequest(
     content: TripContent,
@@ -47,7 +56,7 @@ fun audioGuideRequest(
     return AudioGuideRequest.Playable(
         mediaId = guide.id,
         title = guide.title,
-        subtitle = subtitle,
+        subtitle = subtitle?.takeUnless { it.isSameLineAs(guide.title) },
         uri = uri,
         declaredDurationMs = guide.durationSeconds * 1_000L,
         chapters = guide.chapters
@@ -55,3 +64,12 @@ fun audioGuideRequest(
             .map { PlaybackChapter(title = it.title, startMs = (it.startSeconds * 1_000L).toLong()) },
     )
 }
+
+/**
+ * Whether two lines would read as the same line.
+ *
+ * Compared trimmed and without case: the package carries story titles that end
+ * in a space, and "equal but for a space" is still one line printed twice.
+ */
+private fun String.isSameLineAs(other: String): Boolean =
+    trim().equals(other.trim(), ignoreCase = true)

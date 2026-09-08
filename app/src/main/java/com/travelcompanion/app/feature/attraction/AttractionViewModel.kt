@@ -30,12 +30,21 @@ class AttractionViewModel(
 
     val playbackState: StateFlow<PlaybackState> = playback.state
 
-    /** The audioguide this screen controls, if the attraction has one. */
+    /**
+     * The audioguide this screen controls, if the attraction has one.
+     *
+     * The second line says *where*, not *what*: the title already carries the
+     * name of the place, so repeating it there told the traveller nothing the
+     * first line had not (D151). One rule for all forty-seven — the seven
+     * whose guide happens to be titled differently do not get a branch of
+     * their own, because a conditional whose arm turns on two strings being
+     * equal is the shape D089 warned about.
+     */
     private val request: AudioGuideRequest? =
         audioGuideRequest(
             content = content,
             audioGuideId = content.attraction(attractionId)?.audioGuideId,
-            subtitle = state?.name,
+            subtitle = state?.cityLine?.takeIf { it.isNotBlank() },
         )
 
     val audioGuideMediaId: String? = request?.mediaId

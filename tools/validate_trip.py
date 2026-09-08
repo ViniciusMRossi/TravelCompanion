@@ -675,6 +675,57 @@ def story_guide_title_problems(trip: dict) -> list[str]:
     return problems
 
 
+def dangling_critical_reference_problems(trip: dict) -> list[str]:
+    """A timeline line naming a critical item its own day cannot reach.
+
+    `criticalItemIds` is a list of ids, not of objects, and the schema declares
+    `criticalItems` in exactly three places - `$defs/day`, `$defs/transport`
+    and `$defs/accommodation`. There is no global array, so an id that none of
+    those three declares has no object behind it and nothing downstream can
+    materialise one. `TripRepository.criticalItemsFor` already reads all three
+    (D142 was recorded as a reader that missed the field; it was measured and
+    it does not - see the numbers in DECISIONS.md).
+
+    What can still go wrong is the reference itself. The scope is one day:
+    `TodayUseCase.kt:189` marks a timeline line critical by testing membership
+    in `criticalItemsFor(day)`, and `WalkFinishedState.kt:80` filters lines out
+    by the same set. Both are per-day, so an item declared on day 12's
+    transport does not rescue a line on day 13 - a reference that misses drops
+    the deadline's emphasis in silence, which is the failure mode the whole
+    critical strip exists to prevent.
+
+    Reported through `content_checks`, so it is a warning until the package
+    declares `production` - the same rule as D095, for the same reason.
+    """
+    transports = {t["id"]: t for t in trip.get("transports", [])}
+    accommodations = {a["id"]: a for a in trip.get("accommodations", [])}
+    problems: list[str] = []
+
+    for day in trip.get("days", []):
+        reachable = {item["id"] for item in day.get("criticalItems", [])}
+        for transport_id in day.get("transportIds", []):
+            transport = transports.get(transport_id)
+            if transport is not None:
+                reachable.update(i["id"] for i in transport.get("criticalItems", []))
+        for accommodation_id in day.get("accommodationIds", []):
+            accommodation = accommodations.get(accommodation_id)
+            if accommodation is not None:
+                reachable.update(i["id"] for i in accommodation.get("criticalItems", []))
+
+        for item in day.get("timeline", []):
+            for critical_id in item.get("criticalItemIds", []) or []:
+                if critical_id in reachable:
+                    continue
+                problems.append(
+                    f"day '{day['id']}' timeline '{item['id']}': criticalItemIds names "
+                    f"'{critical_id}', which the day does not declare and neither does any "
+                    "transport or accommodation it lists; the line loses its critical "
+                    "emphasis with no error"
+                )
+
+    return problems
+
+
 def walk_order_problems(trip: dict):
     """Walk stop numbering that contradicts itself.
 
@@ -853,6 +904,7 @@ def content_checks(trip: dict, assets_root: Path) -> list[str]:
         problems.append(f"cities: duplicate dish id '{dupe}'")
 
     problems.extend(story_guide_title_problems(trip))
+    problems.extend(dangling_critical_reference_problems(trip))
 
     for attraction in attractions.values():
         where = f"attraction '{attraction['id']}'"

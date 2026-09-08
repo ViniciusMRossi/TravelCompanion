@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import json
 import struct
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -44,6 +45,7 @@ from validate_trip import (
     audio_duration_seconds,
     content_checks,
     coordinate_problems,
+    dangling_critical_reference_problems,
     distance_meters,
     known_timezones,
     story_guide_title_problems,
@@ -53,6 +55,8 @@ from validate_trip import (
 
 REPO = Path(__file__).resolve().parent.parent
 PACKAGED_TRIP = REPO / "app/src/main/assets/trip/trip.json"
+SCHEMA = REPO / "trip-package/schema/trip.schema.json"
+VALIDATOR = REPO / "tools/validate_trip.py"
 
 
 def _trip(city_zone: str, day_zone: str, override_zone: str | None = None) -> dict:
@@ -619,6 +623,140 @@ class StoryGuideTitleTest(unittest.TestCase):
             problems = content_checks(trip, Path(folder))
         self.assertEqual(len(problems), 1)
         self.assertIn("carry the same title", problems[0])
+
+
+def _critical_trip(reference, *, on_day=None, on_transport=None, on_accommodation=None):
+    """One day, one timeline line, and a critical item declared where asked."""
+    day = {
+        "id": "day09",
+        "timeline": [{"id": "day09.bus", "criticalItemIds": [reference]}],
+        "transportIds": ["t1"],
+        "accommodationIds": ["stay1"],
+    }
+    if on_day:
+        day["criticalItems"] = [{"id": on_day}]
+    return {
+        "days": [day],
+        "transports": [
+            {"id": "t1", **({"criticalItems": [{"id": on_transport}]} if on_transport else {})},
+            {"id": "t2", "criticalItems": [{"id": "critical.other-day"}]},
+        ],
+        "accommodations": [
+            {
+                "id": "stay1",
+                **({"criticalItems": [{"id": on_accommodation}]} if on_accommodation else {}),
+            }
+        ],
+    }
+
+
+class DanglingCriticalReferenceTest(unittest.TestCase):
+    """A timeline line naming a critical item its own day cannot reach.
+
+    D142 was recorded as `criticalItemsFor` missing `timelineItem.criticalItemIds`.
+    Measured against the package that ships, it is not: 13 items declared, 0 of
+    them orphaned, 13 references, 0 of them unreachable. The schema is the
+    reason it cannot be otherwise - `criticalItems` exists in `$defs/day`,
+    `$defs/transport` and `$defs/accommodation` and nowhere else, so an id no
+    one declares has no object behind it. What is left is the reference, and
+    that is an authoring mistake, so it is caught where authoring is.
+    """
+
+    def test_a_reference_no_one_declares_is_reported(self):
+        problems = dangling_critical_reference_problems(_critical_trip("critical.ghost"))
+        self.assertEqual(len(problems), 1)
+        self.assertIn("day 'day09' timeline 'day09.bus'", problems[0])
+        self.assertIn("'critical.ghost'", problems[0])
+        self.assertIn("loses its critical emphasis", problems[0])
+
+    def test_a_reference_the_day_declares_is_silent(self):
+        trip = _critical_trip("critical.bus", on_day="critical.bus")
+        self.assertEqual(dangling_critical_reference_problems(trip), [])
+
+    def test_a_reference_the_days_transport_declares_is_silent(self):
+        trip = _critical_trip("critical.bus", on_transport="critical.bus")
+        self.assertEqual(dangling_critical_reference_problems(trip), [])
+
+    def test_a_reference_the_days_accommodation_declares_is_silent(self):
+        trip = _critical_trip("critical.reception", on_accommodation="critical.reception")
+        self.assertEqual(dangling_critical_reference_problems(trip), [])
+
+    def test_a_transport_the_day_does_not_list_does_not_rescue_the_line(self):
+        """Both readers are per-day: `TodayUseCase` and `WalkFinishedState`
+        test membership in `criticalItemsFor(day)`, so an item on another
+        day's transport is not reachable from this one."""
+        problems = dangling_critical_reference_problems(_critical_trip("critical.other-day"))
+        self.assertEqual(len(problems), 1)
+        self.assertIn("'critical.other-day'", problems[0])
+
+    def test_the_six_packaged_days_have_no_dangling_reference(self):
+        trip = json.loads(PACKAGED_TRIP.read_text(encoding="utf-8"))
+        self.assertEqual(dangling_critical_reference_problems(trip), [])
+
+    def test_it_reaches_the_package_through_content_checks(self):
+        with tempfile.TemporaryDirectory() as folder:
+            problems = content_checks(_critical_trip("critical.ghost"), Path(folder))
+        self.assertEqual(len(problems), 1)
+        self.assertIn("loses its critical emphasis", problems[0])
+
+
+class DanglingCriticalReferenceExitCodeTest(unittest.TestCase):
+    """The same severity rule as D095: a warning while the package is still
+    being authored, an error once it declares itself production."""
+
+    def _validate(self, content_status, dangling=True):
+        trip = json.loads(PACKAGED_TRIP.read_text(encoding="utf-8"))
+        trip["metadata"]["contentStatus"] = content_status
+        if dangling:
+            timeline = trip["days"][0]["timeline"]
+            timeline[0]["criticalItemIds"] = ["critical.nobody-declares-this"]
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "trip.json"
+            path.write_text(json.dumps(trip), encoding="utf-8")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(VALIDATOR),
+                    str(path),
+                    "--schema",
+                    str(SCHEMA),
+                    "--assets-root",
+                    str(PACKAGED_TRIP.parent),
+                ],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+        return result
+
+    @staticmethod
+    def _count(stdout):
+        """The number the validator printed, warnings or errors."""
+        for line in stdout.splitlines():
+            for marker in ("content error(s)", "content issue(s)"):
+                if marker in line:
+                    return int(line.split()[1])
+        return 0
+
+    def test_production_content_fails(self):
+        result = self._validate("production")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("critical.nobody-declares-this", result.stdout)
+        self.assertIn("content error(s)", result.stdout)
+
+        # The sample carries two unpackaged documents, so rc=1 alone would not
+        # say the guard is what failed. The delta does.
+        control = self._validate("production", dangling=False)
+        self.assertEqual(self._count(result.stdout), self._count(control.stdout) + 1)
+
+    def test_content_still_being_authored_only_warns(self):
+        result = self._validate("prototype")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("critical.nobody-declares-this", result.stdout)
+        self.assertIn("WARNING", result.stdout)
+
+        control = self._validate("prototype", dangling=False)
+        self.assertEqual(self._count(result.stdout), self._count(control.stdout) + 1)
 
 
 def _menu_trip(cities, fallback=None):
