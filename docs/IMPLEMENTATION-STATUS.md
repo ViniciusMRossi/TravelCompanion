@@ -5389,3 +5389,111 @@ telephone.
 D164 it is 13 of 13. This session's scope was `app/src/main/java/`,
 `app/src/test/` and `docs/`, so the root file was not touched; named here so
 it is corrected deliberately rather than found as a contradiction.
+
+## The 152 photographs enter the package (2026-09-08)
+
+Content only. `trip-package/` and `app/src/main/assets/trip-production/` were
+touched; `app/src/main/java/`, `app/src/test/`, `tools/`, the schema, and the
+two tracked `trip.json` files were not. **No package text changed** — not a
+name, not a summary, not a caption. See D166.
+
+### What changed
+
+- **152 images converted and promoted** with
+  `ffmpeg -vf "scale='min(1080,iw)':-2" -q:v 4`, into a staging tree outside
+  the repository; the 114 MiB of originals were never copied into it, not even
+  temporarily.
+- **152 entries appended to `assets[]`**, 77 to **229**, each carrying `id`,
+  `type`, `path`, `mimeType`, `description` and nothing else.
+- **152 fields wired**: 47 `attraction.heroAssetId`, 19 `city.heroAssetId`,
+  10 `accommodation.heroAssetId`, 1 `walk.heroAssetId`, 75
+  `dish.photoAssetId` (the dishes live in `city.menu.meals[].dishes[]`).
+- **Promoted to all three copies** — `trip-package/generated/` (draft),
+  `trip-package/production/` and `app/src/main/assets/trip-production/`
+  (production) — files and `trip.json` alike.
+
+### What the screenshots showed
+
+**Real telephone, not an emulator**: Galaxy S24, `SM-S921B`, serial
+`RQCX80441NX`, running the signed `app-release.apk` after `pm clear`.
+Screenshots were kept outside the repository. The clock was moved to 28/09 in
+the device's own settings to reach the Dubrovnik screens — `adb shell date` is
+refused on this device — and **auto time was restored afterwards**.
+
+- **13/09, Explorar** — São Paulo now carries a city hero: the Estaiada bridge
+  and the skyline, no striped placeholder;
+- **28/09, screen 04 Dubrovnik** — the city hero (walled town at dusk) and
+  **all 13 thumbnails** of the carousel photographed, swiped end to end, no
+  stripe anywhere; the last card is `Forte Imperial`, which was one of the two
+  `.webp` sources;
+- **Muralhas de Dubrovnik, screen 05** — the attraction hero is the wall walk,
+  in place of the placeholder;
+- **28/09, screen 20** — all **9** Dubrovnik dishes carry a photograph,
+  Soparnik through Kava na Stradun;
+- **17/09, screen 16** — the Kotor accommodation hero is the bay and the
+  marina;
+- **25/09, screen 06** — see below: the screen draws no photograph at all.
+
+### Verified
+
+- 6 validators rc=0, `Audio: 50 guide(s) timed against a packaged file, 0 not
+  timed` on the three production copies, unchanged; `check_repo.py` PASS;
+  `content_preflight` PASS 3 / PASS 8, unchanged;
+- `test_validate_trip.py` **60 tests OK**; `git diff --check` clean;
+- Kotlin **451 tests, 0 failures, 0 skipped** from **60 XML files** —
+  unchanged, as expected: no test in the suite asserts the absence of images;
+- `lintDebug` **0 errors, 33 warnings**, the same breakdown as before (11
+  GradleDependency, 9 UseTomlInstead, 6 NewerVersionAvailable, 2
+  AndroidGradlePluginVersion, 2 UseKtx, 1 InlinedApi, 1 ModifierParameter, 1
+  ObsoleteSdkInt);
+- both APKs **230 entries** under `assets/trip-production/` (27 PDF, 50 audio,
+  **152 images**, 1 `trip.json`), up from 78; every declared path cross-checked
+  against the zip name list — **0 declared-but-absent, 0
+  present-but-undeclared**, 152 fields all resolving;
+- `app-release.apk` **83.6 MiB** (from 61.8), `app-debug.apk` **88.7 MiB**;
+  release DEX `Protótipo` 0 and `simular chegada` 0;
+- images total **21.7 MiB**, mean 146 KiB, largest 312 KiB; **EXIF 58 to 0,
+  GPS 7 to 0** across 152 files;
+- the three copies identical except `metadata.contentStatus`, by the
+  comparison command;
+- both tracked `trip.json` blobs still
+  `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+### D110: the release APK has now been on a real telephone
+
+It was installed and run on the Galaxy S24 twice in this session, before and
+after the images, and it did not crash. **The prototype scaffold is absent**
+(`flags=0x0`, no `DEBUGGABLE`), and one of the weather checks left open by
+D164 was satisfied incidentally: on **13/09 with wi-fi on**, São Paulo — the
+one day whose city packages no attraction, so no call is made — the card
+showed the packaged fallback, `Sem dados ao vivo · previsão salva na viagem`.
+**The other four weather checks were not run**; this session was about images.
+
+One thing worth knowing for any future first-launch test: `allowBackup="true"`
+with no `dataExtractionRules` means Android Auto Backup restores the DataStore,
+so a *fresh install is not a fresh state* — the first launch skipped **Quem é
+você?** until `pm clear` was run, after which it appeared correctly with
+Vinícius and Érika. The gate itself is sound.
+
+### ⚠️ Found, not fixed — outside a content session's files
+
+1. **`walk.heroAssetId` is still dead.** The field is registered and the file
+   `images/walks/sarajevo-bazar-ao-rio.jpg` is packaged, but **screen 06 draws
+   no photograph**: no file under `feature/walk/` references `TcHero` or
+   `heroAssetPath`. On the telephone the walk opens on the dark card — title,
+   520 m, 35 min, 3 stories, route — and no image. This is a finding, not a
+   defect: the field is wired correctly and nothing reads it.
+2. **Screen 20 breaks its layout on one dish.** `Peka (carne ou polvo)` renders
+   its name *and* its pronunciation **one character per line**, consuming a
+   whole screen. Its `priceRange` is the longest in the package — `€25–35 por
+   pessoa (mínimo 2 pessoas, encomendar com antecedência)` — and the chip takes
+   the row, squeezing the name column to about one character. **Not caused by
+   the photographs**: the name/price row is above them, and `Kava na Stradun`,
+   two cards later, renders normally on a `€2–3` chip.
+3. **`TcHero` has no scrim, and photographs made that visible.** The white
+   title sat on a striped placeholder before and always read; over a
+   photograph it can land on light pixels. Worst on screen 05, where
+   `Muralhas da cidade velha` and its subtitle fall on pale limestone and sky;
+   also on both accommodation heroes — `(Suranj)` over a white yacht in Kotor,
+   `na cidade velha` over bright rock in Dubrovnik. The city heroes are fine.
+   A design decision, not a content one.
