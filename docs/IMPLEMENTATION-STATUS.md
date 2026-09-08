@@ -4305,3 +4305,162 @@ session can align it with the corrected D078.
   both APKs;
 - both tracked `trip.json` blobs still
   `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Audio guide, phase 5.3: forty-seven attraction guides, and the manifest (2026-09-07)
+
+Content only. Each of the 47 attractions gets an `asset`, an `audioGuide` and an
+`audioGuideId`, and the 47 `.m4a` are promoted into `production/audio/attractions/`
+and `app/src/main/assets/trip-production/audio/attractions/`. The package goes
+from **3 audio guides to 50**, and from 3 audio assets to 50.
+
+For each one, and nothing else:
+
+```json
+{ "id": "asset.ag.dubrovnik.palacio-do-reitor", "type": "audio",
+  "path": "audio/attractions/dubrovnik-palacio-do-reitor.m4a",
+  "mimeType": "audio/mp4" }
+
+{ "id": "ag.dubrovnik.palacio-do-reitor", "title": "Palácio do Reitor",
+  "audioAssetId": "asset.ag.dubrovnik.palacio-do-reitor",
+  "durationSeconds": 73 }
+```
+
+`durationSeconds` is `round()` of the file's own measured length — 72.575 s
+here — and the validator now reports **`Audio: 50 guide(s) timed against a
+packaged file, 0 not timed`**, up from 3. **No guide has `chapters`** (D149).
+Titles name the place, from the entry heading without its editorial annotation
+(D148); two of them deliberately name something narrower than the attraction
+they hang on, because the document does.
+
+### The forty-seven
+
+| # | `audioGuide` | title | s | atração |
+| ---: | --- | --- | ---: | --- |
+| 1 | `ag.amsterdam.jordaan` | Jordaan e os canais | 109 | `attr.amsterdam.jordaan` |
+| 2 | `ag.amsterdam.anne-frank` | Casa de Anne Frank | 125 | `attr.amsterdam.anne-frank` |
+| 3 | `ag.amsterdam.rijksmuseum` | Rijksmuseum | 97 | `attr.amsterdam.rijksmuseum` |
+| 4 | `ag.amsterdam.museu-holocausto` | Museu Nacional do Holocausto | 95 | `attr.amsterdam.museu-holocausto` |
+| 5 | `ag.amsterdam.museu-resistencia` | Museu da Resistência (Verzetsmuseum) | 87 | `attr.amsterdam.museu-resistencia` |
+| 6 | `ag.amsterdam.museu-van-gogh` | Museu Van Gogh | 84 | `attr.amsterdam.museu-van-gogh` |
+| 7 | `ag.ksamil.ilhotas` | Ksamil e as ilhotas | 100 | `attr.ksamil.ilhotas` |
+| 8 | `ag.butrinto.sitio` | Butrinto | 101 | `attr.butrinto.sitio` |
+| 9 | `ag.budva.casco-antigo` | Casco antigo de Budva | 81 | `attr.budva.casco-antigo` |
+| 10 | `ag.kotor.muralhas` | Muralhas de Kotor | 101 | `attr.kotor.muralhas` |
+| 11 | `ag.kotor.forte-sao-joao` | Forte de São João (Sveti Ivan) | 86 | `attr.kotor.forte-sao-joao` |
+| 12 | `ag.kotor.casco-antigo` | Casco antigo de Kotor e Catedral de São Trifão | 97 | `attr.kotor.casco-antigo` |
+| 13 | `ag.kotor.ladder` | Ladder of Kotor | 90 | `attr.kotor.ladder` |
+| 14 | `ag.kotor.teleferico-lovcen` | Teleférico Kotor–Lovćen e Alpine Coaster | 98 | `attr.kotor.teleferico-lovcen` |
+| 15 | `ag.zabljak.lago-negro` | Lago Negro (Crno Jezero) | 86 | `attr.zabljak.lago-negro` |
+| 16 | `ag.zabljak.ledena-pecina` | Ledena Pećina, a caverna de gelo | 71 | `attr.zabljak.ledena-pecina` |
+| 17 | `ag.zabljak.bobotov-kuk` | Bobotov Kuk | 108 | `attr.zabljak.bobotov-kuk` |
+| 18 | `ag.zabljak.nevidio` | Cânion Nevidio | 94 | `attr.zabljak.nevidio` |
+| 19 | `ag.bastasi.rafting-tara` | Rafting no cânion do Tara | 100 | `attr.bastasi.rafting-tara` |
+| 20 | `ag.bastasi.sipcanica` | Cachoeira Šipčanica | 66 | `attr.bastasi.sipcanica` |
+| 21 | `ag.sarajevo.bascarsija` | Baščaršija | 101 | `attr.sarajevo.bascarsija` |
+| 23 | `ag.sarajevo.morica-han` | Morića Han | 67 | `attr.sarajevo.morica-han` |
+| 25 | `ag.sarajevo.chama-eterna` | Chama Eterna (Vječna vatra) | 72 | `attr.sarajevo.chama-eterna` |
+| 26 | `ag.sarajevo.catedral` | Catedral do Sagrado Coração | 71 | `attr.sarajevo.catedral` |
+| 27 | `ag.sarajevo.rosas` | Rosas de Sarajevo | 81 | `attr.sarajevo.rosas` |
+| 29 | `ag.sarajevo.war-childhood` | War Childhood Museum | 64 | `attr.sarajevo.war-childhood` |
+| 30 | `ag.butmir.tunel` | Túnel da Guerra (Tunel spasa) | 99 | `attr.butmir.tunel` |
+| 31 | `ag.sarajevo.vijecnica` | Vijećnica | 99 | `attr.sarajevo.vijecnica` |
+| 32 | `ag.mostar.stari-most` | Stari Most | 104 | `attr.mostar.stari-most` |
+| 33 | `ag.mostar.kujundziluk` | Bazar Kujundžiluk | 66 | `attr.mostar.kujundziluk` |
+| 34 | `ag.mostar.koski-mehmed-pasha` | Mesquita Koski Mehmed Paxá e o minarete | 55 | `attr.mostar.koski-mehmed-pasha` |
+| 35 | `ag.blagaj.tekke` | Tekke de Blagaj | 88 | `attr.blagaj.tekke` |
+| 36 | `ag.kravice.cachoeiras` | Cachoeiras de Kravice | 76 | `attr.kravice.cachoeiras` |
+| 37 | `ag.pocitelj.vila` | Počitelj | 94 | `attr.pocitelj.vila` |
+| 38 | `ag.dubrovnik.portao-pile` | Portão Pile e a Baía de Pile | 67 | `attr.dubrovnik.portao-pile` |
+| 39 | `ag.dubrovnik.lokrum` | Ilha de Lokrum | 85 | `attr.dubrovnik.lokrum` |
+| 40 | `ag.dubrovnik.caiaque` | Caverna Betina | 57 | `attr.dubrovnik.caiaque` |
+| 41 | `ag.dubrovnik.cidade-velha` | Stradun (Placa) | 85 | `attr.dubrovnik.cidade-velha` |
+| 42 | `ag.dubrovnik.porto-velho` | Porto velho | 87 | `attr.dubrovnik.porto-velho` |
+| 43 | `ag.dubrovnik.muralhas` | Muralhas da cidade velha | 107 | `attr.dubrovnik.muralhas` |
+| 44 | `ag.dubrovnik.forte-lovrijenac` | Forte Lovrijenac | 73 | `attr.dubrovnik.forte-lovrijenac` |
+| 45 | `ag.dubrovnik.palacio-do-reitor` | Palácio do Reitor | 73 | `attr.dubrovnik.palacio-do-reitor` |
+| 46 | `ag.dubrovnik.museu-maritimo` | Forte de São João e Museu Marítimo | 46 | `attr.dubrovnik.museu-maritimo` |
+| 47 | `ag.dubrovnik.mosteiro-franciscano` | Mosteiro Franciscano e a farmácia antiga | 67 | `attr.dubrovnik.mosteiro-franciscano` |
+| 48 | `ag.dubrovnik.museu-rupe` | Museu Etnográfico Rupe | 51 | `attr.dubrovnik.museu-rupe` |
+| 49 | `ag.dubrovnik.teleferico-srd` | Teleférico do Monte Srđ | 74 | `attr.dubrovnik.teleferico-srd` |
+| 50 | `ag.dubrovnik.forte-imperial` | Forte Imperial e Museu da Guerra da Pátria | 110 | `attr.dubrovnik.forte-imperial` |
+
+### The manifest
+
+`audio-manifest.json` covered three story scripts with `ttsVoice: null`. It now
+covers **all fifty**, and the voice is **`pm_alex`** — given by Vinícius in this
+session and recorded exactly as given. The TTS provider was not stated and is
+not invented; what a `.m4a` can prove about itself is still only the encoder
+(FFmpeg), which is the step after the TTS. Per entry it records the source
+document and entry number, the source WAV, the target path, `durationSeconds`
+and `durationSecondsMeasured`, and the byte size; once, at the top, the exact
+command, the ffmpeg build, the **requested 64 kbps against the measured 68.1–68.5
+of stream and 68.6–70.0 of file**, and that every duration was read from the
+final file's `mvhd` atom. The three story entries keep `supersededScriptPath`
+pointing at the narration scripts they replaced, with a note that those are no
+longer the origin of the audio (D150).
+
+### What was heard
+
+Same caveat as phase 5.2, and it is not a formality: **nobody listened.** There
+is no audio path back from an emulator over `adb`. What follows is what the
+device did.
+
+**Release APK on `emulator-5554`, clock at 28/09 (Dia 16, Dubrovnik).**
+
+- Explorar → Dubrovnik: every card in **O QUE VER** now carries an **Audioguia**
+  badge beside **Offline** — badges that were absent an hour ago because no
+  attraction had a guide.
+- **Palácio do Reitor** (the ninth Dubrovnik card): the header reads **Audioguia
+  2 min · Salvo offline**, and the action at the foot of the editorial sections
+  is **▶ Ouvir audioguia · 2 min**. Tapping it plays: `state=PLAYING(3)`,
+  `buffered position=72575` — the file's own 72.575 s to the millisecond — and
+  the counter runs **00:06 / 01:12**.
+- **The player prints the same line twice.** Under the pause button:
+  **Palácio do Reitor** in bold, and **Palácio do Reitor** again in muted type
+  beneath it. The media session agrees: `description=Palácio do Reitor, Palácio
+  do Reitor`. This is D102's shape, arriving through a door D102 never guarded —
+  the subtitle is the *attraction's* name, and an attraction is already named
+  after its place, so it equals the guide's title on **40 of the 47**. Found by
+  looking, not predicted; recorded as D151, and the fix is in the player, not in
+  the content.
+
+**Same build, clock at 14/09 (Dia 2, Amsterdã).**
+
+- Explorar → Amsterdã → **Casa de Anne Frank**: **Audioguia 3 min · Salvo
+  offline**, action **Ouvir audioguia · 3 min**, and it plays —
+  `state=PLAYING(3)` on the longest file in the package (124.65 s).
+- **Airplane mode** with it playing: `airplane_mode_on=1`, position
+  3005 → 9014 → 15028 ms, uninterrupted. 50 guides, 35 MB, none of it on the
+  network.
+
+**What is still unheard.** Whether the narration is good, whether `pm_alex`
+handles `Vijećnica` and `Šipčanica`, whether any of the 50 has a defect in the
+middle that a duration check cannot see: none of that was checked, and none of
+it is claimed. What is established is that all 50 files are in both APKs, that
+each one's declared length matches its own bytes within D095's tolerance, and
+that two of them decode and play on a device.
+
+### Verified
+
+- 6 validators rc=0, and `Audio: 50 guide(s) timed against a packaged file, 0
+  not timed` on all three copies of the real package; three copies identical
+  except `contentStatus` (rc=0);
+- `check_repo.py` PASS; `content_preflight` PASS 3 / PASS 8, unchanged;
+- `test_validate_trip.py` **51 tests OK**; Kotlin **381 tests, 0 failures** from 45 XML files**; `lintDebug`
+  **0 errors, 33 warnings**; `git diff --check` clean;
+- both APKs **78 entries** under `assets/trip-production/` — 27 PDF +
+  `trip.json` + **50 audio**, from 31 at the end of phase 5.2 and 28 at the
+  start of the session; `app-release.apk` **61.8 MB (was 28.8)**, `app-debug.apk`
+  **66.9 MB (was 33.9)**;
+- release DEX `"Protótipo"` 0;
+- **47 of 47 attractions carry an `audioGuideId`**, 50 audio assets, 50 guides,
+  **0 with `chapters`**, and every id unique;
+- `source-wav/` untouched at **50 WAVs**, and nothing from it promoted: **no
+  `.wav`, no `audio-manifest.json` and no `audio/scripts/` under
+  `production/`, under `assets/trip-production/`, or anywhere under
+  `assets/trip-production/` in either APK. The one `.wav` either APK does
+  contain is `assets/trip/audio/attractions/bascarsija.prototype.wav`, the
+  sample package's labelled synthetic placeholder (D019), which predates this
+  session and is untouched;
+- both tracked `trip.json` blobs still
+  `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
