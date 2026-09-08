@@ -60,6 +60,41 @@ class TransportStateTest {
         assertTrue("nothing to dial in this package", state.operatorPhone?.dialable != true)
     }
 
+    /**
+     * The eyebrow the approved artboard puts above the journey — "Ônibus ·
+     * Centrotrans" — which the app had never drawn, plus the service number
+     * the package declares and nothing read (D177).
+     *
+     * The companion to `TransportServicePackagedTest`, on the packaged sample
+     * so it runs on every machine. The sample bus declares no number, so this
+     * half also states what a leg without one looks like.
+     */
+    @Test
+    fun `the leg is named by mode and operator, and by its number when it has one`() {
+        val state = buildTransportState(content, bus, LocalTime.of(12, 0))!!
+
+        assertEquals("Ônibus · Operadora — exemplo", state.serviceLine)
+
+        val trip = content.trip
+        val numbered = com.travelcompanion.app.data.trip.TripContent(
+            trip.copy(
+                transports = trip.transports.map { transport ->
+                    if (transport.id == bus) {
+                        transport.copy(type = "flight", operator = "Croatia Airlines", serviceNumber = "OU 661")
+                    } else {
+                        transport
+                    }
+                },
+            ),
+            content.assets,
+        )
+
+        assertEquals(
+            "Voo · Croatia Airlines · OU 661",
+            buildTransportState(numbered, bus, LocalTime.of(12, 0))!!.serviceLine,
+        )
+    }
+
     @Test
     fun `an unknown transport is nothing to build`() {
         assertNull(buildTransportState(content, "does.not.exist", LocalTime.NOON))

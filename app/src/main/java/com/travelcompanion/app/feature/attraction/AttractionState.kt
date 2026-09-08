@@ -33,6 +33,17 @@ data class PracticalLineUi(
     val value: String,
 )
 
+/**
+ * The one practical value the app writes itself, because the field is a
+ * boolean and there is no sentence in the package to print.
+ *
+ * Every other line of the block is the source's own text; this one is a label
+ * and a value both composed here, which is why it is a named constant rather
+ * than a string buried in a `buildList` — a test can name it, and nothing can
+ * quietly change what the app promises about a reservation (D176).
+ */
+const val RESERVATION_REQUIRED: String = "Exige reserva com antecedência."
+
 data class AttractionUiState(
     val id: String,
     val name: String,
@@ -44,6 +55,8 @@ data class AttractionUiState(
     val chips: List<String>,
     /** What the source wrote, whole, in the operational layer. */
     val practicalLines: List<PracticalLineUi>,
+    /** What to carry, and what to have done before arriving — also operational. */
+    val requirements: List<String>,
     val summary: String,
     /** Long-form narration, between the summary and the operational strip. */
     val historySections: List<EditorialSectionUi>,
@@ -108,9 +121,20 @@ fun buildAttractionState(
         // how long the string happens to be: a threshold would be a branch
         // that agrees with the intent almost always, which is D089's shape.
         practicalLines = buildList {
-            attraction.practical?.price?.let { add(PracticalLineUi("Entrada", it)) }
-            attraction.practical?.openingHours?.let { add(PracticalLineUi("Horários", it)) }
+            val practical = attraction.practical
+            practical?.price?.let { add(PracticalLineUi("Entrada", it)) }
+            practical?.openingHours?.let { add(PracticalLineUi("Horários", it)) }
+            // Drawn only when the package says a reservation is required. A
+            // "não exige reserva" is a sentence nobody looks for, and the one
+            // explicit `false` in the package says no more about that place
+            // than the field's absence says about the other forty-three.
+            if (practical?.reservationRequired == true) {
+                add(PracticalLineUi("Reserva", RESERVATION_REQUIRED))
+            }
+            practical?.bestTime?.let { add(PracticalLineUi("Melhor hora", it)) }
+            practical?.accessibility?.let { add(PracticalLineUi("Acessibilidade", it)) }
         },
+        requirements = attraction.practical?.requirements.orEmpty(),
         summary = attraction.summary,
         historySections = editorialSectionsOf(attraction.historySections),
         departure = departure,

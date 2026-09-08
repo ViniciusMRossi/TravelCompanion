@@ -130,6 +130,16 @@ fun TransportScreen(
 @Composable
 private fun Journey(state: TransportUiState) {
     SoftCard {
+        // The artboard names the leg here, above the journey: "Ônibus ·
+        // Centrotrans". The app had never drawn the row, so the leg was named
+        // only by its two station names — and the service number the package
+        // declares was on no screen at all (D177).
+        Text(
+            text = state.serviceLine.uppercase(),
+            style = TcType.eyebrow,
+            color = FieldCompanionColors.Neutral600,
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
         LegEnd(state.origin)
         Box(
             modifier = Modifier

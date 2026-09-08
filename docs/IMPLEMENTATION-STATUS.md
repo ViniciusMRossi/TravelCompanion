@@ -5950,3 +5950,104 @@ repeating them: `app-release.apk` **87,707,586 bytes** (was 87,707,578, +8),
 Both tracked `trip.json` blobs still
 `97627a8c8cda0c1126eacda352aff0b30e6427ce`. **Automatic date and time were
 restored on the device** (`auto_time` back to 1, clock back to 08/09).
+
+## Four practical fields and a flight number that nothing read (2026-09-08)
+
+A sweep of the 173 filled fields in the package that ships against every
+reader outside `TripModels.kt` left five that were written and dropped. Four
+of them are `practical`'s, and one is the flight number.
+
+**`practical` declares seven fields and screen 05 drew three** (D176).
+`AttractionState.kt` read `price`, `openingHours` and
+`recommendedDurationMinutes`; `bestTime` (**21 of 47**), `requirements`
+(**15 of 47**, thirty sentences between them), `accessibility` (**6 of 47**)
+and `reservationRequired` (**declared 4 times, true in 3**) were parsed,
+carried in memory and read by nobody. The three one-line fields became three
+more lines of the `PracticalBlock` D154 built for exactly that shape —
+**RESERVA**, **MELHOR HORA**, **ACESSIBILIDADE**, beside the plate's existing
+**ENTRADA** and **HORÁRIOS**. `requirements` is a list, so it got a block of
+its own, **ANTES DE IR**, in the operational layer immediately below — never
+beside `whatToObserve`, which is editorial and numbered in gold. `false`
+draws nothing. The addition to the artboard is deliberate and approved: the
+five labels searched for appear **zero times** in either approved artboard.
+
+**Screen 15 never said the flight number** (D177). `serviceNumber` was read
+nowhere; five transports declare one. The approved artboard names a leg in an
+eyebrow above the vertical journey — `Telas Secundárias.dc.html:551`,
+`Ônibus · Centrotrans`, mode then operator — and **the app had never drawn
+that row at all**. It now does, with the number as a third term.
+
+**`usefulApps.countryCodes` stays unread, by decision** (D178). Counted
+first: **seven apps**, five carrying codes, two carrying none. Filtering by
+the day's country would hide Google Tradutor in Amsterdam on 14/09 — the
+morning to download the four languages — and Ferryhopper on every day but the
+one its ticket is already bought for. Seven lines fit on one screen.
+
+**Two sentences that had aged mid-paragraph** (D179). `CLAUDE.md:76` still
+sent every session to spend its remaining days on the release APK never
+having been on a phone; it has been on a Galaxy S24 four times. D164's
+closing gained the `*(Corrected: …)*` mark, original text untouched.
+
+### What the emulator showed
+
+**No telephone was attached in this session, so this was an emulator, and
+that is the right instrument here** — everything checked is text and layout,
+and nothing depends on the hardware. **AVD `Pixel_9`, system image
+`system-images/android-37.1/google_apis_playstore_ps16k/x86_64`, API level
+37 (Android 17)**, signed `app-release.apk` installed with `adb install -r`
+and `pm clear`ed to reach screen 01. As on the Galaxy S24, the image is a
+`google_apis_playstore` one, so `adb root` is refused and `adb shell date`
+answers *Operation not permitted*; the clock moved through Settings → Date &
+time. Screenshots are outside the repository, in this session's scratchpad.
+
+| date | screen | what it showed |
+|---|---|---|
+| **14/09** · Casa de Anne Frank | 05 | **ENTRADA** "2 × €23,50, pago", **RESERVA** "Exige reserva com antecedência.", then **ANTES DE IR** carrying the 135-character sentence **whole**, wrapped over four lines and ending "…não remarca nem reembolsa em nenhuma hipótese.", plus the two shorter ones. "O que observar" sits below in gold numerals, visibly a different layer |
+| **17/09** · Muralhas de Kotor | 05 | **MELHOR HORA** "06:15, antes de a guarita abrir — o nascer do sol em Kotor é por volta das 6h40" whole, under **ENTRADA** and **HORÁRIOS**; **ANTES DE IR** with the head-torch sentence and "Euros trocados na subida…" |
+| **22/09** · Cânion Nevidio | 05 | **ENTRADA** "€120 por pessoa, em espécie no dia", **RESERVA**, and **ANTES DE IR** with all three: the dry change and closed shoes, "Nada de celular…", and the operator's gear |
+| **28/09** · Palácio do Reitor | 05 | the control. `practical` is **null**, so **no practical card and no ANTES DE IR** — the screen runs from the editorial history straight to the audio button and "O que observar", with no reserved space and no empty heading. Identical to before |
+| **30/09** · Dubrovnik → Zagreb | 15 | **VOO · CROATIA AIRLINES · OU 661** as the eyebrow above the journey, `06:15 Dubrovnik · aeroporto` / `07:10 Zagreb · aeroporto` below it |
+| **18/09** · Kotor, Montenegro | 18 | all **seven** apps, unfiltered — including Ferryhopper (`GR`, `AL`) and Google Tradutor on a Montenegro day, which is the D178 decision made visible |
+
+**One correction to the brief, from the package itself.** The Anne Frank
+requirement is **135** characters, not 138, and the head-torch sentence
+("Lanterna de cabeça… o primeiro trecho é no escuro", 94 characters) belongs
+to **`attr.kotor.muralhas`**, not to Nevidio; it was checked on 17/09 where it
+actually lives. Nevidio's own three requirements all arrive whole.
+
+### Verified
+
+Kotlin **475 tests, 0 failures, 0 skipped** from **65 XML files** — 465 plus
+the ten new ones across `AttractionRequirementsPackagedTest` (3),
+`TransportServicePackagedTest` (3), `AttractionStateTest` (3) and
+`TransportStateTest` (1). **Nothing was skipped**, so the two packaged tests
+really ran against `assets/trip-production/` rather than assuming past it.
+
+**All three were watched failing first**, against the same tests with the new
+wiring backed out and the state shape left in place, so the failures are
+assertions rather than compile errors: **8 failures** — every requirement
+uncut, the Anne Frank sentence, the 21/6/3 counts, the hand-built companion,
+the Zagreb flight's `OU 661`, all five declared numbers, the unnumbered leg,
+and the sample bus. The two regression guards stayed **green** while red, as
+they must: they assert that an attraction with none of the four, and a
+declared `false`, draw nothing.
+
+6 validators rc=0, the three production packages each `Audio: 50 guide(s)
+timed against a packaged file, 0 not timed`; `check_repo.py` PASS;
+`content_preflight` PASS 8 (`assets/trip`) and PASS 3
+(`trip-package/generated`); `test_validate_trip.py` **60 tests OK**;
+`git diff --check` clean; `lintDebug` **0 errors, 33 warnings** with the
+baseline breakdown unchanged (11 GradleDependency, 9 UseTomlInstead, 6
+NewerVersionAvailable, 2 AndroidGradlePluginVersion, 2 UseKtx, 1 InlinedApi,
+1 ModifierParameter, 1 ObsoleteSdkInt). **230** entries under
+`assets/trip-production/` in both APKs; release DEX "Protótipo" 0, "simular
+chegada" 0.
+
+**The APK sizes did not move**, which is the point — nothing here touches an
+asset: `app-release.apk` **87,707,586 bytes**, `app-debug.apk`
+**93,077,743 bytes**, both identical to the 2f6dd95 baseline.
+
+Both tracked `trip.json` blobs still
+`97627a8c8cda0c1126eacda352aff0b30e6427ce`, before and after. **Automatic
+date and time were restored on the emulator** (`auto_time` back to 1, clock
+back to 08/09).

@@ -182,6 +182,114 @@ class AttractionStateTest {
         )
     }
 
+    /* --------------------------- the rest of `practical` (D176) */
+
+    /**
+     * The companion to `AttractionRequirementsPackagedTest`, built by hand so
+     * it runs on machines that do not carry the operational package.
+     *
+     * Four of `practicalInfo`'s seven fields were parsed since the first schema
+     * and read by nobody. Three of them are one sentence each and become lines
+     * of the block D154 built for exactly that; `requirements` is a list and
+     * gets its own block in the operational layer — never beside
+     * `whatToObserve`, which is editorial, numbered in gold, and answers a
+     * different question. Carrying repellent is not a curiosity about a place.
+     */
+    @Test
+    fun `the other four practical fields all reach the state`() {
+        val timedEntry = "Estar na Westermarkt às 15h20: uma vez iniciado o programa, " +
+            "ninguém mais entra, e a casa não remarca nem reembolsa em nenhuma hipótese."
+        val bestTime = "06:15, antes de a guarita abrir — o nascer do sol em Kotor é " +
+            "por volta das 6h40"
+        val accessibility = "Trilha marcada, sem guia obrigatório em tempo bom. O trecho " +
+            "final não serve para quem tem vertigem severa."
+        val trip = content.trip
+        val withAllFour = TripContent(
+            trip.copy(
+                attractions = trip.attractions.map { attraction ->
+                    if (attraction.id == "bascarsija") {
+                        attraction.copy(
+                            practical = PracticalInfo(
+                                price = "Entrada livre",
+                                reservationRequired = true,
+                                accessibility = accessibility,
+                                bestTime = bestTime,
+                                requirements = listOf(timedEntry, "Sem mala nem mochila grande."),
+                            ),
+                        )
+                    } else {
+                        attraction
+                    }
+                },
+            ),
+            AssetResolver(trip.assets, exists = { true }),
+        )
+
+        val state = buildAttractionState(withAllFour, "bascarsija", dayDate)!!
+
+        assertEquals(135, timedEntry.length)
+        assertEquals(
+            "the source's own sentences, whole, in the operational layer",
+            listOf(timedEntry, "Sem mala nem mochila grande."),
+            state.requirements,
+        )
+        assertEquals(
+            listOf(
+                PracticalLineUi("Entrada", "Entrada livre"),
+                PracticalLineUi("Reserva", RESERVATION_REQUIRED),
+                PracticalLineUi("Melhor hora", bestTime),
+                PracticalLineUi("Acessibilidade", accessibility),
+            ),
+            state.practicalLines,
+        )
+        assertFalse(
+            "a requirement is operational and never joins the gold list",
+            state.whatToObserve.any { it == timedEntry },
+        )
+    }
+
+    /**
+     * A reservation the package says is **not** required draws nothing.
+     *
+     * "Não exige reserva" is a sentence nobody looks for, and an explicit
+     * `false` on one attraction says no more than the field's absence on the
+     * other forty-three.
+     */
+    @Test
+    fun `a reservation declared false is not a line`() {
+        val trip = content.trip
+        val declaredFalse = TripContent(
+            trip.copy(
+                attractions = trip.attractions.map { attraction ->
+                    if (attraction.id == "bascarsija") {
+                        attraction.copy(practical = PracticalInfo(reservationRequired = false))
+                    } else {
+                        attraction
+                    }
+                },
+            ),
+            content.assets,
+        )
+
+        val state = buildAttractionState(declaredFalse, "bascarsija", dayDate)!!
+
+        assertEquals(emptyList<PracticalLineUi>(), state.practicalLines)
+    }
+
+    /**
+     * The regression guard, and the reason the other twenty-six screens are
+     * safe: an attraction carrying none of the four draws exactly what it drew
+     * before D176 — no block, no heading, no reserved space.
+     */
+    @Test
+    fun `an attraction with none of the four draws what it drew before`() {
+        val state = buildAttractionState(content, "latin-bridge", dayDate)!!
+
+        assertEquals(emptyList<String>(), state.requirements)
+        assertEquals(emptyList<PracticalLineUi>(), state.practicalLines)
+        assertEquals(listOf("Audioguia 9 min", "Visita ~30 min"), state.chips)
+    }
+
     /* ------------------------------------------- editorial sections (D133) */
 
     /** The packaged content with `bascarsija` carrying the given sections. */

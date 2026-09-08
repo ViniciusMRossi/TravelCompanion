@@ -54,6 +54,14 @@ fun buildMoreState(
 
     return MoreUiState(
         planBs = content.trip.planBs.map { PlanBLinkUi(it.id, it.scenario) },
+        // `usefulApps.countryCodes` is read by nobody, and on purpose. The
+        // package declares seven apps for six countries, and five of them
+        // carry codes; filtering the list by the day's country would hide the
+        // translator on 14/09 in Amsterdam — the very morning to download
+        // Albanian, Bosnian, Croatian and Greek before there is no signal —
+        // and hide Ferryhopper on every day but the Corfu crossing it sold.
+        // Seven lines fit on one screen. The field documents coverage; it is
+        // not an instruction to hide (D178).
         apps = content.trip.usefulApps.map { UsefulAppUi(it.name, it.action) },
         members = content.info.participants.map { person ->
             val sync = syncById[person.id]

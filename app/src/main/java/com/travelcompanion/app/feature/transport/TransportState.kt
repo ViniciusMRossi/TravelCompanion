@@ -3,6 +3,7 @@ package com.travelcompanion.app.feature.transport
 import com.travelcompanion.app.data.trip.ActionLink
 import com.travelcompanion.app.data.trip.CriticalItem
 import com.travelcompanion.app.data.trip.PlanB
+import com.travelcompanion.app.data.trip.Transport
 import com.travelcompanion.app.data.trip.TripContent
 import com.travelcompanion.app.domain.operations.ActionWindow
 import com.travelcompanion.app.domain.operations.PhoneUi
@@ -20,6 +21,8 @@ data class LegEndUi(
 /** Screen 15 state. */
 data class TransportUiState(
     val title: String,
+    /** The eyebrow above the journey: mode, operator, and the service number. */
+    val serviceLine: String,
     val critical: CriticalItem?,
     val window: ActionWindow,
     val criticalActions: List<ActionLink>,
@@ -62,6 +65,7 @@ fun buildTransportState(
 
     return TransportUiState(
         title = "${transport.origin.name} → ${transport.destination.name}",
+        serviceLine = serviceLine(transport),
         critical = critical,
         window = critical?.let { actionWindow(it, now) } ?: ActionWindow.Ahead,
         criticalActions = critical?.actionLinks.orEmpty(),
@@ -93,6 +97,38 @@ fun buildTransportState(
         documentId = document,
         planB = content.planB(transport.planBId),
     )
+}
+
+/**
+ * How the approved artboard names a leg: an eyebrow above the vertical
+ * journey, reading "Ônibus · Centrotrans" — mode, then operator.
+ *
+ * The app drew no such row, and `serviceNumber` was parsed and read nowhere,
+ * so the five flights that declare `LA 8078`, `EJU7913`, `OU 661`, `OU 450`
+ * and `LA 8079` never showed one. The number is the third term here: it is
+ * what the airport board lists and what the counter asks for, and at 04:45 on
+ * 30/09 "Croatia Airlines" alone is not enough to find the queue. The artboard
+ * shows two terms because its bus has no number; the third is a deliberate
+ * addition, approved (D177).
+ *
+ * Whatever is missing simply drops out, so a leg with neither operator nor
+ * number still gets its mode and the row never appears empty.
+ */
+private fun serviceLine(transport: Transport): String =
+    listOfNotNull(modeLabel(transport.type), transport.operator, transport.serviceNumber)
+        .joinToString(" · ")
+
+/** The schema's nine modes, in the plate's own register. */
+private fun modeLabel(type: String): String = when (type) {
+    "flight" -> "Voo"
+    "bus" -> "Ônibus"
+    "ferry" -> "Ferry"
+    "train" -> "Trem"
+    "transfer" -> "Transfer"
+    "taxi" -> "Táxi"
+    "urban" -> "Transporte urbano"
+    "walk" -> "A pé"
+    else -> "Transporte"
 }
 
 private fun clock(dateTime: String): String =

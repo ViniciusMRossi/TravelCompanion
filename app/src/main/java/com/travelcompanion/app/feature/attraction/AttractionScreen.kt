@@ -110,6 +110,10 @@ fun AttractionScreen(
                 PracticalBlock(state.practicalLines)
             }
 
+            if (state.requirements.isNotEmpty()) {
+                RequirementsBlock(state.requirements)
+            }
+
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 AudioGuideAction(state = state, onPlayAudioGuide = onPlayAudioGuide)
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -338,6 +342,62 @@ private fun PracticalBlock(lines: List<PracticalLineUi>) {
                         style = TcType.meta,
                         color = FieldCompanionColors.Neutral800,
                         modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * What to carry, and what to have done before arriving.
+ *
+ * `practical.requirements` is a list, so it cannot be a line of
+ * [PracticalBlock]; it gets a block of its own immediately below, inside the
+ * same operational layer. It is deliberately **not** drawn beside
+ * `whatToObserve`: that list is editorial, numbered in gold, and answers what
+ * to look at once you are there. "Repelente: é mata fechada" is not a
+ * curiosity about Butrinto, and "Estar na Westermarkt às 15h20" is a deadline
+ * — critical timing stays visually separate from editorial content.
+ *
+ * The eyebrow is the app's, in the plate's own vocabulary ("ENTRADA",
+ * "HORÁRIOS"); every line below it is the source's sentence, whole. The
+ * longest in the package runs 135 characters and its tail is the part that
+ * matters — "não remarca nem reembolsa em nenhuma hipótese" — so nothing here
+ * is ellipsised, for the same reason as D154.
+ *
+ * The artboard draws no such block. This is a deliberate addition, approved,
+ * built from components and tokens that already exist (D176).
+ */
+@Composable
+private fun RequirementsBlock(requirements: List<String>) {
+    TcCard(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "ANTES DE IR",
+            style = TcType.eyebrow,
+            color = FieldCompanionColors.Neutral600,
+        )
+        Column(
+            modifier = Modifier.padding(top = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            requirements.forEach { requirement ->
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .size(5.dp)
+                            .clip(TcPillShape)
+                            .background(FieldCompanionColors.Neutral400),
+                    )
+                    Text(
+                        text = requirement,
+                        style = TcType.meta,
+                        color = FieldCompanionColors.Neutral800,
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }

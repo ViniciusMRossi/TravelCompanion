@@ -73,9 +73,10 @@ Avoid:
 screens exist, and §32's Definition of Done stands at 13 of 13 — the last
 one was weather's live and cached states, built in 6717f8b and seen on a
 Galaxy S24 in f4818d6, the four states in one install.
-Real-device QA is marked closed, but it was run against a *debug* build; the
-release APK has never been on a phone (D110). That, not new feature work, is
-the risk worth spending the remaining days on.
+Real-device QA is closed against the *release* APK: it has been on a Galaxy
+S24 four times — the 152 images, the price and the veil, the weather's four
+states, and 2f6dd95 — and D110 names `app-release.apk` as the binary that gets
+tested.
 
 What matters before touching anything:
 
