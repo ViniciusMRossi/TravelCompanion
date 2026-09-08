@@ -4157,3 +4157,151 @@ regression** — the phase was defined as conversion without touching any
   `production/` or `assets/trip-production/`**;
 - both tracked `trip.json` blobs still
   `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
+
+## Audio guide, phase 5.2: the three stories, and the guard's first real firing (2026-09-07)
+
+Content only. The three new `.m4a` were promoted from `generated/` into
+`production/audio/stories/` and into
+`app/src/main/assets/trip-production/audio/stories/`, which had been left
+**empty** on purpose before this session — so the three `Ouvir` buttons were
+absent, by `AssetResolver` checking for the file and dropping the button in
+silence (D021), and the APK carried 28 entries instead of 31.
+
+### Proved by failing, on all three copies
+
+The files were promoted **before** the numbers were corrected, which is the
+whole point:
+
+```text
+--- trip-package/generated/trip.json
+FAIL: 3 audio duration/chapter error(s) in trip-package/generated/trip.json
+- audioGuide 'ag.sarajevo.sebilj': declares durationSeconds 141 but audio/stories/sarajevo-sebilj.m4a is 67.4s (off by 73.6s, tolerance 2s)
+- audioGuide 'ag.sarajevo.encontro-de-culturas': declares durationSeconds 149 but audio/stories/sarajevo-encontro-de-culturas.m4a is 75.0s (off by 74.0s, tolerance 2s)
+- audioGuide 'ag.sarajevo.ponte-latina': declares durationSeconds 162 but audio/stories/sarajevo-ponte-latina.m4a is 95.5s (off by 66.5s, tolerance 2s)
+rc=1
+--- trip-package/production/trip.json          (identical three findings)  rc=1
+--- app/src/main/assets/trip-production/trip.json (identical three findings) rc=1
+```
+
+Then `durationSeconds` became **67, 75 and 95** — `round()` of the measured
+value, not a target:
+
+```text
+--- trip-package/generated/trip.json
+PASS: trip-package/generated/trip.json validates against trip-package/schema/trip.schema.json
+Audio: 3 guide(s) timed against a packaged file, 0 not timed
+rc=0
+--- trip-package/production/trip.json             PASS · Audio: 3 timed, 0 not timed · rc=0
+--- app/src/main/assets/trip-production/trip.json PASS · Audio: 3 timed, 0 not timed · rc=0
+```
+
+This is the first time D095's guard has fired on real content (D146). It was
+written in September against a hypothetical and had never seen a declared
+duration be wrong; here it was wrong by more than a minute on all three, and
+`durationSeconds` — not the file — is what draws the progress bar and the
+duration label.
+
+### The body is now what the voice says
+
+`autoPlayInWalk: true` since `a61fa8b` makes the audio the primary experience
+of the walk, and the `body` was a different text about the same place. It is
+now the audio guide entry, verbatim from `audioguia-balcas-2026.md`, entries
+22, 24 and 28 — **every paragraph verified as an exact substring of the
+source**, paragraphs separated by a blank line, **no stray single newlines**.
+`title` and `hook` are untouched, and story title still differs from guide
+title in all three. `readDurationMinutes` is 2, 2, 2 (was 2, 2, 3). The
+replaced text is kept whole in D147; what it loses is the second-person
+register written for someone standing in front of the thing.
+
+| guia | antes | agora | arquivo medido | história | readDurationMinutes |
+| --- | ---: | ---: | ---: | --- | ---: |
+| `ag.sarajevo.sebilj` | 141 | **67** | 67.38 s | `story.sarajevo.sebilj` | 2 (era 2) |
+| `ag.sarajevo.encontro-de-culturas` | 149 | **75** | 75.05 s | `story.sarajevo.encontro-de-culturas` | 2 (era 2) |
+| `ag.sarajevo.ponte-latina` | 162 | **95** | 95.47 s | `story.sarajevo.ponte-latina` | 2 (era 3) |
+
+### What was heard
+
+**Nobody listened.** This session drives an emulator over `adb`, and there is no
+audio path back from it, so nothing here claims how the new voice sounds, whether
+it stumbles on `Baščaršija`, or whether it is an improvement. What follows is
+what the device did, plus one identity that pins down *which* audio it was.
+
+**Release APK on `emulator-5554`, clock at 25/09 (Dia 13, Sarajevo).**
+
+- Explorar → Sarajevo → **HISTÓRIAS CURTAS**: three cards, each labelled
+  **LEITURA DE 2 MIN** — *Ponte Latina* said 3 before — and each carrying
+  **Ouvir** and **Ler**. The *Ouvir* buttons are back; they were absent while
+  `assets/trip-production/audio/stories/` was empty, which is D021 working.
+- **Ouvir** on the Sebilj story: the compact player shows **Sebilj,
+  Baščaršija** over **O Sebilj tem 1891; a praça tem 1462** — the guide's title
+  and the story's, two different lines, which is the pair D102 exists to keep
+  apart — and the counter reads **00:03 / 01:07**, not 02:21. The media session
+  reports `state=PLAYING(3)` with `buffered position=67375`, the file's own
+  67.375 s to the millisecond. Left alone it reached **01:07 / 01:07**, so it
+  decodes end to end.
+- **Ler** expands the body in place, and what appears is the transcript: *"O
+  Sebilj é o quiosque de madeira e pedra no centro da praça de Baščaršija, com
+  um telhado em forma de cúpula e torneiras de bronze…"* — the same sentences
+  the audio guide entry carries. Read and heard are one text now, which is the
+  whole point of D147.
+- **Airplane mode**, `airplane_mode_on=1` with a guide playing: position
+  2974 → 8991 → 15001 ms, uninterrupted. Nothing about this audio was ever on
+  the network, and now it is proved from the aeroplane state rather than from
+  the architecture.
+
+**Debug APK on `emulator-5556`, same date, for the arrival only.**
+
+On this AVD the automatic arrival **cannot be produced on the release build**.
+`appops set --uid 2000 android:mock_location allow` plus `cmd location providers
+set-test-provider-location` does move the system provider — screen 07 goes from
+*Procurando localização* to *Localização ativa* — but Play Services'
+`FusedLocationProviderClient`, which `FusedLocationSource` uses, never delivers
+it, and `adb emu geo fix` answers `OK` and changes nothing. So the arrival was
+shown through D031's debug scaffold, which feeds the packaged coordinate into
+the same `WalkModeController.onLocation` a GPS fix uses and therefore exercises
+the real decision rather than a way around it.
+
+- *Protótipo · simular chegada num ponto de história* → the media session goes
+  to `state=PLAYING(3)` at `position=0`: **the story starts by itself**.
+- **Screen 10 does not rise.** Screen 07 stays and advances to **CONTINUE · Do
+  Sebilj, siga pela Sarači…**, which is D078's composition and D141's
+  consequence, seen on the real package for the first time.
+- **No notification is posted.** The app holds exactly two, before and after:
+  id **1001**, `template=MediaStyle category=transport`, the
+  `MediaSessionService`'s own (D018), and id **2001**, `category=navigation`
+  `ONGOING_EVENT|SILENT`, the walk's. No third one appears — which is the
+  difference between `PlayInWalk` and `Notify`, and the reason the invariant
+  reads *headphones + screen off*.
+- **Screen off**, `mWakefulness=Asleep`: position **27005 → 33011 ms** with the
+  display asleep. The phone can go in a pocket.
+
+**Which audio actually played.** The `sha256` of all three `.m4a` is the same in
+`generated/`, in `production/`, in `assets/trip-production/` and **inside
+`app-release.apk`** — `896ff4a7…`, `bd48cb16…`, `15e219f7…`. So the bytes that
+played are the bytes converted from the WAV of entry 22, and what the voice says
+is the audio guide entry by construction. How it sounds is Vinícius's to judge.
+
+### Observed, not fixed
+
+`app/src/debug/.../WalkArrivalScaffold.kt` carries D078's old sentence in its
+KDoc — *"every story in it declares `autoPlayInWalk` and the walk declares
+`automaticStoriesDefault`"* — which was false from the first real package until
+`a61fa8b` and is true again now, but for a reason the comment does not give. It
+is Kotlin and out of this session's scope; named here so an implementation
+session can align it with the corrected D078.
+
+### Verified
+
+- 6 validators rc=0; three copies identical except `contentStatus` (rc=0);
+- `check_repo.py` PASS; `content_preflight` PASS 3 / PASS 8, unchanged;
+- `test_validate_trip.py` **51 tests OK**; Kotlin **381 tests, 0 failures** from 45 XML files; `lintDebug`
+  **0 errors, 33 warnings**; `git diff --check` clean;
+- both APKs **31 entries** under `assets/trip-production/` — 27 PDF +
+  `trip.json` + **3 audio**, up from 28; `app-release.apk` **28.8 MB (was 26.8)**,
+  `app-debug.apk` **33.9 MB (was 31.9)**;
+- release DEX `"Protótipo"` 0;
+- no `.wav` under `production/` or `assets/trip-production/`;
+  `audio/scripts/` and `audio-manifest.json` promoted nowhere and absent from
+  both APKs;
+- both tracked `trip.json` blobs still
+  `97627a8c8cda0c1126eacda352aff0b30e6427ce`.
