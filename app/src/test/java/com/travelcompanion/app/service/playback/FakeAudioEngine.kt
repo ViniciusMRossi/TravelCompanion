@@ -89,6 +89,9 @@ class FakeAudioEngine : AudioEngine {
         isPlaying = false
         positionMs = 0L
         commands += "stop"
+        // Media3 reports the stop it performed, whoever asked for it, and the
+        // controller has to survive hearing its own command back.
+        if (notifiesSynchronously) listener?.onStopped()
     }
 
     /** Simulates the player finishing preparation. */
@@ -119,6 +122,15 @@ class FakeAudioEngine : AudioEngine {
 
     fun emitEnded() {
         listener?.onEnded()
+    }
+
+    /**
+     * The session ended without the app asking: the media notification was
+     * swiped away, or the service went with it.
+     */
+    fun emitStopped() {
+        isPlaying = false
+        listener?.onStopped()
     }
 
     fun markReleased() {

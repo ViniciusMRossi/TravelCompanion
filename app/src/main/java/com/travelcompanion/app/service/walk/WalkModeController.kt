@@ -81,11 +81,26 @@ class WalkModeController(
     fun start() {
         val started = _state.value.startWalking()
         if (started.phase != WalkPhase.Active) return
+        // The same marker the stamp below reads, asked once: no stamp yet
+        // means this is the first start and not a resume. Two ways of asking
+        // the same question drift apart the day one of them is corrected.
+        val firstStart = started.startedAtEpochMs == null
         _state.value = started
             .withLocationQuality(currentQuality())
             // Only the first start stamps: resuming from Paused continues the
             // same walk, and screen 11's duration is the whole of it.
             .copy(startedAtEpochMs = started.startedAtEpochMs ?: now())
+        // A walk begins in silence. Whatever the traveller was listening to
+        // before — an attraction's guide from another city, hours earlier —
+        // is not this walk's first story, and leaving it running made screen
+        // 07 a walk with someone else's audio underneath it. The position is
+        // kept, so that guide resumes where it stopped (D021 is about not
+        // interrupting audio for a guide that cannot play; this is the
+        // traveller asking for a different thing entirely).
+        //
+        // Only here. `finish` deliberately leaves audio playing, and resuming
+        // from Paused must not kill the story of the very walk being resumed.
+        if (firstStart) playbackController.stop()
         // The persistent notification exists to satisfy Android's rules for
         // holding location in the background, and a foreground service of type
         // `location` is refused outright without a location permission. With no

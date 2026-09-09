@@ -524,6 +524,14 @@ fun AppNavigation(
 
         val playback by playbackController.state.collectAsStateWithLifecycle()
         val walkState by walkModeController.state.collectAsStateWithLifecycle()
+
+        // Written here and nowhere else: the shell is the one composable that
+        // watches the route change, and a rule repeated on nineteen screens is
+        // a rule that is wrong on one of them.
+        LaunchedEffect(route) {
+            if (endsOnRouteChange(playback, walkState.isRunning)) playbackController.stop()
+        }
+
         // Screen 07 carries its own transport on an ink field; showing the
         // persistent player under it would offer the same controls twice.
         if (playback.isActive && !walkState.isRunning) {
@@ -537,6 +545,10 @@ fun AppNavigation(
                 isBuffering = playback.status == PlaybackState.Status.Buffering,
                 variant = TcAudioPlayerVariant.Compact,
                 onTogglePlayPause = playbackController::togglePlayPause,
+                // Only here. The full player on screen 09 and the walk's own
+                // transport on 07 each live on a screen with a way out; this
+                // bar follows the traveller everywhere and had none.
+                onClose = playbackController::stop,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             )
         }
@@ -549,6 +561,26 @@ fun AppNavigation(
         }
     }
 }
+
+/**
+ * Whether changing screens ends the audioguide session.
+ *
+ * Two guards, and the rule is wrong without either of them:
+ *
+ * - **Only when paused.** The compact bar exists so a guide survives
+ *   navigation — the app assumes headphones, and the phone goes in a pocket.
+ *   Audio that is *playing* is never stopped by walking to another screen.
+ * - **Never during a walk.** Pausing a story to cross a street and coming
+ *   back must not end the walk's audio, and screen 07 hides the bar anyway
+ *   (`!walkState.isRunning`), so a route change around a running walk means
+ *   nothing here.
+ *
+ * A pause the traveller then walks away from is the case that left the bar on
+ * every screen forever, over a guide nobody was going to resume. Ending it
+ * keeps the resume point, so the same guide continues where it stopped.
+ */
+internal fun endsOnRouteChange(playback: PlaybackState, walkIsRunning: Boolean): Boolean =
+    playback.status == PlaybackState.Status.Paused && !walkIsRunning
 
 /**
  * Screen 20's day cursor lives here, and nowhere else.

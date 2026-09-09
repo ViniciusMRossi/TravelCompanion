@@ -11,6 +11,7 @@ import com.travelcompanion.app.service.location.LocationSource
 import com.travelcompanion.app.service.playback.FakeAudioEngine
 import com.travelcompanion.app.service.playback.InMemoryPlaybackPositionStore
 import com.travelcompanion.app.service.playback.PlaybackController
+import com.travelcompanion.app.service.playback.PlaybackState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -190,6 +191,64 @@ class WalkModeControllerTest {
 
         assertEquals(WalkPhase.Completed, controller.state.value.phase)
         assertEquals(1, presence.stopped)
+    }
+
+    /**
+     * The walk begins in silence.
+     *
+     * Reported from the device: "tocou o áudio errado. Tocou o que eu estava
+     * escutando antes, de Kotor." `start` set the phase, raised the presence
+     * and watched the location, and never touched the player — so an
+     * attraction's guide from another city, started hours earlier, was still
+     * running underneath screen 07 while the walk claimed to have begun.
+     */
+    @Test
+    fun `the first start of a walk ends the audio that was already playing`() {
+        val controller = controller()
+        controller.prepare(content, walkId)
+
+        playback.playAudioGuide(
+            com.travelcompanion.app.service.playback.audioGuideRequest(content, "ag.bascarsija")!!,
+        )
+        engine.becomeReady(120_000L)
+        engine.advanceTo(30_000L)
+        playback.refreshProgress()
+        assertTrue("a guide from before the walk", playback.state.value.isPlaying)
+
+        controller.start()
+
+        assertEquals(PlaybackState.Status.Idle, playback.state.value.status)
+        assertNull("nothing is claimed on screen 07", playback.state.value.mediaId)
+        assertEquals(1, engine.stopCount)
+    }
+
+    /**
+     * And only the first start.
+     *
+     * `start` is also screen 06's resume from Paused, where the story running
+     * is the walk's own: silencing it there would trade the reported defect
+     * for a new one. The marker is the same one the timestamp reads — no stamp
+     * yet means a first start — so the two cannot drift apart.
+     */
+    @Test
+    fun `resuming a paused walk leaves its own story alone`() {
+        val controller = controller()
+        controller.prepare(content, walkId)
+        controller.start()
+
+        playback.playAudioGuide(
+            com.travelcompanion.app.service.playback.audioGuideRequest(content, "ag.bascarsija")!!,
+        )
+        engine.becomeReady(120_000L)
+        val stopsAfterStarting = engine.stopCount
+
+        controller.pause()
+        controller.start()
+
+        assertEquals(WalkPhase.Active, controller.state.value.phase)
+        assertEquals("the story of this walk keeps playing", stopsAfterStarting, engine.stopCount)
+        assertEquals("ag.bascarsija", playback.state.value.mediaId)
+        assertTrue(playback.state.value.isPlaying)
     }
 
     private class FakeLocationSource(private val granted: Boolean) : LocationSource {

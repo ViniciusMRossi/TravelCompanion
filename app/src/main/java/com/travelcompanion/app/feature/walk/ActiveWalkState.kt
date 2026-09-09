@@ -73,7 +73,15 @@ fun buildActiveWalkState(
         remainingLabel = remainingLabel(walk, totalStops, completed),
         totalStops = totalStops,
         completedStops = completed,
-        nowPlayingEyebrow = if (playback.isPlaying) "Tocando agora" else "Passeio ativo",
+        // The same guard as `currentStop` above, and for the same reason: the
+        // eyebrow announces the title under it, so it may only say "Tocando
+        // agora" when the audio running is the one this screen is naming.
+        // Over any other guide the walk names itself, and so does the eyebrow.
+        nowPlayingEyebrow = if (playback.isPlaying && currentStop != null) {
+            "Tocando agora"
+        } else {
+            "Passeio ativo"
+        },
         storyTitle = storyTitle,
         storyContext = storyContext,
         // The instruction belongs to the stop just reached: it is what to do

@@ -34,7 +34,8 @@ import androidx.compose.ui.unit.sp
  *
  * Two approved variants, per the design system:
  * - [TcAudioPlayerVariant.Compact] — the persistent player that stays
- *   available while navigating (46dp toggle, no transport).
+ *   available while navigating (46dp toggle, no transport, and an optional
+ *   close button where the session has to be endable from the bar).
  * - [TcAudioPlayerVariant.Full] — the shared audioguide screen's player
  *   (52 / 68 / 52dp movement transport), screen 09. Screen 07 does not use it:
  *   the approved prototype gives Walk Mode its own ink transport at
@@ -56,6 +57,7 @@ fun TcAudioPlayer(
     variant: TcAudioPlayerVariant = TcAudioPlayerVariant.Compact,
     onSkipBack: (() -> Unit)? = null,
     onSkipForward: (() -> Unit)? = null,
+    onClose: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier
@@ -80,6 +82,7 @@ fun TcAudioPlayer(
                     PlayerTitle(title)
                     PlayerSubtitle(subtitle, topPadding = 2.dp)
                 }
+                CloseButton(onClose)
             }
         } else {
             PlayerTitle(title)
@@ -185,6 +188,36 @@ private fun PlayToggle(
             contentDescription = null,
             tint = FieldCompanionColors.White,
             modifier = Modifier.size(iconSize),
+        )
+    }
+}
+
+/**
+ * Ends the session from the bar itself.
+ *
+ * Nullable like [SkipButton], and drawn only where it is passed: the compact
+ * bar is the one surface with no other way out, since the full player and the
+ * walk's transport each sit on a screen the traveller can leave. The approved
+ * compact specimen leaves this corner of the head row empty — the play toggle
+ * is on the left and the title column stretches to meet it — so the button
+ * takes space nothing else claims. 48dp, the minimum target D153 fixed.
+ */
+@Composable
+private fun CloseButton(onClick: (() -> Unit)?) {
+    onClick ?: return
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(TcPillShape)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = "Encerrar audioguia" },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = TcIcons.Close,
+            contentDescription = null,
+            tint = FieldCompanionColors.TealDark,
+            modifier = Modifier.size(20.dp),
         )
     }
 }

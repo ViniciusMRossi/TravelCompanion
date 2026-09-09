@@ -409,6 +409,82 @@ class PlaybackControllerTest {
         )
     }
 
+    /**
+     * `stop` existed and nobody called it, so the compact bar had no ending:
+     * paused counts as active, and after the first guide of the app's life the
+     * bar stood on every screen for ever.
+     *
+     * The second half is what makes ending safe to offer at all. Closing is
+     * not discarding: the resume point is written on the way out and read back
+     * by `playAudioGuide`, so the same guide continues where it stopped.
+     */
+    @Test
+    fun endingTheSessionClearsTheBarAndKeepsThePlace() {
+        controller.playAudioGuide(playableRequest())
+        engine.becomeReady(120_000L)
+        engine.advanceTo(37_000L)
+        controller.refreshProgress()
+        assertTrue(controller.state.value.isActive)
+
+        // Stopped while playing, so nothing else can have written the resume
+        // point: a preceding pause would have persisted it and the assertion
+        // below would pass over a `stop` that saves nothing.
+        controller.stop()
+
+        val state = controller.state.value
+        assertEquals(PlaybackState.Status.Idle, state.status)
+        assertFalse("and the bar is gone", state.isActive)
+        assertNull(state.mediaId)
+        assertNull(state.title)
+        assertEquals("the engine was told too", 1, engine.stopCount)
+
+        assertEquals("the place survived", 37_000L, positions.peek("ag.bascarsija"))
+        controller.playAudioGuide(playableRequest())
+        assertEquals(
+            "so the same guide resumes rather than starting over",
+            37_000L,
+            controller.state.value.positionMs,
+        )
+    }
+
+    /**
+     * Dismissing the media notification issues `COMMAND_STOP` to the session
+     * (Media3 builds the delete intent from it), and the player going idle was
+     * reaching the app as a bare `isPlaying = false` — indistinguishable from a
+     * pause. The state stayed Paused, so the bar stayed, over nothing.
+     */
+    @Test
+    fun aSessionStoppedFromOutsideTheAppEndsTheState() {
+        controller.playAudioGuide(playableRequest())
+        engine.becomeReady(120_000L)
+        engine.advanceTo(18_000L)
+        controller.refreshProgress()
+        controller.pause()
+
+        engine.emitStopped()
+
+        assertEquals(PlaybackState.Status.Idle, controller.state.value.status)
+        assertFalse(controller.state.value.isActive)
+        assertEquals("and this ending keeps the place too", 18_000L, positions.peek("ag.bascarsija"))
+    }
+
+    /**
+     * A failure reaches IDLE as well, and Media3 delivers the error first.
+     * Reading that idle state as "someone stopped it" would erase the one
+     * status screen 05 has to tell the traveller the guide could not play.
+     */
+    @Test
+    fun theIdleThatFollowsAFailureDoesNotEraseTheFailure() {
+        controller.playAudioGuide(playableRequest())
+        engine.becomeReady(120_000L)
+
+        engine.fail()
+        engine.emitStopped()
+
+        assertEquals(PlaybackState.Status.Failed, controller.state.value.status)
+        assertEquals(PlaybackFailure.PlaybackFailed, controller.state.value.failure)
+    }
+
     @Test
     fun nothingInTheObservableApiExposesMedia3() {
         val surface = buildList {

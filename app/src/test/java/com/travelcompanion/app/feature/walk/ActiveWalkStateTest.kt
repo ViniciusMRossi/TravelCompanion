@@ -90,6 +90,39 @@ class ActiveWalkStateTest {
         assertEquals("Caminhada Histórica de Sarajevo", state.storyTitle)
     }
 
+    @Test
+    fun `the eyebrow says Tocando agora when the guide playing is the one named`() {
+        val state = buildActiveWalkState(
+            walkState = walkState(listOf(bascarsija, latinBridge), currentStopIndex = 0),
+            playback = playing("ag.bascarsija"),
+            walk = null,
+        )
+
+        assertEquals("Tocando agora", state.nowPlayingEyebrow)
+        assertEquals("Baščaršija", state.storyTitle)
+    }
+
+    /**
+     * The half the title guard missed.
+     *
+     * The title already fell back to the walk when the player was on another
+     * guide, but the eyebrow above it read only `isPlaying` — so the header
+     * came out "TOCANDO AGORA · Caminhada Histórica de Sarajevo" over the
+     * audioguide of a different city. The eyebrow describes the line beneath
+     * it, so it takes the same guard.
+     */
+    @Test
+    fun `the eyebrow does not claim the walk is playing over someone else's guide`() {
+        val state = buildActiveWalkState(
+            walkState = walkState(listOf(bascarsija, latinBridge), currentStopIndex = 1),
+            playback = playing("ag.bascarsija"),
+            walk = null,
+        )
+
+        assertEquals("Passeio ativo", state.nowPlayingEyebrow)
+        assertEquals("Caminhada Histórica de Sarajevo", state.storyTitle)
+    }
+
     /**
      * Where to walk is true whether or not the story could be narrated, so the
      * instruction follows the arrival rather than the audio.

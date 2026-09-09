@@ -37,6 +37,17 @@ class Media3AudioEngine(context: Context) : AudioEngine {
                 Player.STATE_BUFFERING -> listener?.onBuffering()
                 Player.STATE_READY -> listener?.onReady(durationMs)
                 Player.STATE_ENDED -> listener?.onEnded()
+                // The session player only reaches IDLE by being stopped, by
+                // failing, or by going away with the service. Dismissing the
+                // media notification is the first of those: Media3 builds the
+                // notification's delete intent from `COMMAND_STOP`
+                // (`DefaultActionFactory.createNotificationDismissalIntent`),
+                // and 1.10.1 exposes no callback for the dismissal itself —
+                // `MediaNotificationManager.onNotificationDismissed` is
+                // private and only records a flag. So the stop the player
+                // performs *is* the hook, and it belongs here, on the seam the
+                // app already learns about Media3 through.
+                Player.STATE_IDLE -> listener?.onStopped()
                 else -> Unit
             }
         }

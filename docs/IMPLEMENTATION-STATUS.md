@@ -6163,3 +6163,131 @@ compressed archive simply landed on the same byte count.
 
 Both tracked `trip.json` blobs still
 `97627a8c8cda0c1126eacda352aff0b30e6427ce`, before and after.
+
+
+## A `stop()` nobody called, and the three defects it left (2026-09-08)
+
+`PlaybackController.stop()` existed on line 162 and had **zero callers** in
+the whole of `app/src/main/java`. The player could start and pause and had no
+way to end, and three separate defects came out of that one hole.
+
+1. **The mini-player never went away.** It is drawn when `playback.isActive`,
+   which is "neither Idle nor Failed" — and paused is active. After the first
+   audioguide of the app's life the compact bar stood on every screen for
+   ever, over a guide nobody was going to resume.
+2. **Dismissing the media notification ended nothing.** The state stayed
+   `Paused` and the bar stayed with it, now over a session that no longer
+   existed.
+3. **The walk inherited the previous audio.** Reported verbatim from the
+   device: *"tocou o áudio errado. Tocou o que eu estava escutando antes, de
+   Kotor."* `WalkModeController.start()` set the phase, raised the presence
+   notification and began watching the location — and never touched the
+   player.
+
+The full argument is **D182**. What follows is what the telephone showed.
+
+### The Media3 hook, and how it was chosen
+
+Media3 **1.10.1** exposes no callback for a dismissed notification:
+`MediaNotificationManager.onNotificationDismissed` is private and only records
+a flag. Reading the 1.10.1 sources, the notification's delete intent comes from
+`DefaultActionFactory.createNotificationDismissalIntent`, which is built on
+**`Player.COMMAND_STOP`** and run against the session player by
+`MediaSessionStub.stopForControllerInfo`. So the dismissal **is** a
+`player.stop()`, and the player reaching **`Player.STATE_IDLE`** is the only
+thing that crosses back into the app. `Media3AudioEngine` mapped `STATE_IDLE`
+to nothing, so the ending arrived as a bare `isPlaying = false` —
+indistinguishable from a pause. The propagation was added on the seam the app
+already learns about Media3 through: `AudioEngine.Listener.onStopped()`,
+mapped from `STATE_IDLE`, answered by the same `stop()` a button calls.
+
+### What the telephone showed
+
+On the **Galaxy S24** (SM-S921B, RQCX80441NX, Android 16), against the
+**release** APK, with the reported defect reproduced first.
+
+- **The Kotor defect, before and after.** Screen 05 for *Muralhas de Kotor*,
+  audioguide playing (`state=PLAYING(3)`), then screen 06 for *Do Sebilj ao
+  rio* → **Começar passeio**. Before the fix the Kotor guide kept playing
+  under the walk. After: `state=NONE(0), position=0` — **silence** — and the
+  header reads **PASSEIO ATIVO** over the walk's own title, with the transport
+  at 00:00 / 00:00.
+- **The eyebrow, both halves.** With the Kotor guide playing *inside* a running
+  walk, screen 07 says **PASSEIO ATIVO** and names the walk, not the guide —
+  the half that was wrong. On the debug build, after *Protótipo · simular
+  chegada num ponto de história*, it says **TOCANDO AGORA** over *"O Sebilj tem
+  1891; a praça tem 1462"* — the half that must keep working.
+- **The notification.** Paused at 15,422 ms, notification swiped out of the
+  shade: the bar disappeared and the session went to `state=NONE(0)`. Playing
+  the same guide again resumed at **15,488 ms**, not from the start.
+- **Paused + changing screen.** Paused at 87,967 ms on screen 11, deep-linked
+  to another attraction: `state=NONE(0)`, bar gone. Playing and changing
+  screen: still `PLAYING`, bar there. With the **walk running**, neither
+  applies — paused at 87,967 ms across a route change stayed `PAUSED(2)` at
+  87,967 ms.
+- **The X on the bar.** Tapped: bar gone, `state=NONE(0)`. And after the
+  route-change ending above, replaying *Muralhas de Kotor* resumed at
+  **87,978 ms** — the point the stop had written. **Ending is not
+  discarding.**
+- **The debug build** was used only for *simular chegada*, both prototype
+  lines visible on screen 07, and the **release** APK was reinstalled
+  afterwards (`versionName=1.0-2026-09-08`).
+
+Screenshots were kept outside the repository. One thing the device could not
+show: `WalkModeController.pause()` has no UI caller in this build, so
+**resuming a walk from Paused is proved only by unit test** — that half is
+`resuming a paused walk leaves its own story alone`, and it was seen red
+against an unconditional `stop()`.
+
+### Verified
+
+Kotlin **497 tests, 0 failures, 0 skipped** from **69 XML files** — 484 plus
+the thirteen new ones, in two new files. 6 validators rc=0; `check_repo.py`
+PASS; `content_preflight` PASS 8 (`assets/trip`) and PASS 3
+(`trip-package/generated`); `test_validate_trip.py` **60 tests OK**;
+`git diff --check` clean; `lintDebug` **0 errors, 33 warnings** with the
+baseline breakdown exactly (11 GradleDependency, 9 UseTomlInstead, 6
+NewerVersionAvailable, 2 AndroidGradlePluginVersion, 2 UseKtx, 1 InlinedApi,
+1 ModifierParameter, 1 ObsoleteSdkInt).
+
+**230** entries under `assets/trip-production/` in both APKs; release DEX
+"Protótipo" 0, "simular chegada" 0.
+
+`app-release.apk` **87,723,970 bytes** (was 87,707,586, +16,384) ·
+`app-debug.apk` **93,077,743 bytes**, unchanged to the byte.
+
+Both tracked `trip.json` blobs still
+`97627a8c8cda0c1126eacda352aff0b30e6427ce`, before and after.
+
+### Proved by failing, four times
+
+```
+WalkModeControllerTest > the first start of a walk ends the audio that was already playing FAILED
+    expected:<Idle> but was:<Playing>
+WalkModeControllerTest > resuming a paused walk leaves its own story alone FAILED
+    the story of this walk keeps playing expected:<1> but was:<2>
+ActiveWalkStateTest > the eyebrow does not claim the walk is playing over someone else's guide FAILED
+    expected:<[Passeio ativo]> but was:<[Tocando agora]>
+CompactPlayerLifetimeTest > paused audio does not follow the traveller to the next screen FAILED
+CompactPlayerLifetimeTest > audio that is playing survives the screen it was started on FAILED
+CompactPlayerLifetimeTest > a running walk is not touched by this rule at all FAILED
+PlaybackControllerTest > endingTheSessionClearsTheBarAndKeepsThePlace FAILED
+    the place survived expected:<37000> but was:<null>
+PlaybackControllerTest > aSessionStoppedFromOutsideTheAppEndsTheState FAILED
+    expected:<Idle> but was:<Paused>
+PlaybackControllerTest > theIdleThatFollowsAFailureDoesNotEraseTheFailure FAILED
+TcAudioPlayerCloseTest > the compact bar closes, and only where the button is passed FAILED
+```
+
+Each half was made red on its own, against a *different* intermediate: no
+`stop()` in `start` for the first, an unconditional one for the second; the
+old `isPlaying`-only eyebrow for the third; `false` and then `playback.isActive`
+for the three route-change answers, since no single wrong rule fails all of
+them; a `stop()` that skips `persistCurrentPosition`, an `onStopped` that does
+not propagate, and an `onStopped` without the Failed guard for the controller;
+and the head row without `CloseButton` for the button.
+
+The one assertion that had to be rewritten to mean anything: *the place
+survived* first passed against a `stop()` that saves nothing, because the test
+paused before stopping and `pause` writes the position itself. It now stops
+**while playing**, and goes red.

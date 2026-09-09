@@ -29,6 +29,7 @@ class PlaybackController(
     val state: StateFlow<PlaybackState> = _state.asStateFlow()
 
     private var ticker: Job? = null
+    private var stopping = false
 
     init {
         engine.setListener(EngineEvents())
@@ -159,11 +160,30 @@ class PlaybackController(
         seekToChapter(current - 1)
     }
 
+    /**
+     * Ends the session: no guide loaded, no compact player, nothing claimed.
+     *
+     * It is not destructive. The resume point is written before the state is
+     * cleared, and [playAudioGuide] reads it back with `positions.load`, so
+     * asking for the same guide again continues where it stopped rather than
+     * starting over. Only [EngineEvents.onEnded] discards a position, because
+     * a guide that finished has none.
+     *
+     * The guard is not decoration: `engine.stop()` is the very thing the
+     * session reports back as [EngineEvents.onStopped], so without it this
+     * method calls itself from inside its own third line.
+     */
     fun stop() {
-        persistCurrentPosition()
-        stopTicker()
-        engine.stop()
-        _state.value = PlaybackState()
+        if (stopping) return
+        stopping = true
+        try {
+            persistCurrentPosition()
+            stopTicker()
+            engine.stop()
+            _state.value = PlaybackState()
+        } finally {
+            stopping = false
+        }
     }
 
     /** Samples the engine. Production ticks this while playing. */
@@ -260,6 +280,26 @@ class PlaybackController(
             }
             // A finished guide starts from the beginning next time.
             if (mediaId != null) scope.launch { positions.clear(mediaId) }
+        }
+
+        /**
+         * The session ended without this app asking: the notification was
+         * dismissed, or the session went away.
+         *
+         * Propagated to the same [stop] a button would call — the state is
+         * where "there is no audio" is said, and a second path saying it would
+         * be a second answer to the same question.
+         *
+         * Failure is not a stop. The player reaches IDLE after an error too,
+         * and `MediaControllerImplBase` delivers `onPlayerError` before the
+         * state change that follows it, so Failed is already on the state by
+         * the time this arrives and must survive: it is what screen 05 reads
+         * to tell the traveller the guide could not be played.
+         */
+        override fun onStopped() {
+            if (_state.value.status == PlaybackState.Status.Failed) return
+            if (_state.value.mediaId == null) return
+            stop()
         }
 
         override fun onError(cause: Throwable?) {

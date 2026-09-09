@@ -52,6 +52,19 @@ interface AudioEngine {
 
         fun onEnded()
 
+        /**
+         * The session went idle: playback ended without anyone in this app
+         * asking for it.
+         *
+         * Media3 gives the media notification a dismissal intent that carries
+         * `COMMAND_STOP`, so swiping the notification away stops the session's
+         * player, and a session that dies underneath the app reports the same
+         * thing. Neither reaches [onPlayingChanged] with anything but a bare
+         * `false`, which reads as a pause and leaves the app claiming audio
+         * that no longer exists.
+         */
+        fun onStopped()
+
         fun onError(cause: Throwable?)
     }
 }
